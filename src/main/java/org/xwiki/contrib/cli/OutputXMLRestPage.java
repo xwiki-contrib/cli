@@ -97,20 +97,18 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void save() throws DocException
     {
-        if (content == null && title == null && values == null) {
-            return;
-        }
+        if (content != null || title != null) {
+            var xml = "<page xmlns='http://www.xwiki.org'>";
+            if (content != null) {
+                xml += "<content>" + Utils.escapeXML(content) + "</content>";
+            }
+            if (title != null) {
+                xml += "<title>" + Utils.escapeXML(title) + "</title>";
+            }
+            xml += "</page>";
 
-        var xml = "<page xmlns='http://www.xwiki.org'>";
-        if (content != null) {
-            xml += "<content>" + Utils.escapeXML(content) + "</content>";
+            checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
         }
-        if (title != null) {
-            xml += "<title>" + Utils.escapeXML(title) + "</title>";
-        }
-        xml += "</page>";
-
-        checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
 
         if (values != null) {
             for (var v : values) {
