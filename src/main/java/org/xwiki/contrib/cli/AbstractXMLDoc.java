@@ -224,11 +224,8 @@ abstract class AbstractXMLDoc
             for (var prop : getElements(object, NODE_NAME_PROPERTY)) {
                 if (fromRest) {
                     var value = (Element) prop.selectSingleNode("xwiki:value");
-                    if (value == null) {
-                        throw new MissingNodeException("property value");
-                    }
-
-                    properties.put(((Element) prop).attributeValue("name"), value.getText());
+                    var valueElement =  value==null?null:value.getText();
+                    properties.put(((Element) prop).attributeValue("name"), valueElement);
                 } else {
                     for (var propertyElement : ((Element) prop).elements()) {
                         var p = propertyElement.getName();

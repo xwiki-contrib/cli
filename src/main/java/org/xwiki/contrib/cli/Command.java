@@ -109,7 +109,9 @@ class Command
                 var doc = new MultipleDoc(cmd);
                 for (var prop : doc.getProperties(cmd.objectClass, cmd.objectNumber, cmd.property).entrySet()) {
                     var val = prop.getValue();
-                    if (val.isEmpty()) {
+                    if (val == null) {
+                        val = "\u001B[33m(missing value)\u001B[0m";
+                    } else if (val.isEmpty()) {
                         val = "\u001B[32m(empty)\u001B[0m";
                     } else if (severalLines(val)) {
                         val = LINE + "\n" + val + LINE;
