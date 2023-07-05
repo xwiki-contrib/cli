@@ -242,7 +242,7 @@ abstract class AbstractXMLDoc
     private boolean objectMatchesFilter(Node object, String objectClass, String objectNumber)
     {
         if (objectClass != null) {
-            var classNameElement = object.selectSingleNode(NODE_NAME_CLASS_NAME);
+            var classNameElement = getElement((Element)object, NODE_NAME_CLASS_NAME);
             if (classNameElement == null) {
                 err.println("Couldn't find class name of object");
                 return false;
@@ -254,7 +254,7 @@ abstract class AbstractXMLDoc
         }
 
         if (objectNumber != null) {
-            var numberElement = object.selectSingleNode(NODE_NAME_NUMBER);
+            var numberElement = getElement((Element)object ,NODE_NAME_NUMBER);
             if (numberElement == null) {
                 err.println("Couldn't find class number of object");
                 return false;
