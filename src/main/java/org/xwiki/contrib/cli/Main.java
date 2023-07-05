@@ -21,12 +21,15 @@
 package org.xwiki.contrib.cli;
 
 import java.util.HashMap;
+import java.util.regex.Pattern;
 
 import static java.lang.System.out;
 import static java.lang.System.err;
 
 final class Main
 {
+    private static final Pattern HEADER_SPLIT_PATTERN = Pattern.compile("\\s*:\\s*");
+
     private Main()
     {
         throw new UnsupportedOperationException("Main cannot be instantiated");
@@ -44,20 +47,18 @@ final class Main
     {
         var i = 0;
         var cmd = new Command();
-        cmd.headers = new HashMap<String, String>();
+        cmd.headers = new HashMap<>();
         while (i < args.length) {
             switch (args[i]) {
-                case "-b":
+                case "-b" -> {
                     cmd.base = Utils.ensureScheme(getNextParameter(args, i));
                     i++;
-                    break;
-
-                case "-p":
+                }
+                case "-p" -> {
                     cmd.page = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "-o":
+                }
+                case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
                     cmd.objectClass = objectParts[0];
                     if (objectParts.length == 2) {
@@ -65,121 +66,78 @@ final class Main
                     } else if (objectParts.length != 1) {
                         throw new CommandException(
                             "Too many slashes in value "
-                            + args[i + 1]
-                            + " passed for option "
-                            + args[i]);
+                                + args[i + 1]
+                                + " passed for option "
+                                + args[i]);
                     }
                     i++;
-                    break;
-
-                case "-w":
+                }
+                case "-w" -> {
                     cmd.wiki = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "-v":
+                }
+                case "-v" -> {
                     cmd.value = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "-H":
-                    String[] header = getNextParameter(args, i).split("\\s*:\\s*");
+                }
+                case "-H" -> {
+                    String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
                     cmd.headers.put(header[0], header[1]);
-                    break;
-
-                case "--user":
+                }
+                case "--user" -> {
                     cmd.user = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "--pass":
+                }
+                case "--pass" -> {
                     cmd.pass = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "--write-to-xml":
+                }
+                case "--write-to-xml" -> {
                     cmd.outputFile = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "--read-from-xml":
+                }
+                case "--read-from-xml" -> {
                     cmd.inputFile = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "--xml-file":
+                }
+                case "--xml-file" -> {
                     cmd.inputFile = getNextParameter(args, i);
                     cmd.outputFile = cmd.inputFile;
                     i++;
-                    break;
-
-                case "-u":
-                case "--url":
+                }
+                case "-u", "--url" -> {
                     cmd.url = getNextParameter(args, i);
                     i++;
-                    break;
-
-                case "--edit-page":
-                    cmd.action = Command.Action.EDIT_PAGE;
-                    break;
-
-                case "--list-properties":
-                    cmd.action = Command.Action.LIST_PROPERTIES;
-                    break;
-
-                case "--list-objects":
-                    cmd.action = Command.Action.LIST_OBJECTS;
-                    break;
-
-                case "--get-content":
-                    cmd.action = Command.Action.GET_CONTENT;
-                    break;
-
-                case "--get-title":
-                    cmd.action = Command.Action.GET_TITLE;
-                    break;
-
-                case "--set-content":
+                }
+                case "--edit-page" -> cmd.action = Command.Action.EDIT_PAGE;
+                case "--list-properties" -> cmd.action = Command.Action.LIST_PROPERTIES;
+                case "--list-objects" -> cmd.action = Command.Action.LIST_OBJECTS;
+                case "--get-content" -> cmd.action = Command.Action.GET_CONTENT;
+                case "--get-title" -> cmd.action = Command.Action.GET_TITLE;
+                case "--set-content" -> {
                     cmd.content = getNextParameter(args, i);
                     i++;
                     cmd.action = Command.Action.SET_CONTENT;
-                    break;
-
-                case "--set-title":
+                }
+                case "--set-title" -> {
                     cmd.title = getNextParameter(args, i);
                     i++;
                     cmd.action = Command.Action.SET_TITLE;
-                    break;
-
-                case "--get-property":
+                }
+                case "--get-property" -> {
                     cmd.property = getNextParameter(args, i);
                     i++;
                     cmd.action = Command.Action.GET_PROPERTY_VALUE;
-                    break;
-
-                case "--set-property":
+                }
+                case "--set-property" -> {
                     cmd.property = getNextParameter(args, i);
                     i++;
                     cmd.action = Command.Action.SET_PROPERTY_VALUE;
-                    break;
-
-                case "--debug":
-                    cmd.debug = true;
-                    break;
-
-                case "--print-xml":
-                    cmd.printXML = true;
-                    break;
-
-                case "--help":
-                case "-help":
-                case "-h":
-                case "help":
-                    cmd.action = Command.Action.HELP;
-                    break;
-
-                default:
-                    throw new CommandException("Unknown option " + args[i] + ". Try --help.");
+                }
+                case "--debug" -> cmd.debug = true;
+                case "--print-xml" -> cmd.printXML = true;
+                case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;
+                default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
             }
             i++;
         }
