@@ -42,7 +42,7 @@ class CommandDoc implements InputDoc
         return cmd.title;
     }
 
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property)
+    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
     {
         return null;
     }

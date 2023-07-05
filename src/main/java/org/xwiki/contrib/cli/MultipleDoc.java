@@ -134,16 +134,16 @@ class MultipleDoc implements InputDoc, OutputDoc
         return objects;
     }
 
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property)
+    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
         throws DocException
     {
         Map<String, String> properties = null;
         for (var inputDoc : inputDocs) {
-            var newProperties = inputDoc.getProperties(objectClass, objectNumber, property);
+            var newProperties = inputDoc.getProperties(objectClass, objectNumber, property, fullPath);
             if (properties == null) {
                 properties = newProperties;
             } else if (newProperties != null && !properties.equals(newProperties)) {
-                return pickInputFile("the property list").getProperties(objectClass, objectNumber, property);
+                return pickInputFile("the property list").getProperties(objectClass, objectNumber, property, fullPath);
             }
         }
 

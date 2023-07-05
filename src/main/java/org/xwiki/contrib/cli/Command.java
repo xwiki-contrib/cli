@@ -60,6 +60,89 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
+                var properties = doc.getProperties(null, null, null, true);
+                String res = "title=" + doc.getTitle() + "\n\n";
+                for (var p : properties.entrySet()) {
+                    res += p.getKey() + "=" + protectValue(p.getValue());
+                }
+                res += "\n\ncontent=" + protectValue(doc.getContent());
+                var dir = Files.createTempDirectory("xwiki-cli");
+                var dirFile = dir.toFile();
+                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
+                Editing.editValue(cmd, res, dirFile, tmpFile, newRes -> {
+                    try {
+                        final var len = newRes.length();
+                        var curIndex = 0;
+                        while (curIndex < len) {
+                            final var eq = newRes.indexOf('=', curIndex);
+                            if (eq == -1) {
+                                // TODO handle unexpected garbage at the end
+                                break;
+                            }
+                            final var prop = newRes.substring(curIndex, eq).trim();
+                            final var valueStart = eq + 1;
+                            String value = null;
+
+                            if (valueStart >= len) {
+                                // TODO handle unexpected end of file
+                                break;
+                            }
+
+                            final var nextNL = newRes.indexOf('\n', valueStart);
+                            var beforeNL = nextNL == -1 ? "" : newRes.substring(valueStart, nextNL);
+
+                            if (nextNL == -1) {
+                                value = newRes.substring(valueStart);
+                                curIndex = len;
+                            } else if (beforeNL.isBlank() && valueStart + 1 < len && newRes.charAt(valueStart + 1) == '-') {
+                                final var lineEnd = newRes.indexOf('\n', valueStart + 1);
+                                if (lineEnd == -1) {
+                                    // TODO handle unexpected end of file
+                                    break;
+                                }
+                                final var line = newRes.substring(valueStart, lineEnd + 1);
+                                final var valueEnd = newRes.indexOf(line, lineEnd + 1);
+                                if (valueEnd == -1) {
+                                    // TODO handle missing closing line
+                                    break;
+                                }
+                                value = newRes.substring(lineEnd + 1, valueEnd);
+                                curIndex = valueEnd + line.length();
+                            } else {
+                                value = beforeNL;
+                                curIndex = nextNL + 1;
+                            }
+
+                            switch (prop) {
+                                case "#" -> { /* Intentionally left blank */ }
+                                case "content" -> doc.setContent(value);
+                                case "title" -> doc.setTitle(value);
+                                default -> {
+                                    var dot = prop.lastIndexOf('.');
+                                    if (dot < 1) {
+                                        // TODO handle missing dot, or a dot at the start of the line
+                                        continue;
+                                    }
+                                    var objectSpec = prop.substring(0, dot);
+
+                                    var slash = objectSpec.indexOf('/');
+                                    if (slash < 1) {
+                                        // TODO handle missing /, or at the start of the line
+                                        continue;
+                                    }
+                                    var objectClass = objectSpec.substring(0, slash);
+                                    var objectNumber = objectSpec.substring(slash + 1);
+                                    var propertyName = prop.substring(dot + 1);
+                                    doc.setValue(objectClass, objectNumber, propertyName, value);
+                                }
+                            }
+                        }
+                        doc.save();
+                    } catch (DocException e) {
+                        err.println("Could not save document");
+                        e.printStackTrace();
+                    }
+                });
             }
         },
         EDIT_PROPERTY {
@@ -152,7 +235,7 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                for (var prop : doc.getProperties(cmd.objectClass, cmd.objectNumber, cmd.property).entrySet()) {
+                for (var prop : doc.getProperties(cmd.objectClass, cmd.objectNumber, cmd.property, false).entrySet()) {
                     var val = prop.getValue();
                     if (val == null) {
                         val = "\u001B[33m(missing value)\u001B[0m";
@@ -269,6 +352,23 @@ class Command
             return cmd.debug ? "(null)" : "";
         }
         return value;
+    }
+
+    private static String protectValue(String value)
+    {
+        if (value.indexOf('\n') == -1) {
+            return value + "\n";
+        }
+
+        var line = "----";
+
+        while (value.contains(line)) {
+            line += "-";
+        }
+
+        var lineWithNL = "\n" + line + "\n";
+
+        return lineWithNL + value + lineWithNL + "\n";
     }
 
     private static boolean severalLines(String value)

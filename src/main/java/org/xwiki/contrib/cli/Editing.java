@@ -60,7 +60,6 @@ class Editing
                 //TODO: catch if a ENTRY_MODIFY and ENTRY_CREATE are fired together
                 final var wk = watchService.take();
                 for (var event : wk.pollEvents()) {
-                    //we only register "ENTRY_MODIFY" so the context is always a Path.
                     final var changed = (Path) event.context();
                     if (filename.endsWith(changed.toString())) {
                         callback.run(Files.readString(Path.of(filename)));

@@ -22,7 +22,9 @@ package org.xwiki.contrib.cli;
 
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
@@ -30,18 +32,16 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     private final Command cmd;
     private String content;
     private String title;
-    private List<ObjectValueSetter> values;
+    private Map<String, List<ObjectValueSetter>> values;
     InputXMLRestPage input;
 
     private class ObjectValueSetter
     {
-        String objectSpec;
         String property;
         String value;
 
-        ObjectValueSetter(String objectSpec, String property, String value)
+        ObjectValueSetter(String property, String value)
         {
-            this.objectSpec = objectSpec;
             this.property   = property;
             this.value      = value;
         }
@@ -72,7 +72,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         if (values == null) {
-            values = new ArrayList<ObjectValueSetter>();
+            values = new HashMap<>();
         }
 
         String objectSpec;
@@ -85,7 +85,12 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             objectSpec = objectClass + "/" + objectNumber;
         }
 
-        values.add(new ObjectValueSetter(objectSpec, property, value));
+        var valuesForGivenObjectSpec = values.get(objectSpec);
+        if (valuesForGivenObjectSpec == null) {
+            valuesForGivenObjectSpec = new ArrayList<>();
+            values.put(objectSpec, valuesForGivenObjectSpec);
+        }
+        valuesForGivenObjectSpec.add(new ObjectValueSetter(property, value));
     }
 
     @Override
@@ -97,29 +102,58 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void save() throws DocException
     {
-        if (content != null || title != null) {
-            var xml = "<page xmlns='http://www.xwiki.org'>";
-            if (content != null) {
-                xml += "<content>" + Utils.escapeXML(content) + "</content>";
-            }
-            if (title != null) {
-                xml += "<title>" + Utils.escapeXML(title) + "</title>";
-            }
-            xml += "</page>";
-
-            checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
+        if (content == null && title == null && values == null) {
+            return;
         }
+
+        // if (content == null && title == null && values != null && onlyOneValue()) {
+        //     var v = values.get(0);
+        //     checkStatus(Utils.httpPut(
+        //         cmd,
+        //         url + "/objects/" + v.objectSpec + "/properties/" + v.property,
+        //         v.value,
+        //         "text/plain; charset=utf-8"));
+        //     return;
+        // }
+
+        var xml = "<page xmlns='http://www.xwiki.org'>";
 
         if (values != null) {
-            for (var v : values) {
-                // TODO group these requests to avoid one request per value
-                checkStatus(Utils.httpPut(
-                    cmd,
-                    url + "/objects/" + v.objectSpec + "/properties/" + v.property,
-                    v.value,
-                    "text/plain; charset=utf-8"));
+            xml += "<objects>";
+            for (var byObjectSpec : values.entrySet()) {
+                var objectSpec = byObjectSpec.getKey();
+                var slash = objectSpec.indexOf('/');
+
+                xml += "<objectSummary xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:type='Object'>"
+                    + "<className>" + objectSpec.substring(0, slash) + "</className>"
+                    + "<number>" + objectSpec.substring(slash + 1) + "</number>";
+
+                for (var propWithValue : byObjectSpec.getValue()) {
+                    xml += "<property name='" + Utils.escapeXML(propWithValue.property) + "'>"
+                        + "<value>" + Utils.escapeXML(propWithValue.value) + "</value>"
+                        + "</property>";
+                }
+
+                xml += "</objectSummary>";
             }
+            xml += "</objects>";
         }
+
+        if (content != null) {
+            xml += "<content>" + Utils.escapeXML(content) + "</content>";
+        }
+
+        if (title != null) {
+            xml += "<title>" + Utils.escapeXML(title) + "</title>";
+        }
+
+        xml += "</page>";
+
+        values.clear();
+        content = null;
+        title = null;
+        checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
+
     }
 
     private void checkStatus(HttpResponse<String> response) throws MessageForUserDocException

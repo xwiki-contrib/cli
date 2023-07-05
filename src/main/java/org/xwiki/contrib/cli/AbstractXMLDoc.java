@@ -203,7 +203,7 @@ abstract class AbstractXMLDoc
         return;
     }
 
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property)
+    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
             throws DocException
     {
         var domdoc = getDom();
@@ -221,21 +221,29 @@ abstract class AbstractXMLDoc
                 continue;
             }
 
+            String propertyName = null;
+            Element propertyElement = null;
+
             for (var prop : getElements(object, NODE_NAME_PROPERTY)) {
                 if (fromRest) {
-                    var value = (Element) prop.selectSingleNode("xwiki:value");
-                    var valueElement =  value==null?null:value.getText();
-                    properties.put(((Element) prop).attributeValue("name"), valueElement);
+                    propertyElement = (Element) prop.selectSingleNode("xwiki:value");
+                    propertyName = ((Element) prop).attributeValue("name");
                 } else {
-                    for (var propertyElement : ((Element) prop).elements()) {
-                        var p = propertyElement.getName();
-                        if (property == null || property.equals(p)) {
-                            properties.put(p, propertyElement.getText());
-                        }
+                    for (var pElement : ((Element) prop).elements()) {
+                        propertyName = pElement.getName();
+                        propertyElement = pElement;
                     }
+                }
+
+                if (propertyElement != null && (property == null || property.equals(propertyName))) {
+                    if (fullPath) {
+                        propertyName = getObjectSpec((Element) object) + "." + propertyName;
+                    }
+                    properties.put(propertyName, propertyElement.getText());
                 }
             }
         }
+
         return properties;
     }
 
@@ -305,6 +313,30 @@ abstract class AbstractXMLDoc
         return null;
     }
 
+    public String getObjectSpec(Element object)
+    {
+        var classNameElement = getElement(object, "className");
+        if (classNameElement == null) {
+            return null;
+        }
+
+        var className = classNameElement.getText();
+        if (Utils.isEmpty(className)) {
+            return null;
+        }
+        var numberElement = getElement(object, "number");
+        if (numberElement == null) {
+            return null;
+        }
+
+        var number = numberElement.getText();
+        if (Utils.isEmpty(number)) {
+            return null;
+        }
+
+        return className + "/" + number;
+    }
+
     public String getObjectSpec(String objectClass, String objectNumber, String property)
             throws DocException
     {
@@ -335,26 +367,7 @@ abstract class AbstractXMLDoc
                 continue;
             }
 
-            var classNameElement = getElement((Element) object, "className");
-            if (classNameElement == null) {
-                return null;
-            }
-
-            var className = classNameElement.getText();
-            if (Utils.isEmpty(className)) {
-                return null;
-            }
-            var numberElement = getElement((Element) object, "number");
-            if (numberElement == null) {
-                return null;
-            }
-
-            var number = classNameElement.getText();
-            if (Utils.isEmpty(number)) {
-                return null;
-            }
-
-            return className + "/" + number;
+            return getObjectSpec((Element) object);
         }
 
         return null;
