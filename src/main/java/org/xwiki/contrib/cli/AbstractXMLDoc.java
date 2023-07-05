@@ -48,7 +48,8 @@ abstract class AbstractXMLDoc
     private static final String NODE_NAME_OBJECT = "object";
     private static final String NODE_NAME_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
     private static final String NODE_NAME_PROPERTY = "property";
-
+    private static final String NODE_NAME_ATTACHMENT = "attachment";
+    private static final String NODE_NAME_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
     private static final String LINE = "\n-----\n";
 
     protected String xml;
@@ -383,21 +384,21 @@ abstract class AbstractXMLDoc
         }
 
         var root = domdoc.getRootElement();
-        var objects = root.selectNodes(NODE_NAME_OBJECT);
+        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
         var objs = new ArrayList<String>();
         for (var object : objects) {
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
                 continue;
             }
 
-            var classNameElement = object.selectSingleNode(NODE_NAME_CLASS_NAME);
+            var classNameElement = getElement((Element) object, NODE_NAME_CLASS_NAME);
             if (classNameElement == null) {
                 throw new MissingNodeException("class name of object");
             }
 
             String className = classNameElement.getText();
 
-            var numberElement = object.selectSingleNode(NODE_NAME_NUMBER);
+            var numberElement = getElement((Element) object, NODE_NAME_NUMBER);
             if (numberElement == null) {
                 throw new MissingNodeException("number of object");
             }
@@ -408,6 +409,28 @@ abstract class AbstractXMLDoc
         }
 
         return objs;
+    }
+
+    public Collection<Attachment> getAttachments() throws DocException
+    {
+        var domdoc = getDom();
+
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+
+        var root = domdoc.getRootElement();
+        var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
+        var res = new ArrayList<Attachment>(attachments.size());
+        for (var attachment : attachments) {
+            res.add(new Attachment(
+                getElement((Element) attachment, "name").getText(),
+                Long.parseLong(getElement((Element) attachment, "size").getText()),
+                null
+            ));
+        }
+
+        return res;
     }
 
     public String getValue(String objectClass, String objectNumber, String property)

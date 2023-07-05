@@ -20,50 +20,15 @@
 
 package org.xwiki.contrib.cli;
 
-import java.util.Collection;
-import java.util.Map;
-
-class CommandDoc implements InputDoc
+class Attachment
 {
-    private final Command cmd;
-
-    CommandDoc(Command cmd)
+    public final String name;
+    public final long size;
+    public final byte[] content;
+    Attachment(String name, long size, byte[] content)
     {
-        this.cmd = cmd;
-    }
-
-    public String getContent()
-    {
-        return cmd.content;
-    }
-
-    public String getTitle()
-    {
-        return cmd.title;
-    }
-
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-    {
-        return null;
-    }
-
-    public Collection<String> getObjects(String objectClass, String objectNumber)
-    {
-        return null;
-    }
-
-    public Collection<Attachment> getAttachments()
-    {
-        return null;
-    }
-
-    public String getValue(String objectClass, String objectNumber, String property)
-    {
-        return cmd.value;
-    }
-
-    public String getFriendlyName()
-    {
-        return "the command";
+        this.name = name;
+        this.size = size;
+        this.content = content;
     }
 }

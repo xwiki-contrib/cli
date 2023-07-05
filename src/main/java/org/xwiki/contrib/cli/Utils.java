@@ -191,7 +191,7 @@ public final class Utils
         return cmd.base
             + "/xwiki/rest/wikis/" + wiki
             +  Utils.pageToRestURLPart(cmd.page)
-            + (withObjects ? "?objects=true" : "");
+            + (withObjects ? "?objects=true&attachments=true" : "");
     }
 
     /**

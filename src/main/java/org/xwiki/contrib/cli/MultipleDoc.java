@@ -134,6 +134,20 @@ class MultipleDoc implements InputDoc, OutputDoc
         return objects;
     }
 
+    public Collection<Attachment> getAttachments() throws DocException
+    {
+        Collection<Attachment> attachments = null;
+        for (var inputDoc : inputDocs) {
+            var newAttachments = inputDoc.getAttachments();
+            if (attachments == null) {
+                attachments = newAttachments;
+            } else if (newAttachments != null && !attachments.equals(newAttachments)) {
+                return pickInputFile("the attachment list").getAttachments();
+            }
+        }
+        return attachments;
+    }
+
     public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
         throws DocException
     {

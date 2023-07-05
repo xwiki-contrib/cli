@@ -248,6 +248,16 @@ class Command
                 }
             }
         },
+        LIST_ATTACHMENTS {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                var doc = new MultipleDoc(cmd);
+                for (var attachment : doc.getAttachments()) {
+                    out.println(attachment.name + " (size: " + attachment.size + ")");
+                }
+            }
+        },
         HELP {
             @Override
             void run(Command cmd) throws Exception

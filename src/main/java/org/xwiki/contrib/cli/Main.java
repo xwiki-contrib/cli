@@ -117,6 +117,7 @@ final class Main
                 case "--edit-content" -> cmd.action = Command.Action.EDIT_CONTENT;
                 case "--list-properties" -> cmd.action = Command.Action.LIST_PROPERTIES;
                 case "--list-objects" -> cmd.action = Command.Action.LIST_OBJECTS;
+                case "--list-attachments" -> cmd.action = Command.Action.LIST_ATTACHMENTS;
                 case "--get-content" -> cmd.action = Command.Action.GET_CONTENT;
                 case "--get-title" -> cmd.action = Command.Action.GET_TITLE;
                 case "--set-content" -> {

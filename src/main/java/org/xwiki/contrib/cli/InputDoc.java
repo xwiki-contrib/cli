@@ -56,6 +56,10 @@ interface InputDoc
      */
     Collection<String> getObjects(String objectClass, String objectNumber) throws DocException;
 
+    /**
+     * @return the name of attachments.
+     */
+    Collection<Attachment> getAttachments() throws DocException;
 
     /**
      * @return the first value of the property matching the given filters.
