@@ -44,7 +44,7 @@ class Command
                 var dir = Files.createTempDirectory("xwiki-cli");
                 var dirFile = dir.toFile();
                 var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
-                Editing.editValue(content, dirFile, tmpFile, newValue -> {
+                Editing.editValue(cmd, content, dirFile, tmpFile, newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
@@ -173,6 +173,7 @@ class Command
                         --debug                Enable debug mode (for now, more verbose logs)
                         --print-xml            Print received XML code (for debugging)
                         -b HOST[:PORT][/PATH]  Use this host and port to connect to XWiki.
+                        --editor EDITOR        Use this editor (necessary if environnement variable EDITOR is not set)
                         -p PAGE                Specify the page (dotted notation)
                         -u, --url URL          Specify the page's URL
                         -w WIKI                Specify the wiki
@@ -206,6 +207,7 @@ class Command
     public String objectNumber;
     public String property;
     public String value;
+    public String editor;
     public String outputFile;
     public String inputFile;
     public Map<String, String> headers;

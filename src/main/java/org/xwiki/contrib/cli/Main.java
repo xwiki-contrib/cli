@@ -80,6 +80,10 @@ final class Main
                     cmd.value = getNextParameter(args, i);
                     i++;
                 }
+                case "--editor" -> {
+                    cmd.editor = getNextParameter(args, i);
+                    i++;
+                }
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
                     cmd.headers.put(header[0], header[1]);

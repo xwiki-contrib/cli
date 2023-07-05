@@ -36,7 +36,7 @@ class Editing
       void run(String newValue);
     }
 
-    public static void editValue(String oldValue, File folder, File file, EditingCallback callback)
+    public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
         throws IOException, InterruptedException
     {
         try (final var writer = new BufferedWriter(new FileWriter(file))) {
@@ -44,24 +44,42 @@ class Editing
         }
 
         var filename = file.getAbsolutePath();
-        new ProcessBuilder("kate", filename).start();
-        final var path = FileSystems.getDefault().getPath(folder.getAbsolutePath());
-        System.out.println(path);
+        var editor = getEditor(cmd);
+        if (!Utils.isEmpty(editor)) {
+            new ProcessBuilder(editor, filename).inheritIO().start();
+            final var path = FileSystems.getDefault().getPath(folder.getAbsolutePath());
 
-        try (final var watchService = FileSystems.getDefault().newWatchService()) {
-            path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY);
-            // path.register(watchService, StandardWatchEventKinds.ENTRY_CREATE);
-            while (true) {
-                final var wk = watchService.take();
-                for (var event : wk.pollEvents()) {
-                    //we only register "ENTRY_MODIFY" so the context is always a Path.
-                    final var changed = (Path) event.context();
-                    if (filename.endsWith(changed.toString())) {
-                        callback.run(Files.readString(Path.of(filename)));
+            try (final var watchService = FileSystems.getDefault().newWatchService()) {
+                path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_CREATE);
+                while (true) {
+                    //TODO: catch if a ENTRY_MODIFY and ENTRY_CREATE are fired together
+                    final var wk = watchService.take();
+                    for (var event : wk.pollEvents()) {
+                        //we only register "ENTRY_MODIFY" so the context is always a Path.
+                        final var changed = (Path) event.context();
+                        if (filename.endsWith(changed.toString())) {
+                            callback.run(Files.readString(Path.of(filename)));
+                        }
                     }
+                    wk.reset();
                 }
-                wk.reset();
             }
+        } else {
+            System.out.println("Please select an editor with --editor or set an EDITOR environnement variable");
         }
+    }
+
+    public static String getEditor(Command cmd) {
+        var editor = "";
+            if (!Utils.isEmpty(cmd.editor)) {
+                editor = cmd.editor;
+            } else {
+                try {
+                    editor = System.getenv("EDITOR");
+                } catch (Exception e) {
+                    //Variable either doesn't exist or a security manager has denied access to it
+                }
+            }
+        return editor;
     }
 }
