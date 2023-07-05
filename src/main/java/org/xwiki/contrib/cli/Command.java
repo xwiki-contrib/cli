@@ -70,7 +70,8 @@ class Command
                 var content = value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property));
                 var dir = Files.createTempDirectory("xwiki-cli");
                 var dirFile = dir.toFile();
-                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
+
+                var tmpFile = File.createTempFile("content-", getFileExtension(cmd.objectClass, cmd.property), dirFile);
                 Editing.editValue(cmd, content, dirFile, tmpFile, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
@@ -288,5 +289,16 @@ class Command
     private String given(String v)
     {
         return "(" + (v == null ? "not " : "") + "given)";
+    }
+
+    private static String getFileExtension(String objectClass, String property)
+    {
+        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
+            return ".less";
+        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
+            return ".js";
+        } else {
+            return ".xwiki";
+        }
     }
 }
