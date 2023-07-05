@@ -21,12 +21,23 @@
 package org.xwiki.contrib.cli;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Base64;
+import java.util.stream.Collectors;
+
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Namespace;
+import org.dom4j.io.SAXReader;
+import org.xml.sax.SAXException;
 
 /**
  * Utils.
@@ -34,6 +45,8 @@ import java.util.Base64;
  */
 public final class Utils
 {
+    private static final String SINGLE_QUOTE = "'";
+
     private Utils()
     {
         // Intentionally left blank.
@@ -154,6 +167,75 @@ public final class Utils
     }
 
     /**
+     * Encode a string with URL-encoding.
+     *
+     * @param string the input to encode
+     * @return the encoded result
+     */
+    public static String encodeURLPart(Object string)
+    {
+        String encodedURL = null;
+        if (string != null) {
+            encodedURL = URLEncoder.encode(String.valueOf(string), StandardCharsets.UTF_8);
+            // The previous call will convert " " into "+" (and "+" into "%2B") so we need to convert "+" into "%20"
+            // It's ok since %20 is allowed in both the URL path and the query string (and anchor).
+            encodedURL = encodedURL.replace("+", "%20");
+        }
+        return encodedURL;
+    }
+
+    /**
+     * Parse an XML document into a DOM.
+     *
+     * @param xml the XML to parse
+     * @return the parsed DOM
+     * @throws DocException if there is an error parsing the XML
+     */
+    public static Document parseXML(String xml) throws DocException
+    {
+        Document dom = null;
+
+        if (xml != null) {
+            var reader = new SAXReader();
+            try {
+                reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+            } catch (SAXException e) {
+                throw new DocException(e);
+            }
+
+            try {
+                dom = reader.read(new StringReader(xml));
+                dom.getRootElement().add(new Namespace("xwiki", "http://www.xwiki.org"));
+            } catch (DocumentException e) {
+                throw new DocException(e);
+            }
+        }
+
+        return dom;
+    }
+
+    /**
+     * Escape the given string to be used as a string in an XPath expression.
+     *
+     * @param input the input to escape
+     * @return the escaped string
+     */
+    public static String escapeXPathString(String input)
+    {
+        if (input.contains(SINGLE_QUOTE)) {
+            String[] elements = input.split(SINGLE_QUOTE);
+
+            return "concat("
+                + Arrays.stream(elements)
+                .map(element -> SINGLE_QUOTE + element + SINGLE_QUOTE)
+                .collect(Collectors.joining(", \"'\", "))
+                + ")";
+        } else {
+            return SINGLE_QUOTE + input + SINGLE_QUOTE;
+        }
+    }
+
+    /**
      * @return the base, with an HTTP scheme if it's missing.
      *         Uses https://, except of IPv4 or localhost addresses.
      * @param base the base to use.
@@ -205,10 +287,10 @@ public final class Utils
     public static String escapeXML(String str)
     {
         return str
-            .replaceAll("&", "&amp;")
-            .replaceAll("'", "&apos;")
-            .replaceAll("\"", "&quote;")
-            .replaceAll("<", "&lt;")
-            .replaceAll(">", "&gt;");
+            .replace("&", "&amp;")
+            .replace(SINGLE_QUOTE, "&apos;")
+            .replace("\"", "&quote;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;");
     }
 }

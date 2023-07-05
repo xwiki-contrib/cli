@@ -26,16 +26,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import java.io.StringReader;
-
 import org.dom4j.Document;
-import org.dom4j.DocumentException;
 import org.dom4j.Element;
-import org.dom4j.Namespace;
 import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
-
-import org.xml.sax.SAXException;
 
 import static java.lang.System.err;
 
@@ -99,31 +92,22 @@ abstract class AbstractXMLDoc
 
     protected Document getDom() throws DocException
     {
-        if (dom == null) {
-            if (xml != null) {
-                var reader = new SAXReader();
-                try {
-                    reader.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-                } catch (SAXException e) {
-                    throw new DocException(e);
-                }
-
-                try {
-                    dom = reader.read(new StringReader(xml));
-                    dom.getRootElement().add(new Namespace("xwiki", "http://www.xwiki.org"));
-                } catch (DocumentException e) {
-                    if (cmd.debug) {
-                        err.println(
-                            "A parse error occured. Here is the content we attempted to parse."
+        if (dom == null && xml != null) {
+            try {
+                this.dom = Utils.parseXML(this.xml);
+            } catch (DocException e) {
+                if (cmd.debug) {
+                    err.println(
+                        "A parse error occured. Here is the content we attempted to parse."
                             + LINE + xml + LINE
-                        );
-                    }
-                    throw new DocException(e);
+                    );
                 }
 
-                if (cmd.printXML) {
-                    err.println(LINE + xml + LINE);
-                }
+                throw e;
+            }
+
+            if (cmd.printXML) {
+                err.println(LINE + xml + LINE);
             }
         }
 
