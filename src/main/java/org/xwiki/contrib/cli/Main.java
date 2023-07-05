@@ -145,6 +145,11 @@ final class Main
                     i++;
                     cmd.action = Command.Action.EDIT_PROPERTY;
                 }
+                case "--mount" -> {
+                    cmd.mountPath = getNextParameter(args, i);
+                    ++i;
+                    cmd.action = Command.Action.MOUNT;
+                }
                 case "--debug" -> cmd.debug = true;
                 case "--print-xml" -> cmd.printXML = true;
                 case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;

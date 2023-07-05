@@ -20,6 +20,7 @@
 
 package org.xwiki.contrib.cli;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 import static java.lang.System.out;
@@ -248,6 +249,20 @@ class Command
                 }
             }
         },
+
+        MOUNT {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                XWikiFS fs = new XWikiFS(cmd);
+                try {
+                    fs.mount(Path.of(cmd.mountPath), true, true);
+                } finally {
+                    fs.umount();
+                }
+            }
+        },
+
         LIST_ATTACHMENTS {
             @Override
             void run(Command cmd) throws Exception
@@ -283,6 +298,7 @@ class Command
                                                  optionally from the given object
                         --set-property PROPERTY  Set the value of the given property,
                                                  optionally from the given object (see -v to give a value)
+                        --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
 
                     Parameters:
                         --debug                Enable debug mode (for now, more verbose logs)
@@ -331,6 +347,8 @@ class Command
     public String pass;
     public String content;
     public String title;
+    public String mountPath;
+
     public boolean printXML;
     public boolean debug;
 
@@ -351,6 +369,7 @@ class Command
             + "\nPass:          " + given(pass)
             + "\nContent:       " + given(content)
             + "\nTitle:         " + title
+            + "\nMount Path:    " + mountPath
             + "\nUsed Doc URL:  " + getDocURL(false)
             + "\nDebug:         " + debug
             + "\n + printXML:   " + printXML);
