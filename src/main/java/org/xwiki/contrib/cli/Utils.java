@@ -126,20 +126,10 @@ public final class Utils
     public static HttpResponse<String> httpPut(Command cmd, String url, String content, String mimetype)
         throws DocException
     {
-        var client = getHTTPClient(cmd);
-        var request = setHeadersFromCommand(
-            cmd,
-            HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
-                .PUT(BodyPublishers.ofString(content))
-        ).build();
-
-        try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
-        } catch (IOException | InterruptedException e) {
-            throw new DocException(e);
-        }
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
+            .PUT(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
     }
 
     /**
@@ -151,16 +141,36 @@ public final class Utils
      */
     public static HttpResponse<String> httpGet(Command cmd, String url) throws DocException
     {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .GET(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /**
+     * Perform a GET request.
+     * @param cmd the Command produced by parsing arguments from the cli.
+     *            It contains authentication and custom headers to use.
+     * @param url the URL to use.
+     * @return the HTTP reponse.
+     */
+    public static HttpResponse<byte[]> httpGetBytes(Command cmd, String url) throws DocException
+    {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .GET(), HttpResponse.BodyHandlers.ofByteArray());
+    }
+
+    private static <T> HttpResponse<T> internalHttpRequest(Command cmd, HttpRequest.Builder url,
+        HttpResponse.BodyHandler<T> bodyHandler) throws DocException
+    {
         var client = getHTTPClient(cmd);
         var request = setHeadersFromCommand(
             cmd,
-            HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .GET()
+            url
         ).build();
 
         try {
-            return client.send(request, HttpResponse.BodyHandlers.ofString());
+            return client.send(request, bodyHandler);
         } catch (IOException | InterruptedException e) {
             throw new DocException(e);
         }
