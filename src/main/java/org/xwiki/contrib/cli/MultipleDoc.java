@@ -25,19 +25,20 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import static java.lang.System.out;
 import static java.lang.System.err;
 
 class MultipleDoc implements InputDoc, OutputDoc
 {
-    private List<InputDoc> inputDocs;
-    private List<OutputDoc> outputDocs;
+    private final List<InputDoc> inputDocs;
+    private final List<OutputDoc> outputDocs;
 
     MultipleDoc(Command cmd) throws DocException, IOException
     {
-        inputDocs = new ArrayList<InputDoc>();
-        outputDocs = new ArrayList<OutputDoc>();
+        inputDocs = new ArrayList<>();
+        outputDocs = new ArrayList<>();
 
         inputDocs.add(new CommandDoc(cmd));
 
@@ -65,29 +66,23 @@ class MultipleDoc implements InputDoc, OutputDoc
 
         var i = 1;
         for (var d : inputDocs) {
-            out.println(Integer.toString(i) + ": " + d.getFriendlyName());
+            out.println(i + ": " + d.getFriendlyName());
+            ++i;
         }
 
         out.print("> ");
         out.flush();
 
-        final String choice;
-        try {
-            choice = System.in.readAllBytes().toString().trim();
-        } catch (IOException e) {
-            throw new DocException(e);
-        }
+        final String choice = new Scanner(System.in).next().trim();
 
         if ("c".equals(choice)) {
             throw new CancelledOperationDocException();
         }
 
-        if (choice != null) {
-            try {
-                return inputDocs.get(Integer.parseInt(choice));
-            } catch (NumberFormatException e) {
-                // nothing, we'll tell the user we didn't understand the choice
-            }
+        try {
+            return inputDocs.get(Integer.parseInt(choice));
+        } catch (NumberFormatException e) {
+            // nothing, we'll tell the user we didn't understand the choice
         }
 
         err.println("Sorry, I didn't understand your answer. Please retry.");
