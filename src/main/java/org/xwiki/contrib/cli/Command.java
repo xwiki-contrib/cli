@@ -62,6 +62,26 @@ class Command
                 var doc = new MultipleDoc(cmd);
             }
         },
+        EDIT_PROPERTY {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                var doc = new MultipleDoc(cmd);
+                var content = value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property));
+                var dir = Files.createTempDirectory("xwiki-cli");
+                var dirFile = dir.toFile();
+                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
+                Editing.editValue(cmd, content, dirFile, tmpFile, newValue -> {
+                    try {
+                        doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
+                        doc.save();
+                    } catch (DocException e) {
+                        err.println("Could not save document");
+                        e.printStackTrace();
+                    }
+                });
+            }
+        },
         GET_CONTENT {
             @Override
             void run(Command cmd) throws Exception
@@ -164,6 +184,7 @@ class Command
                                                  optionally from the given object
                         --list-objects           List the document's objects,
                                                  optionally from the given class
+                        --edit-content PROPERTY  Edit the content of a given property with a text editor
                         --get-property PROPERTY  Get the value of the given property,
                                                  optionally from the given object
                         --set-property PROPERTY  Set the value of the given property,

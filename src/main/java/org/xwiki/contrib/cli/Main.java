@@ -139,6 +139,11 @@ final class Main
                     i++;
                     cmd.action = Command.Action.SET_PROPERTY_VALUE;
                 }
+                case "--edit-property" -> {
+                    cmd.property = getNextParameter(args, i);
+                    i++;
+                    cmd.action = Command.Action.EDIT_PROPERTY;
+                }
                 case "--debug" -> cmd.debug = true;
                 case "--print-xml" -> cmd.printXML = true;
                 case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;
