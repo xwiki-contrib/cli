@@ -467,12 +467,12 @@ class XWikiFS extends FuseStubFS
         Pattern pagePattern = Pattern.compile("^/wikis/([^/]+)/(spaces(?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)");
         Matcher pageMatcher = pagePattern.matcher(path);
         if (pageMatcher.find()) {
-            try {
-                this.command.wiki = pageMatcher.group(1);
-                String space = getSpaceFromPathPart(pageMatcher.group(2));
-                String page = pageMatcher.group(3).replace(".", "\\.");
-                this.command.page = space + "." + page;
+            this.command.wiki = pageMatcher.group(1);
+            String space = getSpaceFromPathPart(pageMatcher.group(2));
+            String page = pageMatcher.group(3).replace(".", "\\.");
+            this.command.page = space + "." + page;
 
+            try {
                 MultipleDoc document = new MultipleDoc(this.command);
 
                 String remainingPath = path.substring(pageMatcher.end());
@@ -522,4 +522,113 @@ class XWikiFS extends FuseStubFS
 
         return new byte[0];
     }
+
+    @Override
+    public int write(String path, Pointer buf, long size, long offset, FuseFileInfo fi)
+    {
+        byte[] content = getValue(path);
+
+        if (content == null) {
+            return -ErrorCodes.ENOENT();
+        }
+
+        // Remove the part of the old content after the offset if there is any.
+        if (offset < content.length) {
+            content = Arrays.copyOf(content, (int) offset);
+        }
+
+        // Append the new content.
+        byte[] newContent = new byte[(int) (offset + size)];
+        System.arraycopy(content, 0, newContent, 0, content.length);
+        buf.get(0, newContent, (int) offset, (int) size);
+        putValue(path, newContent);
+
+        return (int) size;
+    }
+
+    @Override
+    public int truncate(String path, long size)
+    {
+        byte[] content = getValue(path);
+        if (content == null) {
+            return -ErrorCodes.ENOENT();
+        }
+
+        if (size < content.length) {
+            byte[] newContent = Arrays.copyOf(content, (int) size);
+            putValue(path, newContent);
+        }
+
+        return (int) size;
+    }
+
+    private int putValue(String path, byte[] value)
+    {
+        Pattern pagePattern = Pattern.compile("^/wikis/([^/]+)/(spaces(?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)");
+        Matcher pageMatcher = pagePattern.matcher(path);
+        if (pageMatcher.find()) {
+            this.command.wiki = pageMatcher.group(1);
+            String space = getSpaceFromPathPart(pageMatcher.group(2));
+            String page = pageMatcher.group(3).replace(".", "\\.");
+            this.command.page = space + "." + page;
+
+            try {
+                MultipleDoc document = new MultipleDoc(this.command);
+
+                String remainingPath = path.substring(pageMatcher.end());
+
+                Pattern propertyPattern = Pattern.compile("^/objects/([^/]+)/([^/]+)/properties/([^/]+)$");
+                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                if (propertyMatcher.matches()) {
+                    String className = propertyMatcher.group(1);
+                    String objectNumber = propertyMatcher.group(2);
+                    String propertyName = propertyMatcher.group(3);
+                    String stringValue = new String(value, StandardCharsets.UTF_8);
+
+                    document.setValue(className, objectNumber, propertyName, stringValue);
+                    document.save();
+                    return value.length;
+                }
+
+                if (remainingPath.equals("/content")) {
+                    String stringValue = new String(value, StandardCharsets.UTF_8);
+
+                    document.setContent(stringValue);
+                    document.save();
+                    return value.length;
+                }
+
+                /*
+                Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
+                Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
+                if (classPropertyMatcher.matches()) {
+                    String propertyName = classPropertyMatcher.group(1);
+                    String attributeName = classPropertyMatcher.group(2);
+
+                    return document.getClassAttribute(propertyName, attributeName).getBytes(StandardCharsets.UTF_8);
+                }
+                */
+
+                Pattern attachmentPattern = Pattern.compile("^/attachments/([^/]+)$");
+                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                if (attachmentMatcher.matches()) {
+                    /*
+                    String attachmentName = attachmentMatcher.group(1);
+
+                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
+                     */
+                    String attachmentURL = this.command.url + "/rest" + escapeURLWithSlashes(path);
+                    Utils.httpPut(this.command, attachmentURL, value, "application/octet-stream");
+                    return value.length;
+                }
+            } catch (DocException | IOException e) {
+                if (command.debug) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return 0;
+    }
+
 }
