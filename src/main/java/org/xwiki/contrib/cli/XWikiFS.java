@@ -541,9 +541,8 @@ class XWikiFS extends FuseStubFS
         byte[] newContent = new byte[(int) (offset + size)];
         System.arraycopy(content, 0, newContent, 0, content.length);
         buf.get(0, newContent, (int) offset, (int) size);
-        putValue(path, newContent);
-
-        return (int) size;
+        int bytesWritten = putValue(path, newContent);
+        return Math.min(bytesWritten, (int) size);
     }
 
     @Override
@@ -556,10 +555,10 @@ class XWikiFS extends FuseStubFS
 
         if (size < content.length) {
             byte[] newContent = Arrays.copyOf(content, (int) size);
-            putValue(path, newContent);
+            return putValue(path, newContent);
         }
 
-        return (int) size;
+        return content.length;
     }
 
     private int putValue(String path, byte[] value)
