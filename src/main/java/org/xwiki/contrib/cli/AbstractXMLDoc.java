@@ -114,7 +114,7 @@ abstract class AbstractXMLDoc
         return dom;
     }
 
-    private Element getElement(Element parent, String nodeName)
+    private static Element getElement(Element parent, String nodeName)
     {
         var element = (Element) parent.selectSingleNode(nodeName);
         if (element == null) {
@@ -123,7 +123,7 @@ abstract class AbstractXMLDoc
         return element;
     }
 
-    private List<Node> getElements(Node parent, String nodeName)
+    private static List<Node> getElements(Node parent, String nodeName)
     {
         var elements = ((Element) parent).selectNodes(nodeName);
         if (elements == null || elements.isEmpty()) {
@@ -298,7 +298,7 @@ abstract class AbstractXMLDoc
         return null;
     }
 
-    public String getObjectSpec(Element object)
+    public static String getObjectSpec(Element object)
     {
         var classNameElement = getElement(object, "className");
         if (classNameElement == null) {
@@ -358,7 +358,7 @@ abstract class AbstractXMLDoc
         return null;
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber)
+    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
             throws DocException
     {
         var domdoc = getDom();
@@ -388,6 +388,18 @@ abstract class AbstractXMLDoc
             }
 
             String number = numberElement.getText();
+
+            if (!Utils.isEmpty(property)) {
+                var propertyElement = object.selectSingleNode(
+                    fromRest
+                        ? "xwiki:property[@name = '" + property + "']/xwiki:value"
+                        : "property/" + property
+                );
+
+                if (propertyElement == null) {
+                    continue;
+                }
+            }
 
             objs.add(className + "/" + number);
         }

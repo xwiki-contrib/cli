@@ -47,7 +47,7 @@ class CommandDoc implements InputDoc
         return null;
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber)
+    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
     {
         return null;
     }

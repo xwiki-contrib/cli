@@ -119,15 +119,15 @@ class MultipleDoc implements InputDoc, OutputDoc
         return title;
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber) throws DocException
+    public Collection<String> getObjects(String objectClass, String objectNumber, String property) throws DocException
     {
         Collection<String> objects = null;
         for (var inputDoc : inputDocs) {
-            var newObjects = inputDoc.getObjects(objectClass, objectNumber);
+            var newObjects = inputDoc.getObjects(objectClass, objectNumber, property);
             if (objects == null) {
                 objects = newObjects;
             } else if (newObjects != null && !objects.equals(newObjects)) {
-                return pickInputFile("the object list").getObjects(objectClass, objectNumber);
+                return pickInputFile("the object list").getObjects(objectClass, objectNumber, property);
             }
         }
 

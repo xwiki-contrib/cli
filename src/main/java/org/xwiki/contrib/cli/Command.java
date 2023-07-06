@@ -151,12 +151,20 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                var content = value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property));
+                var val = doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property);
+                if (val == null) {
+                    throw new MessageForUserDocException("This property does not exist");
+                }
                 var dir = Files.createTempDirectory("xwiki-cli");
                 var dirFile = dir.toFile();
-
-                var tmpFile = File.createTempFile("content-", getFileExtension(cmd.objectClass, cmd.property), dirFile);
-                Editing.editValue(cmd, content, dirFile, tmpFile, newValue -> {
+                var objectClass = cmd.objectClass;
+                if (Utils.isEmpty(objectClass)) {
+                    objectClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
+                        .stream().findFirst().get()
+                        .split("/")[0];
+                }
+                var tmpFile = File.createTempFile("property-", getFileExtension(objectClass, cmd.property), dirFile);
+                Editing.editValue(cmd, val, dirFile, tmpFile, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
@@ -226,7 +234,7 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber)) {
+                for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
                     out.println(object);
                 }
             }

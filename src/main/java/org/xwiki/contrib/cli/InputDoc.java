@@ -53,8 +53,9 @@ interface InputDoc
      * @return the name of objects matching the given filters.
      * @param objectClass the class of object to consider, or empty if no class is specified.
      * @param objectNumber the number of the object to consider, or empty if not specified.
+     * @param property if not empty, the object should contain this property.
      */
-    Collection<String> getObjects(String objectClass, String objectNumber) throws DocException;
+    Collection<String> getObjects(String objectClass, String objectNumber, String property) throws DocException;
 
     /**
      * @return the name of attachments.
