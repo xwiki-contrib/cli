@@ -70,6 +70,15 @@ class Editing
         }
     }
 
+    public static void editValue(Command cmd, String oldValue, String prefix, String suffix, EditingCallback callback)
+        throws IOException, InterruptedException
+    {
+        var dir = Files.createTempDirectory("xwiki-cli");
+        var dirFile = dir.toFile();
+        var tmpFile = File.createTempFile(prefix, suffix, dirFile);
+        Editing.editValue(cmd, oldValue, dirFile, tmpFile, callback);
+    }
+
     public static String getEditor(Command cmd) {
         var editor = "";
             if (!Utils.isEmpty(cmd.editor)) {
@@ -82,5 +91,76 @@ class Editing
                 }
             }
         return editor;
+    }
+
+    public static void updateDocFromTextPage(OutputDoc doc, String pageText) throws DocException
+    {
+        final var len = pageText.length();
+        var curIndex = 0;
+        while (curIndex < len) {
+            final var eq = pageText.indexOf('=', curIndex);
+            if (eq == -1) {
+                // TODO handle unexpected garbage at the end
+                break;
+            }
+            final var prop = pageText.substring(curIndex, eq).trim();
+            final var valueStart = eq + 1;
+            String value = null;
+
+            if (valueStart >= len) {
+                // TODO handle unexpected end of file
+                break;
+            }
+
+            final var nextNL = pageText.indexOf('\n', valueStart);
+            var beforeNL = nextNL == -1 ? "" : pageText.substring(valueStart, nextNL);
+
+            if (nextNL == -1) {
+                value = pageText.substring(valueStart);
+                curIndex = len;
+            } else if (beforeNL.isBlank() && valueStart + 1 < len && pageText.charAt(valueStart + 1) == '-') {
+                final var lineEnd = pageText.indexOf('\n', valueStart + 1);
+                if (lineEnd == -1) {
+                    // TODO handle unexpected end of file
+                    break;
+                }
+                final var line = pageText.substring(valueStart, lineEnd + 1);
+                final var valueEnd = pageText.indexOf(line, lineEnd + 1);
+                if (valueEnd == -1) {
+                    // TODO handle missing closing line
+                    break;
+                }
+                value = pageText.substring(lineEnd + 1, valueEnd);
+                curIndex = valueEnd + line.length();
+            } else {
+                value = beforeNL;
+                curIndex = nextNL + 1;
+            }
+
+            switch (prop) {
+                case "#" -> { /* Intentionally left blank */ }
+                case "content" -> doc.setContent(value);
+                case "title" -> doc.setTitle(value);
+                default -> {
+                    var dot = prop.lastIndexOf('.');
+                    if (dot < 1) {
+                        // TODO handle missing dot, or a dot at the start of the line
+                        continue;
+                    }
+                    var objectSpec = prop.substring(0, dot);
+
+                    var slash = objectSpec.indexOf('/');
+                    if (slash < 1) {
+                        // TODO handle missing /, or at the start of the line
+                        continue;
+                    }
+                    var objectClass = objectSpec.substring(0, slash);
+                    var objectNumber = objectSpec.substring(slash + 1);
+                    var propertyName = prop.substring(dot + 1);
+                    doc.setValue(objectClass, objectNumber, propertyName, value);
+                }
+            }
+        }
+        doc.save();
     }
 }

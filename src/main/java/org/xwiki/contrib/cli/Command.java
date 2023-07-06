@@ -24,10 +24,6 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import static java.lang.System.out;
-
-import java.io.File;
-import java.nio.file.Files;
-
 import static java.lang.System.err;
 
 class Command
@@ -41,15 +37,12 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                var content = doc.getContent();
-                var dir = Files.createTempDirectory("xwiki-cli");
-                var dirFile = dir.toFile();
-                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
-                Editing.editValue(cmd, content, dirFile, tmpFile, newValue -> {
+                Editing.editValue(cmd, doc.getContent(), "content-", ".xwiki", newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
                     } catch (DocException e) {
+                        // FIXME we can't really print stuff here, it will mess up any terminal editor.
                         err.println("Could not save document");
                         e.printStackTrace();
                     }
@@ -67,79 +60,11 @@ class Command
                     res += p.getKey() + "=" + protectValue(p.getValue());
                 }
                 res += "\n\ncontent=" + protectValue(doc.getContent());
-                var dir = Files.createTempDirectory("xwiki-cli");
-                var dirFile = dir.toFile();
-                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
-                Editing.editValue(cmd, res, dirFile, tmpFile, newRes -> {
+                Editing.editValue(cmd, res, "content-", ".xwiki", newRes -> {
                     try {
-                        final var len = newRes.length();
-                        var curIndex = 0;
-                        while (curIndex < len) {
-                            final var eq = newRes.indexOf('=', curIndex);
-                            if (eq == -1) {
-                                // TODO handle unexpected garbage at the end
-                                break;
-                            }
-                            final var prop = newRes.substring(curIndex, eq).trim();
-                            final var valueStart = eq + 1;
-                            String value = null;
-
-                            if (valueStart >= len) {
-                                // TODO handle unexpected end of file
-                                break;
-                            }
-
-                            final var nextNL = newRes.indexOf('\n', valueStart);
-                            var beforeNL = nextNL == -1 ? "" : newRes.substring(valueStart, nextNL);
-
-                            if (nextNL == -1) {
-                                value = newRes.substring(valueStart);
-                                curIndex = len;
-                            } else if (beforeNL.isBlank() && valueStart + 1 < len && newRes.charAt(valueStart + 1) == '-') {
-                                final var lineEnd = newRes.indexOf('\n', valueStart + 1);
-                                if (lineEnd == -1) {
-                                    // TODO handle unexpected end of file
-                                    break;
-                                }
-                                final var line = newRes.substring(valueStart, lineEnd + 1);
-                                final var valueEnd = newRes.indexOf(line, lineEnd + 1);
-                                if (valueEnd == -1) {
-                                    // TODO handle missing closing line
-                                    break;
-                                }
-                                value = newRes.substring(lineEnd + 1, valueEnd);
-                                curIndex = valueEnd + line.length();
-                            } else {
-                                value = beforeNL;
-                                curIndex = nextNL + 1;
-                            }
-
-                            switch (prop) {
-                                case "#" -> { /* Intentionally left blank */ }
-                                case "content" -> doc.setContent(value);
-                                case "title" -> doc.setTitle(value);
-                                default -> {
-                                    var dot = prop.lastIndexOf('.');
-                                    if (dot < 1) {
-                                        // TODO handle missing dot, or a dot at the start of the line
-                                        continue;
-                                    }
-                                    var objectSpec = prop.substring(0, dot);
-
-                                    var slash = objectSpec.indexOf('/');
-                                    if (slash < 1) {
-                                        // TODO handle missing /, or at the start of the line
-                                        continue;
-                                    }
-                                    var objectClass = objectSpec.substring(0, slash);
-                                    var objectNumber = objectSpec.substring(slash + 1);
-                                    var propertyName = prop.substring(dot + 1);
-                                    doc.setValue(objectClass, objectNumber, propertyName, value);
-                                }
-                            }
-                        }
-                        doc.save();
+                        Editing.updateDocFromTextPage(doc, newRes);
                     } catch (DocException e) {
+                        // FIXME we can't really print stuff here, it will mess up any terminal editor.
                         err.println("Could not save document");
                         e.printStackTrace();
                     }
@@ -155,20 +80,18 @@ class Command
                 if (val == null) {
                     throw new MessageForUserDocException("This property does not exist");
                 }
-                var dir = Files.createTempDirectory("xwiki-cli");
-                var dirFile = dir.toFile();
                 var objectClass = cmd.objectClass;
                 if (Utils.isEmpty(objectClass)) {
                     objectClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
                         .stream().findFirst().get()
                         .split("/")[0];
                 }
-                var tmpFile = File.createTempFile("property-", getFileExtension(objectClass, cmd.property), dirFile);
-                Editing.editValue(cmd, val, dirFile, tmpFile, newValue -> {
+                Editing.editValue(cmd, val, "property-", getFileExtension(objectClass, cmd.property), newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
                     } catch (DocException e) {
+                        // FIXME we can't really print stuff here, it will mess up any terminal editor.
                         err.println("Could not save document");
                         e.printStackTrace();
                     }
@@ -257,7 +180,6 @@ class Command
                 }
             }
         },
-
         MOUNT {
             @Override
             void run(Command cmd) throws Exception
@@ -270,7 +192,6 @@ class Command
                 }
             }
         },
-
         LIST_ATTACHMENTS {
             @Override
             void run(Command cmd) throws Exception
