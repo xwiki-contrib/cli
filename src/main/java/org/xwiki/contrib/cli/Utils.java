@@ -133,6 +133,23 @@ public final class Utils
     }
 
     /**
+     * Perform a PUT request.
+     * @param cmd the Command produced by parsing arguments from the cli.
+     *            It contains authentication and custom headers to use.
+     * @param url the URL to use.
+     * @param content the content to set.
+     * @param mimetype the mimetype of the content to set. null to use the default "text/plain; charset=utf8".
+     * @return the HTTP reponse.
+     */
+    public static HttpResponse<String> httpPut(Command cmd, String url, byte[] content, String mimetype)
+        throws DocException
+    {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
+            .PUT(BodyPublishers.ofByteArray(content)), HttpResponse.BodyHandlers.ofString());
+    }
+    /**
      * Perform a GET request.
      * @param cmd the Command produced by parsing arguments from the cli.
      *            It contains authentication and custom headers to use.
@@ -299,7 +316,7 @@ public final class Utils
         return str
             .replace("&", "&amp;")
             .replace(SINGLE_QUOTE, "&apos;")
-            .replace("\"", "&quote;")
+            .replace("\"", "&quot;")
             .replace("<", "&lt;")
             .replace(">", "&gt;");
     }
