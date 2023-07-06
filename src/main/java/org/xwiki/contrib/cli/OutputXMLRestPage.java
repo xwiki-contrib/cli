@@ -149,7 +149,9 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
         xml += "</page>";
 
-        values.clear();
+        if (values != null) {
+            values.clear();
+        }
         content = null;
         title = null;
         checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
