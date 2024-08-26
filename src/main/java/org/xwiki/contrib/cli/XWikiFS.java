@@ -290,7 +290,7 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SINGLE_PAGE_DIRECTORY_PATTERN.matcher(path).matches()) {
-            return new String[]{"attachments", "class", "objects", /*"page.xml", */"content", "content.xwiki"};
+            return new String[]{"attachments", "class", "objects", /*"page.xml", */"content", "content.xwiki", "title"};
         }
 
         if (ATTACHMENTS_DIRECTORY_PATTERN.matcher(path).matches()) {
@@ -497,6 +497,10 @@ class XWikiFS extends FuseStubFS
                     return document.getContent().getBytes(StandardCharsets.UTF_8);
                 }
 
+                if (remainingPath.equals("/title")) {
+                    return document.getTitle().getBytes(StandardCharsets.UTF_8);
+                }
+
                 /*
                 Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
                 Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
@@ -595,10 +599,14 @@ class XWikiFS extends FuseStubFS
                     return value.length;
                 }
 
-                if (remainingPath.equals("/content")) {
+                if (remainingPath.equals("/content") || remainingPath.equals("/title")) {
                     String stringValue = new String(value, StandardCharsets.UTF_8);
 
-                    document.setContent(stringValue);
+                    if (remainingPath.equals("/title")){
+                        document.setTitle(stringValue.stripTrailing());
+                    } else {
+                        document.setContent(stringValue);
+                    }
                     document.save();
                     return value.length;
                 }
