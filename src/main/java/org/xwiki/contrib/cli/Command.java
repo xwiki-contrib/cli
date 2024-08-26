@@ -351,10 +351,13 @@ class Command
 
     private static String getFileExtension(String objectClass, String property)
     {
+        // TODO add support for XWiki.ScriptComponentClass as same as in org/xwiki/contrib/cli/XWikiFS.java:361
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
             return ".less";
         } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
             return ".js";
+        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
+            return ".vm";
         } else {
             return ".xwiki";
         }

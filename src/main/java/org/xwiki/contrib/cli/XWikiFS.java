@@ -359,10 +359,16 @@ class XWikiFS extends FuseStubFS
                         properties.add(name + ".js");
                     }
                 } else if (name.equals("script_content") && className.equals("XWiki.ScriptComponentClass")) {
-                    Node scriptLanguage = root.selectSingleNode("/xwiki:properties/xwiki:property[@name = "
+                    Node scriptLanguage = root.selectSingleNode("/xwiki:object/xwiki:property[@name = "
                         + "'script_language']/xwiki:value");
                     if (scriptLanguage != null) {
                         properties.add(name + "." + extFromLanguageName(scriptLanguage.getText()));
+                    }
+                } else if (name.equals("content") && className.equals("XWiki.XWikiSkinFileOverrideClass")) {
+                    Node templatePath = root.selectSingleNode("/xwiki:object/xwiki:property[@name = "
+                        + "'path']/xwiki:value");
+                    if (templatePath != null){
+                        properties.add(name + ".vm");
                     }
                 }
 
