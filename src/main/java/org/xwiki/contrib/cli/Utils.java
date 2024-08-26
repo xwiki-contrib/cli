@@ -76,6 +76,7 @@ public final class Utils
                     if (i + 1 < len) {
                         i++;
                     }
+                    c = page.charAt(i);
                     lastPart += c;
                     break;
 
