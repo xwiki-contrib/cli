@@ -96,6 +96,12 @@ final class Main
                     cmd.pass = getNextParameter(args, i);
                     i++;
                 }
+                case "--wiki-readonly" -> {
+                    cmd.wikiReadonly = true;
+                }
+                case "--wiki-writeonly" -> {
+                    cmd.wikiWriteonly = true;
+                }
                 case "--write-to-xml" -> {
                     cmd.outputFile = getNextParameter(args, i);
                     i++;
@@ -104,9 +110,21 @@ final class Main
                     cmd.inputFile = getNextParameter(args, i);
                     i++;
                 }
+                case "--read-from-xml-dir" ->  {
+                    cmd.xmlReadDir = getNextParameter(args, i);
+                    i++;
+                }
+                case "--write-to-xml-dir" ->  {
+                    cmd.xmlWriteDir = getNextParameter(args, i);
+                    i++;
+                }
                 case "--xml-file" -> {
                     cmd.inputFile = getNextParameter(args, i);
                     cmd.outputFile = cmd.inputFile;
+                    i++;
+                }
+                case "--xml-dir" -> {
+                    cmd.xmlDir = getNextParameter(args, i);
                     i++;
                 }
                 case "-u", "--url" -> {

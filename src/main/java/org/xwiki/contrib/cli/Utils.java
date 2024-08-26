@@ -20,6 +20,7 @@
 
 package org.xwiki.contrib.cli;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.net.URI;
@@ -88,6 +89,39 @@ public final class Utils
         }
 
         return urlPart + "/pages/" + lastPart;
+    }
+
+    /**
+     * @return the part of a XAR dir path to reach the given page. Example: Main.WebHome -> Main/WebHome
+     * @param page the page, in dotted notation.
+     */
+    public static String pageToXARPath(String page) {
+        final var urlPart = new StringBuilder();
+        final var len = page.length();
+        var i = 0;
+
+        while (i < len) {
+            char c = page.charAt(i);
+            switch (c) {
+                case '.':
+                    urlPart.append(File.separator);
+                    break;
+
+                case '\\':
+                    if (i + 1 < len) {
+                        i++;
+                    }
+                    c = page.charAt(i);
+                    urlPart.append(c);
+                    break;
+
+                default:
+                    urlPart.append(c);
+            }
+            i++;
+        }
+        urlPart.append(".xml");
+        return urlPart.toString();
     }
 
     private static HttpClient getHTTPClient(Command cmd)

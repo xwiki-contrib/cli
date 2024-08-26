@@ -79,4 +79,9 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
     {
         return "the XML file [" + outputFile + "]";
     }
+
+    public String getOutputFile()
+    {
+        return outputFile;
+    }
 }

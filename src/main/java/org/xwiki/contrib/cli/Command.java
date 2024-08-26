@@ -230,18 +230,25 @@ class Command
                         --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
 
                     Parameters:
-                        --debug                Enable debug mode (for now, more verbose logs)
-                        --print-xml            Print received XML code (for debugging)
-                        -b HOST[:PORT][/PATH]  Use this host and port to connect to XWiki.
-                        --editor EDITOR        Use this editor (necessary if environnement variable EDITOR is not set)
-                        -p PAGE                Specify the page (dotted notation)
-                        -u, --url URL          Specify the page's URL
-                        -w WIKI                Specify the wiki
-                        -o CLASS[/NUMBER]      Specify the class and optionally the number of the object to consider
-                        -v VALUE               The value to use
-                        --xml-file FILE        Same as --write-to-xml FILE --read-from-xml FILE
-                        --read-from-xml FILE   Read the document from the given file
-                        --write-to-xml FILE    Write the document to the given file
+                        --debug                  Enable debug mode (for now, more verbose logs)
+                        --print-xml              Print received XML code (for debugging)
+                        -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
+                        --editor EDITOR          Use this editor (necessary if environnement variable EDITOR is not set)
+                        -p PAGE                  Specify the page (dotted notation)
+                        -u, --url URL            Specify the page's URL
+                        -w WIKI                  Specify the wiki
+                        --wiki-readonly          Don't write on the wiki
+                        --wiki-writeonly         Don't read from the wiki.
+                                                 Note that in this case you need to use an other source,
+                                                 generally the XML dir.
+                        -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
+                        -v VALUE                 The value to use
+                        --read-from-xml FILE     Read the document from the given file
+                        --write-to-xml FILE      Write the document to the given file
+                        --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
+                        --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
+                        --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
+                        --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
                         -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
 
                     Authentication:
@@ -268,8 +275,13 @@ class Command
     public String property;
     public String value;
     public String editor;
+    public boolean wikiReadonly;
+    public boolean wikiWriteonly;
     public String outputFile;
     public String inputFile;
+    public String xmlReadDir;
+    public String xmlWriteDir;
+    public String xmlDir;
     public Map<String, String> headers;
     public String url;
     public String user;
@@ -291,8 +303,13 @@ class Command
             + "\nObject Class:  " + objectClass
             + "\nObject Number: " + objectNumber
             + "\nProperty:      " + property
+            + "\nWiki readonly: " + wikiReadonly
+            + "\nWiki writeonly:" + wikiWriteonly
             + "\nInput file:    " + inputFile
             + "\nOutput file:   " + outputFile
+            + "\nXML read dir:  " + xmlReadDir
+            + "\nXML write dir: " + xmlWriteDir
+            + "\nXML dir:       " + xmlDir
             + "\nURL:           " + url
             + "\nUser:          " + user
             + "\nPass:          " + given(pass)

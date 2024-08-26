@@ -50,11 +50,27 @@ class MultipleDoc implements InputDoc, OutputDoc
             outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile));
         }
 
-        if (Utils.present(cmd.base)) {
-            inputDocs.add(new InputXMLRestPage(cmd));
-            outputDocs.add(new OutputXMLRestPage(cmd));
+        if (Utils.present(cmd.xmlReadDir)){
+            inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlReadDir));
         }
 
+        if (Utils.present(cmd.xmlWriteDir)){
+            outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlWriteDir));
+        }
+
+        if (Utils.present(cmd.xmlDir)){
+            inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
+            outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
+        }
+
+        if (Utils.present(cmd.base)) {
+            if (!cmd.wikiWriteonly){
+                inputDocs.add(new InputXMLRestPage(cmd));
+            }
+            if (!cmd.wikiReadonly){
+                outputDocs.add(new OutputXMLRestPage(cmd));
+            }
+        }
     }
 
     private InputDoc pickInputFile(String what) throws DocException
