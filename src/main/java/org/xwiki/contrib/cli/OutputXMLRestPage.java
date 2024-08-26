@@ -116,46 +116,50 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         //     return;
         // }
 
-        var xml = "<page xmlns='http://www.xwiki.org'>";
-
         if (values != null) {
-            xml += "<objects>";
             for (var byObjectSpec : values.entrySet()) {
+
                 var objectSpec = byObjectSpec.getKey();
                 var slash = objectSpec.indexOf('/');
+                var objectClassName = objectSpec.substring(0, slash);
+                var objectNumber = objectSpec.substring(slash + 1);
 
-                xml += "<objectSummary xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:type='Object'>"
-                    + "<className>" + objectSpec.substring(0, slash) + "</className>"
-                    + "<number>" + objectSpec.substring(slash + 1) + "</number>";
+                StringBuilder xml = new StringBuilder("<object xmlns='http://www.xwiki.org'>");
+                xml.append("<className>").append(objectClassName).append("</className>");
+                xml.append("<number>").append(objectNumber).append("</number>");
 
                 for (var propWithValue : byObjectSpec.getValue()) {
-                    xml += "<property name='" + Utils.escapeXML(propWithValue.property) + "'>"
-                        + "<value>" + Utils.escapeXML(propWithValue.value) + "</value>"
-                        + "</property>";
+                    xml.append("<property name='").append(Utils.escapeXML(propWithValue.property)).append("'>")
+                        .append("<value>").append(Utils.escapeXML(propWithValue.value)).append("</value>")
+                        .append("</property>");
                 }
-
-                xml += "</objectSummary>";
+                xml.append("</object>");
+                checkStatus(Utils.httpPut(cmd,
+                    url + "/objects/"+ objectClassName + "/" + objectNumber,
+                    xml.toString(), "application/xml; charset=utf-8"));
             }
-            xml += "</objects>";
         }
 
-        if (content != null) {
-            xml += "<content>" + Utils.escapeXML(content) + "</content>";
+        if (content != null || title != null){
+            var xml = new StringBuilder("<page xmlns='http://www.xwiki.org'>");
+
+            if (content != null) {
+                xml.append("<content>").append(Utils.escapeXML(content)).append("</content>");
+            }
+
+            if (title != null) {
+                xml.append("<title>").append(Utils.escapeXML(title)).append("</title>");
+            }
+
+            xml.append("</page>");
+
+            if (values != null) {
+                values.clear();
+            }
+            content = null;
+            title = null;
+            checkStatus(Utils.httpPut(cmd, url, xml.toString(), "application/xml; charset=utf-8"));
         }
-
-        if (title != null) {
-            xml += "<title>" + Utils.escapeXML(title) + "</title>";
-        }
-
-        xml += "</page>";
-
-        if (values != null) {
-            values.clear();
-        }
-        content = null;
-        title = null;
-        checkStatus(Utils.httpPut(cmd, url, xml, "application/xml; charset=utf-8"));
-
     }
 
     private void checkStatus(HttpResponse<String> response) throws MessageForUserDocException
