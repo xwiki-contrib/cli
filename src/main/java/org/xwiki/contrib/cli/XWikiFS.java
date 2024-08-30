@@ -318,6 +318,7 @@ class XWikiFS extends FuseStubFS
             return root.selectNodes("/xwiki:objects/xwiki:objectSummary/xwiki:className")
                 .stream()
                 .map(Node::getText)
+                .distinct()
                 .toArray(String[]::new);
         }
 
