@@ -29,21 +29,27 @@ import java.util.Map;
 class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
     private final String url;
+
     private final Command cmd;
+
     private String content;
+
     private String title;
+
     private Map<String, List<ObjectValueSetter>> values;
+
     InputXMLRestPage input;
 
     private class ObjectValueSetter
     {
         String property;
+
         String value;
 
         ObjectValueSetter(String property, String value)
         {
-            this.property   = property;
-            this.value      = value;
+            this.property = property;
+            this.value = value;
         }
     }
 
@@ -179,9 +185,9 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
         throw new MessageForUserDocException(
             "Unexpected status "
-            + status
-            + ". "
-            + (cmd.debug
+                + status
+                + ". "
+                + (cmd.debug
                 ? "Body: " + response.body()
                 : " Use --debug to print the body of the HTTP request")
         );
