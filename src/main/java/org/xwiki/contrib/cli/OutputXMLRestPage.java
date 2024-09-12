@@ -124,7 +124,10 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
                 var objectClassName = objectSpec.substring(0, slash);
                 var objectNumber = objectSpec.substring(slash + 1);
 
-                StringBuilder xml = new StringBuilder("<object xmlns='http://www.xwiki.org'>");
+                int builderSize = 500 + byObjectSpec.getValue().stream()
+                    .map(i -> i.value.length() + 100).reduce(0, Integer::sum);
+                StringBuilder xml = new StringBuilder(builderSize);
+                xml.append("<object xmlns='http://www.xwiki.org'>");
                 xml.append("<className>").append(objectClassName).append("</className>");
                 xml.append("<number>").append(objectNumber).append("</number>");
 
@@ -135,13 +138,17 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
                 }
                 xml.append("</object>");
                 checkStatus(Utils.httpPut(cmd,
-                    url + "/objects/"+ objectClassName + "/" + objectNumber,
+                    url + "/objects/" + objectClassName + "/" + objectNumber,
                     xml.toString(), "application/xml; charset=utf-8"));
             }
         }
 
-        if (content != null || title != null){
-            var xml = new StringBuilder("<page xmlns='http://www.xwiki.org'>");
+        if (content != null || title != null) {
+            int builderSize = (content == null ? 0 : content.length()) +
+                (title == null ? 0 : title.length()) +
+                500;
+            var xml = new StringBuilder(builderSize);
+            xml.append("<page xmlns='http://www.xwiki.org'>");
 
             if (content != null) {
                 xml.append("<content>").append(Utils.escapeXML(content)).append("</content>");
