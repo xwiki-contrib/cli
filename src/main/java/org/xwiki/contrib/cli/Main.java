@@ -171,6 +171,8 @@ final class Main
                 case "--debug" -> cmd.debug = true;
                 case "--print-xml" -> cmd.printXML = true;
                 case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;
+                case "-n", "--new" -> cmd.acceptNewDocument = true;
+
                 default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
             }
             i++;

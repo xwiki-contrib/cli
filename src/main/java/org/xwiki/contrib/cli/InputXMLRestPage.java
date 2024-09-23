@@ -36,9 +36,9 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         if (status == 200) {
             handleResponse(response);
         } else {
-            if (status == 404) {
+            if (status == 404 && cmd.acceptNewDocument) {
                 // 404 : Document not found, we assume it's a document we would like to create
-                response = Utils.httpPut(cmd, url, "(!) You created this document with xwiki-cli", null);
+                response = Utils.httpPut(cmd, url, "", null);
                 status = response.statusCode();
                 if (status == 201) {
                     // 201 : New Document Created

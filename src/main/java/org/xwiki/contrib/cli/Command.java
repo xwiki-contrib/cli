@@ -325,6 +325,8 @@ class Command
 
     public boolean debug;
 
+    public boolean acceptNewDocument;
+
     void print()
     {
         out.println(""
@@ -347,6 +349,7 @@ class Command
             + "\nPass:          " + given(pass)
             + "\nContent:       " + given(content)
             + "\nTitle:         " + title
+            + "\nAccept New:    " + acceptNewDocument
             + "\nMount Path:    " + mountPath
             + "\nUsed Doc URL:  " + getDocURL(false)
             + "\nDebug:         " + debug
