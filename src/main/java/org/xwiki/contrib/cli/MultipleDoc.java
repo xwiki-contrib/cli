@@ -59,11 +59,6 @@ class MultipleDoc implements InputDoc, OutputDoc
             outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlWriteDir));
         }
 
-        if (Utils.present(cmd.xmlDir)) {
-            inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
-            outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
-        }
-
         if (Utils.present(cmd.base)) {
             if (!cmd.wikiWriteonly) {
                 inputDocs.add(new InputXMLRestPage(cmd));
@@ -72,6 +67,11 @@ class MultipleDoc implements InputDoc, OutputDoc
                 outputDocs.add(new OutputXMLRestPage(cmd));
             }
         }
+    }
+
+    MultipleDoc(List<OutputDoc> outputDocs, List<InputDoc> inputDocs) {
+        this.inputDocs = inputDocs;
+        this.outputDocs = outputDocs;
     }
 
     private InputDoc pickInputFile(String what) throws DocException

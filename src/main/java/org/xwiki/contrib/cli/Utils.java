@@ -101,7 +101,7 @@ public final class Utils
      * @param page the page, in dotted notation.
      * @return the part of a XAR dir path to reach the given page. Example: Main.WebHome -> Main/WebHome
      */
-    public static String pageToXARPath(String page)
+    public static String pageToMvnRepositoryPath(String page)
     {
         final var urlPart = new StringBuilder();
         final var len = page.length();

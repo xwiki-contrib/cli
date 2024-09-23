@@ -111,11 +111,7 @@ final class Main
                     cmd.inputFile = getNextParameter(args, i);
                     i++;
                 }
-                case "--read-from-xml-dir" -> {
-                    cmd.xmlReadDir = getNextParameter(args, i);
-                    i++;
-                }
-                case "--write-to-xml-dir" -> {
+                case "--write-to-mvn-repository" -> {
                     cmd.xmlWriteDir = getNextParameter(args, i);
                     i++;
                 }
@@ -124,8 +120,8 @@ final class Main
                     cmd.outputFile = cmd.inputFile;
                     i++;
                 }
-                case "--xml-dir" -> {
-                    cmd.xmlDir = getNextParameter(args, i);
+                case "--sync-data-source" -> {
+                    cmd.syncDataSource = getNextParameter(args, i);
                     i++;
                 }
                 case "-u", "--url" -> {
@@ -168,6 +164,11 @@ final class Main
                     cmd.mountPath = getNextParameter(args, i);
                     ++i;
                     cmd.action = Command.Action.MOUNT;
+                }
+                case "--sync" -> {
+                    cmd.syncPath = getNextParameter(args, i);
+                    ++i;
+                    cmd.action = Command.Action.SYNC;
                 }
                 case "--debug" -> cmd.debug = true;
                 case "--print-xml" -> cmd.printXML = true;

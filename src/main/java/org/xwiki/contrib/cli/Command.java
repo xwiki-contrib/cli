@@ -28,13 +28,14 @@ import static java.lang.System.out;
 
 class Command
 {
-
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
 
     private static final String EDIT_PREFIX_CONTENT = "content-";
+
     private static final String OBJECT_PROPERTY_NAME_CODE = "code";
 
     private static final String EDIT_SUFFIX_XWIKI = ".xwiki";
+
     private static final String XWIKI_FILE_EXTENSION = ".xwiki";
 
     private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
@@ -195,9 +196,25 @@ class Command
             {
                 XWikiFS fs = new XWikiFS(cmd);
                 try {
-                    fs.mount(Path.of(cmd.mountPath), true, true);
+                    fs.mount(Path.of(cmd.mountPath), true, cmd.debug);
                 } finally {
                     fs.umount();
+                }
+            }
+        },
+        SYNC {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                XWikiDirSync ds = new XWikiDirSync(cmd);
+                try {
+                    ds.sync();
+                    ds.monitor();
+                } catch (Exception e) {
+                    err.println(e);
+                    e.printStackTrace();
+                } finally {
+                    // TODO
                 }
             }
         },
@@ -237,6 +254,7 @@ class Command
                             --set-property PROPERTY  Set the value of the given property,
                                                      optionally from the given object (see -v to give a value)
                             --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
+                            --sync PATH              Sync data to PATH with content from maven repository.
 
                         Parameters:
                             --debug                  Enable debug mode (for now, more verbose logs)
@@ -256,9 +274,8 @@ class Command
                             --read-from-xml FILE     Read the document from the given file
                             --write-to-xml FILE      Write the document to the given file
                             --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
-                            --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
-                            --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
-                            --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
+                            --write-to-mvn-repository DIR   Same as --write-to-xml but for a maven repository
+                            --sync-data-source DIR   Path to the maven repository
                             -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
 
                         Authentication:
@@ -306,8 +323,6 @@ class Command
 
     public String xmlWriteDir;
 
-    public String xmlDir;
-
     public Map<String, String> headers;
 
     public String url;
@@ -321,6 +336,10 @@ class Command
     public String title;
 
     public String mountPath;
+
+    public String syncPath;
+
+    public String syncDataSource;
 
     public boolean printXML;
 
@@ -344,16 +363,16 @@ class Command
             + "\nWiki writeonly:" + wikiWriteonly
             + "\nInput file:    " + inputFile
             + "\nOutput file:   " + outputFile
-            + "\nXML read dir:  " + xmlReadDir
             + "\nXML write dir: " + xmlWriteDir
-            + "\nXML dir:       " + xmlDir
             + "\nURL:           " + url
             + "\nUser:          " + user
             + "\nPass:          " + given(pass)
             + "\nContent:       " + given(content)
             + "\nTitle:         " + title
             + "\nAccept New:    " + acceptNewDocument
-            + "\nMount Path:    " + mountPath
+            + "\nMount Path:      " + mountPath
+            + "\nSync Path:       " + syncPath
+            + "\nSync data source:" + syncDataSource
             + "\nUsed Doc URL:  " + getDocURL(false)
             + "\nDebug:         " + debug
             + "\n + printXML:   " + printXML);
