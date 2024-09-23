@@ -20,6 +20,8 @@
 
 package org.xwiki.contrib.cli;
 
+import java.net.http.HttpResponse;
+
 class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {
     private final String url;
@@ -32,17 +34,22 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         var response = Utils.httpGet(cmd, url);
         var status = response.statusCode();
         if (status == 200) {
-            var body = response.body();
-            setXML(body, true);
+            handleResponse(response);
         } else {
-            throw new MessageForUserDocException(
-                "Unexpected status "
-                    + status
-                    + ". "
-                    + (cmd.debug
-                    ? "Body: " + response.body()
-                    : " Use --debug to print the body of the HTTP request")
-            );
+            if (status == 404) {
+                // 404 : Document not found, we assume it's a document we would like to create
+                response = Utils.httpPut(cmd, url, "(!) You created this document with xwiki-cli", null);
+                status = response.statusCode();
+                if (status == 201) {
+                    // 201 : New Document Created
+                    handleResponse(response);
+                } else {
+                    handleUnexpectedStatus(status, cmd, response);
+                }
+            }
+            else {
+                handleUnexpectedStatus(status, cmd, response);
+            }
         }
     }
 
@@ -50,5 +57,22 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
     public String getFriendlyName()
     {
         return "the page at [" + url + "]";
+    }
+
+    private void handleResponse(HttpResponse<String> response) {
+        var body = response.body();
+        setXML(body, true);
+    }
+
+    private void handleUnexpectedStatus(int status, Command cmd, HttpResponse<String> response) throws DocException
+    {
+        throw new MessageForUserDocException(
+            "Unexpected status "
+            + status
+            + ". "
+            + (cmd.debug
+                ? "Body: " + response.body()
+                : " Use --debug to print the body of the HTTP request")
+        );
     }
 }
