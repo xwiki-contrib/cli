@@ -20,18 +20,6 @@
 
 package org.xwiki.contrib.cli;
 
-class Attachment
+record Attachment(String name, long size, byte[] content)
 {
-    public final String name;
-
-    public final long size;
-
-    public final byte[] content;
-
-    Attachment(String name, long size, byte[] content)
-    {
-        this.name = name;
-        this.size = size;
-        this.content = content;
-    }
 }

@@ -34,43 +34,297 @@ import static java.lang.System.err;
 
 abstract class AbstractXMLDoc
 {
+
     private static final String NODE_NAME_CLASS_NAME = "className";
+
     private static final String NODE_NAME_NUMBER = "number";
+
     private static final String NODE_NAME_CONTENT = "content";
+
     private static final String NODE_NAME_TITLE = "title";
+
     private static final String NODE_NAME_OBJECT = "object";
+
+    private static final String NODE_XWIKI_SPACE = "xwiki:";
+
+    private static final String NODE_NAME = "name";
+
     private static final String NODE_NAME_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
+
     private static final String NODE_NAME_PROPERTY = "property";
+
     private static final String NODE_NAME_ATTACHMENT = "attachment";
+
     private static final String NODE_NAME_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
+
     private static final String LINE = "\n-----\n";
 
+    private static final String NODE_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
+
+    private static final String NODE_PROPERTY = "property/%s";
+
+    private final Command cmd;
+
     protected String xml;
+
     protected Document dom;
 
     boolean fromRest;
 
-    private final Command cmd;
-
-    class DocumentNotFoundException extends DocException
-    {
-        DocumentNotFoundException()
-        {
-            super("Document not found");
-        }
-    }
-
-    class MissingNodeException extends DocException
-    {
-        MissingNodeException(String what)
-        {
-            super("Could not find " + what);
-        }
-    }
-
     AbstractXMLDoc(Command cmd)
     {
         this.cmd = cmd;
+    }
+
+    public String getContent() throws DocException
+    {
+        var domdoc = getDom();
+        var root = (Element) domdoc.getRootElement();
+        var content = (Element) getElement(root, NODE_NAME_CONTENT);
+        if (content == null) {
+            return null;
+        }
+        return content.getText();
+    }
+
+    public void setContent(String str) throws DocException
+    {
+        var domdoc = getDom();
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+        var root = (Element) domdoc.getRootElement();
+        var content = (Element) getElement(root, NODE_NAME_CONTENT);
+        if (content == null) {
+            throw new DocException("Content not found");
+        }
+
+        content.setText(str);
+        xml = null;
+    }
+
+    public String getTitle() throws DocException
+    {
+        var domdoc = getDom();
+        var root = (Element) domdoc.getRootElement();
+        var title = (Element) getElement(root, NODE_NAME_TITLE);
+        if (title == null) {
+            return null;
+        }
+        return title.getText();
+    }
+
+    public void setTitle(String str) throws DocException
+    {
+        var domdoc = getDom();
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+        var root = domdoc.getRootElement();
+        var title = (Element) getElement(root, NODE_NAME_TITLE);
+        if (title == null) {
+            throw new DocException("Title not found");
+        }
+
+        title.setText(str);
+        xml = null;
+    }
+
+    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
+        throws DocException
+    {
+        var domdoc = getDom();
+
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+
+        var properties = new HashMap<String, String>();
+
+        var root = (Element) domdoc.getRootElement();
+        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        for (var object : objects) {
+            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
+                continue;
+            }
+
+            String propertyName = null;
+            Element propertyElement = null;
+
+            for (var prop : getElements(object, NODE_NAME_PROPERTY)) {
+                if (fromRest) {
+                    propertyElement = (Element) prop.selectSingleNode("xwiki:value");
+                    propertyName = ((Element) prop).attributeValue(NODE_NAME);
+                } else {
+                    for (var pElement : ((Element) prop).elements()) {
+                        propertyName = pElement.getName();
+                        propertyElement = pElement;
+                    }
+                }
+
+                if (propertyElement != null && (property == null || property.equals(propertyName))) {
+                    if (fullPath) {
+                        propertyName = getObjectSpec((Element) object) + "." + propertyName;
+                    }
+                    properties.put(propertyName, propertyElement.getText());
+                }
+            }
+        }
+
+        return properties;
+    }
+
+    public static String getObjectSpec(Element object)
+    {
+        var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
+        if (classNameElement == null) {
+            return null;
+        }
+
+        var className = classNameElement.getText();
+        if (Utils.isEmpty(className)) {
+            return null;
+        }
+        var numberElement = getElement(object, NODE_NAME_NUMBER);
+        if (numberElement == null) {
+            return null;
+        }
+
+        var number = numberElement.getText();
+        if (Utils.isEmpty(number)) {
+            return null;
+        }
+
+        return className + '/' + number;
+    }
+
+    public String getObjectSpec(String objectClass, String objectNumber, String property)
+        throws DocException
+    {
+        var domdoc = getDom();
+
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+
+        if (property == null) {
+            throw new DocException("property is null. getObjectSpec expects a property.");
+        }
+
+        var root = domdoc.getRootElement();
+        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        for (var object : objects) {
+            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
+                continue;
+            }
+
+            var propertyElement = object.selectSingleNode(
+                fromRest
+                    ? String.format(NODE_PROPERTY_NAME, property)
+                    : String.format(NODE_PROPERTY, property)
+            );
+
+            if (propertyElement == null) {
+                continue;
+            }
+
+            return getObjectSpec((Element) object);
+        }
+
+        return null;
+    }
+
+    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
+        throws DocException
+    {
+        var domdoc = getDom();
+
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+
+        var root = domdoc.getRootElement();
+        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        var objs = new ArrayList<String>();
+        for (var object : objects) {
+            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
+                continue;
+            }
+
+            var classNameElement = getElement((Element) object, NODE_NAME_CLASS_NAME);
+            if (classNameElement == null) {
+                throw new MissingNodeException("class name of object");
+            }
+
+            String className = classNameElement.getText();
+
+            var numberElement = getElement((Element) object, NODE_NAME_NUMBER);
+            if (numberElement == null) {
+                throw new MissingNodeException("number of object");
+            }
+
+            String number = numberElement.getText();
+
+            if (!Utils.isEmpty(property)) {
+                var propertyElement = object.selectSingleNode(
+                    fromRest
+                        ? String.format(NODE_PROPERTY_NAME, property)
+                        : String.format(NODE_PROPERTY, property)
+                );
+
+                if (propertyElement == null) {
+                    continue;
+                }
+            }
+
+            objs.add(className + "/" + number);
+        }
+
+        return objs;
+    }
+
+    public Collection<Attachment> getAttachments() throws DocException
+    {
+        var domdoc = getDom();
+
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+
+        var root = domdoc.getRootElement();
+        var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
+        var res = new ArrayList<Attachment>(attachments.size());
+        for (var attachment : attachments) {
+            res.add(new Attachment(
+                getElement((Element) attachment, NODE_NAME).getText(),
+                Long.parseLong(getElement((Element) attachment, "size").getText()),
+                null
+            ));
+        }
+
+        return res;
+    }
+
+    public String getValue(String objectClass, String objectNumber, String property)
+        throws DocException
+    {
+        var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
+        if (propertyElement == null) {
+            return null;
+        }
+
+        return propertyElement.getText();
+    }
+
+    public void setValue(String objectClass, String objectNumber, String property, String value)
+        throws DocException
+    {
+        var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
+        if (propertyElement == null) {
+            throw new DocException("Couln't find this property");
+        }
+
+        propertyElement.setText(value);
     }
 
     protected void setXML(String str, boolean fromRest)
@@ -118,124 +372,24 @@ abstract class AbstractXMLDoc
     {
         var element = (Element) parent.selectSingleNode(nodeName);
         if (element == null) {
-            element = (Element) parent.selectSingleNode("xwiki:" + nodeName);
+            element = (Element) parent.selectSingleNode(NODE_XWIKI_SPACE + nodeName);
         }
         return element;
     }
 
     private static List<Node> getElements(Node parent, String nodeName)
     {
-        var elements = ((Element) parent).selectNodes(nodeName);
+        var elements = parent.selectNodes(nodeName);
         if (elements == null || elements.isEmpty()) {
-            elements = ((Element) parent).selectNodes("xwiki:" + nodeName);
+            elements = parent.selectNodes(NODE_XWIKI_SPACE + nodeName);
         }
         return elements;
-    }
-
-    public String getContent() throws DocException
-    {
-        var domdoc = getDom();
-        var root = (Element) domdoc.getRootElement();
-        var content = (Element) getElement(root, NODE_NAME_CONTENT);
-        if (content == null) {
-            return null;
-        }
-        return content.getText();
-    }
-
-    public void setContent(String str) throws DocException
-    {
-        var domdoc = getDom();
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-        var root = (Element) domdoc.getRootElement();
-        var content = (Element) getElement(root, NODE_NAME_CONTENT);
-        if (content == null) {
-            throw new DocException("Content not found");
-        }
-
-        content.setText(str);
-        xml = null;
-        return;
-    }
-
-    public String getTitle() throws DocException
-    {
-        var domdoc = getDom();
-        var root = (Element) domdoc.getRootElement();
-        var title = (Element) getElement(root, NODE_NAME_TITLE);
-        if (title == null) {
-            return null;
-        }
-        return title.getText();
-    }
-
-    public void setTitle(String str) throws DocException
-    {
-        var domdoc = getDom();
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-        var root = domdoc.getRootElement();
-        var title = (Element) getElement(root, NODE_NAME_TITLE);
-        if (title == null) {
-            throw new DocException("Title not found");
-        }
-
-        title.setText(str);
-        xml = null;
-        return;
-    }
-
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-            throws DocException
-    {
-        var domdoc = getDom();
-
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-
-        var properties = new HashMap<String, String>();
-
-        var root = (Element) domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
-        for (var object : objects) {
-            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
-                continue;
-            }
-
-            String propertyName = null;
-            Element propertyElement = null;
-
-            for (var prop : getElements(object, NODE_NAME_PROPERTY)) {
-                if (fromRest) {
-                    propertyElement = (Element) prop.selectSingleNode("xwiki:value");
-                    propertyName = ((Element) prop).attributeValue("name");
-                } else {
-                    for (var pElement : ((Element) prop).elements()) {
-                        propertyName = pElement.getName();
-                        propertyElement = pElement;
-                    }
-                }
-
-                if (propertyElement != null && (property == null || property.equals(propertyName))) {
-                    if (fullPath) {
-                        propertyName = getObjectSpec((Element) object) + "." + propertyName;
-                    }
-                    properties.put(propertyName, propertyElement.getText());
-                }
-            }
-        }
-
-        return properties;
     }
 
     private boolean objectMatchesFilter(Node object, String objectClass, String objectNumber)
     {
         if (objectClass != null) {
-            var classNameElement = getElement((Element)object, NODE_NAME_CLASS_NAME);
+            var classNameElement = getElement((Element) object, NODE_NAME_CLASS_NAME);
             if (classNameElement == null) {
                 err.println("Couldn't find class name of object");
                 return false;
@@ -247,22 +401,20 @@ abstract class AbstractXMLDoc
         }
 
         if (objectNumber != null) {
-            var numberElement = getElement((Element)object ,NODE_NAME_NUMBER);
+            var numberElement = getElement((Element) object, NODE_NAME_NUMBER);
             if (numberElement == null) {
                 err.println("Couldn't find class number of object");
                 return false;
             }
 
-            if (!objectNumber.equals(numberElement.getText())) {
-                return false;
-            }
+            return objectNumber.equals(numberElement.getText());
         }
 
         return true;
     }
 
     private Node getPropertyValueElement(String objectClass, String objectNumber, String property)
-            throws DocException
+        throws DocException
     {
         var domdoc = getDom();
 
@@ -291,163 +443,25 @@ abstract class AbstractXMLDoc
                 continue;
             }
 
-
             return propertyElement;
         }
 
         return null;
     }
 
-    public static String getObjectSpec(Element object)
+    class DocumentNotFoundException extends DocException
     {
-        var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
-        if (classNameElement == null) {
-            return null;
+        DocumentNotFoundException()
+        {
+            super("Document not found");
         }
-
-        var className = classNameElement.getText();
-        if (Utils.isEmpty(className)) {
-            return null;
-        }
-        var numberElement = getElement(object, NODE_NAME_NUMBER);
-        if (numberElement == null) {
-            return null;
-        }
-
-        var number = numberElement.getText();
-        if (Utils.isEmpty(number)) {
-            return null;
-        }
-
-        return className + "/" + number;
     }
 
-    public String getObjectSpec(String objectClass, String objectNumber, String property)
-            throws DocException
+    class MissingNodeException extends DocException
     {
-        var domdoc = getDom();
-
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
+        MissingNodeException(String what)
+        {
+            super("Could not find " + what);
         }
-
-        if (property == null) {
-            throw new DocException("property is null. getObjectSpec expects a property.");
-        }
-
-        var root = domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
-        for (var object : objects) {
-            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
-                continue;
-            }
-
-            var propertyElement = object.selectSingleNode(
-                fromRest
-                    ? "xwiki:property[@name = '" + property + "']/xwiki:value"
-                    : "property/" + property
-            );
-
-            if (propertyElement == null) {
-                continue;
-            }
-
-            return getObjectSpec((Element) object);
-        }
-
-        return null;
-    }
-
-    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
-            throws DocException
-    {
-        var domdoc = getDom();
-
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-
-        var root = domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
-        var objs = new ArrayList<String>();
-        for (var object : objects) {
-            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
-                continue;
-            }
-
-            var classNameElement = getElement((Element) object, NODE_NAME_CLASS_NAME);
-            if (classNameElement == null) {
-                throw new MissingNodeException("class name of object");
-            }
-
-            String className = classNameElement.getText();
-
-            var numberElement = getElement((Element) object, NODE_NAME_NUMBER);
-            if (numberElement == null) {
-                throw new MissingNodeException("number of object");
-            }
-
-            String number = numberElement.getText();
-
-            if (!Utils.isEmpty(property)) {
-                var propertyElement = object.selectSingleNode(
-                    fromRest
-                        ? "xwiki:property[@name = '" + property + "']/xwiki:value"
-                        : "property/" + property
-                );
-
-                if (propertyElement == null) {
-                    continue;
-                }
-            }
-
-            objs.add(className + "/" + number);
-        }
-
-        return objs;
-    }
-
-    public Collection<Attachment> getAttachments() throws DocException
-    {
-        var domdoc = getDom();
-
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-
-        var root = domdoc.getRootElement();
-        var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
-        var res = new ArrayList<Attachment>(attachments.size());
-        for (var attachment : attachments) {
-            res.add(new Attachment(
-                getElement((Element) attachment, "name").getText(),
-                Long.parseLong(getElement((Element) attachment, "size").getText()),
-                null
-            ));
-        }
-
-        return res;
-    }
-
-    public String getValue(String objectClass, String objectNumber, String property)
-            throws DocException
-    {
-        var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
-        if (propertyElement == null) {
-            return null;
-        }
-
-        return propertyElement.getText();
-    }
-
-    public void setValue(String objectClass, String objectNumber, String property, String value)
-            throws DocException
-    {
-        var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
-        if (propertyElement == null) {
-            throw new DocException("Couln't find this property");
-        }
-
-        propertyElement.setText(value);
     }
 }

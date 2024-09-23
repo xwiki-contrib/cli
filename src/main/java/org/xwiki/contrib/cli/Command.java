@@ -28,7 +28,14 @@ import static java.lang.System.out;
 
 class Command
 {
+
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
+
+    public static final String EDIT_PREFIX_CONTENT = "content-";
+
+    public static final String EDIT_SUFFIX_XWIKI = ".xwiki";
+
+    public static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
 
     enum Action
     {
@@ -37,13 +44,13 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                Editing.editValue(cmd, doc.getContent(), "content-", ".xwiki", newValue -> {
+                Editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println("Could not save document");
+                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
                         e.printStackTrace();
                     }
                 });
@@ -60,12 +67,12 @@ class Command
                     res += p.getKey() + "=" + protectValue(p.getValue());
                 }
                 res += "\n\ncontent=" + protectValue(doc.getContent());
-                Editing.editValue(cmd, res, "content-", ".xwiki", newRes -> {
+                Editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newRes -> {
                     try {
                         Editing.updateDocFromTextPage(doc, newRes);
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println("Could not save document");
+                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
                         e.printStackTrace();
                     }
                 });
@@ -92,7 +99,7 @@ class Command
                         doc.save();
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println("Could not save document");
+                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
                         e.printStackTrace();
                     }
                 });
@@ -174,7 +181,7 @@ class Command
                     } else if (val.isEmpty()) {
                         val = "\u001B[32m(empty)\u001B[0m";
                     } else if (severalLines(val)) {
-                        val = LINE + "\n" + val + LINE;
+                        val = LINE + '\n' + val + LINE;
                     }
                     out.println(prop.getKey() + " = " + val);
                 }
@@ -198,7 +205,7 @@ class Command
             {
                 var doc = new MultipleDoc(cmd);
                 for (var attachment : doc.getAttachments()) {
-                    out.println(attachment.name + " (size: " + attachment.size + ")");
+                    out.println(attachment.name() + " (size: " + attachment.size() + ")");
                 }
             }
         },
