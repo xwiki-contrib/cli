@@ -9,6 +9,8 @@ import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,6 +42,8 @@ public class XWikiDirSync
     private static final String ATTACHMENTS_PATTERN = "^/attachments/([^/]+)$";
 
     private static final Pattern ATTACHMENTS_PATTERN_MATCHER = Pattern.compile(ATTACHMENTS_PATTERN);
+
+    private final Set<Path> managedFiles = new HashSet<>();
 
     public XWikiDirSync(Command cmd)
     {
@@ -73,31 +77,32 @@ public class XWikiDirSync
         var contentFilePath = Path.of(dstFile, "content");
         Files.createDirectories(contentFilePath.getParent());
         Files.write(contentFilePath, content.getBytes());
+        managedFiles.add(contentFilePath);
 
         var title = xmlFile.getTitle();
         var titleFilePath = Path.of(dstFile, "title");
         Files.createDirectories(titleFilePath.getParent());
         Files.write(titleFilePath, title.getBytes());
+        managedFiles.add(titleFilePath);
 
         for (var attachment : xmlFile.getAttachments()) {
             var attachmentContent = attachment.content();
             var attachmentFilePath = Path.of(dstFile, "attachments", attachment.name());
             Files.createDirectories(attachmentFilePath.getParent());
-            Files.write(titleFilePath, attachmentContent);
+            Files.write(attachmentFilePath, attachmentContent);
+            managedFiles.add(attachmentFilePath);
         }
 
-        for (var obj : xmlFile.getDom().selectNodes("//xwikidoc/object")) {
-            var className = obj.valueOf("//className");
-            // TODO use correct numbering / this implementation don't work well
-            var number = obj.valueOf("//number");
-
-            for (var property : obj.selectNodes("//property")) {
-                var propertyNode = ((org.dom4j.Element) property).elements().get(0);
-                var propertyName = propertyNode.getName();
-                var propertyValue = propertyNode.getStringValue();
-                var propertyValueFileName = Path.of(dstFile, "objects", className, number, "properties", propertyName);
+        for (var obj : xmlFile.getObjects(null, null, null)) {
+            // TODO use change getObject to return already split data instead of splitting here
+            var objClass = obj.split("/")[0];
+            var objNumber = obj.split("/")[1];
+            for (var property : xmlFile.getProperties( objClass, objNumber, null,false).entrySet()) {
+                var propertyValueFileName = Path.of(dstFile, "objects", objClass, objNumber, "properties",
+                    property.getKey());
                 Files.createDirectories(propertyValueFileName.getParent());
-                Files.write(propertyValueFileName, propertyValue.getBytes());
+                Files.write(propertyValueFileName,  property.getValue().getBytes());
+                managedFiles.add(propertyValueFileName);
             }
         }
     }
@@ -162,10 +167,7 @@ public class XWikiDirSync
 
     private void write(Path path) throws IOException
     {
-        // TODO we should ensure that the property exist
-        //   by example a file like 'code.kate-swp' should be ignored
-
-        if (Files.exists(path)) {
+        if (managedFiles.contains(path) && Files.exists(path)) {
             var newContent = Files.readAllBytes(path);
             putValue(syncPath.relativize(path).toString(), newContent);
         }
