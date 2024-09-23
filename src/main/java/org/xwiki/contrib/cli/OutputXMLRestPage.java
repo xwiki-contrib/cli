@@ -28,6 +28,8 @@ import java.util.Map;
 
 class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
+    private static final String APPLICATION_XML_CHARSET_UTF_8 = "application/xml; charset=utf-8";
+
     private final String url;
 
     private final Command cmd;
@@ -38,20 +40,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private Map<String, List<ObjectValueSetter>> values;
 
-    InputXMLRestPage input;
-
-    private class ObjectValueSetter
-    {
-        String property;
-
-        String value;
-
-        ObjectValueSetter(String property, String value)
-        {
-            this.property = property;
-            this.value = value;
-        }
-    }
+    private InputXMLRestPage input;
 
     OutputXMLRestPage(Command cmd) throws DocException
     {
@@ -88,7 +77,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             }
             objectSpec = input.getObjectSpec(objectClass, objectNumber, property);
         } else {
-            objectSpec = objectClass + "/" + objectNumber;
+            objectSpec = objectClass + '/' + objectNumber;
         }
 
         var valuesForGivenObjectSpec = values.get(objectSpec);
@@ -144,15 +133,14 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
                 }
                 xml.append("</object>");
                 checkStatus(Utils.httpPut(cmd,
-                    url + "/objects/" + objectClassName + "/" + objectNumber,
-                    xml.toString(), "application/xml; charset=utf-8"));
+                    url + "/objects/" + objectClassName + '/' + objectNumber,
+                    xml.toString(), APPLICATION_XML_CHARSET_UTF_8));
             }
         }
 
         if (content != null || title != null) {
-            int builderSize = (content == null ? 0 : content.length()) +
-                (title == null ? 0 : title.length()) +
-                500;
+            int builderSize = (content == null ? 0 : content.length())
+                + (title == null ? 0 : title.length()) + 500;
             var xml = new StringBuilder(builderSize);
             xml.append("<page xmlns='http://www.xwiki.org'>");
 
@@ -171,8 +159,14 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             }
             content = null;
             title = null;
-            checkStatus(Utils.httpPut(cmd, url, xml.toString(), "application/xml; charset=utf-8"));
+            checkStatus(Utils.httpPut(cmd, url, xml.toString(), APPLICATION_XML_CHARSET_UTF_8));
         }
+    }
+
+    @Override
+    public String getFriendlyName()
+    {
+        return "the page at [" + url + "]";
     }
 
     private void checkStatus(HttpResponse<String> response) throws MessageForUserDocException
@@ -193,9 +187,16 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         );
     }
 
-    @Override
-    public String getFriendlyName()
+    private class ObjectValueSetter
     {
-        return "the page at [" + url + "]";
+        String property;
+
+        String value;
+
+        ObjectValueSetter(String property, String value)
+        {
+            this.property = property;
+            this.value = value;
+        }
     }
 }

@@ -47,7 +47,13 @@ import org.xml.sax.SAXException;
  */
 public final class Utils
 {
+    private static final String CONTENT_TYPE = "Content-Type";
+
+    private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain; charset=utf8";
+
     private static final String SINGLE_QUOTE = "'";
+
+    private static final String XWIKI = "xwiki";
 
     private Utils()
     {
@@ -125,28 +131,15 @@ public final class Utils
         return urlPart.toString();
     }
 
-    private static HttpClient getHTTPClient(Command cmd)
-    {
-        return HttpClient.newBuilder().build();
-    }
-
+    /**
+     * Test if the string value is present.
+     *
+     * @param param the value to check
+     * @return if the param is not null and is not empty
+     */
     public static boolean present(String param)
     {
         return param != null && !param.isEmpty();
-    }
-
-    private static HttpRequest.Builder setHeadersFromCommand(Command cmd, HttpRequest.Builder builder)
-    {
-        for (var header : cmd.headers.entrySet()) {
-            builder.header(header.getKey(), header.getValue());
-        }
-
-        if (present(cmd.user) && present(cmd.pass)) {
-            builder.header("Authorization",
-                "Basic " + Base64.getEncoder().encodeToString((cmd.user + ":" + cmd.pass).getBytes())
-            );
-        }
-        return builder;
     }
 
     /**
@@ -164,7 +157,7 @@ public final class Utils
     {
         return internalHttpRequest(cmd, HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
+            .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
             .PUT(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
     }
 
@@ -183,7 +176,7 @@ public final class Utils
     {
         return internalHttpRequest(cmd, HttpRequest.newBuilder()
             .uri(URI.create(url))
-            .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
+            .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
             .PUT(BodyPublishers.ofByteArray(content)), HttpResponse.BodyHandlers.ofString());
     }
 
@@ -215,22 +208,6 @@ public final class Utils
         return internalHttpRequest(cmd, HttpRequest.newBuilder()
             .uri(URI.create(url))
             .GET(), HttpResponse.BodyHandlers.ofByteArray());
-    }
-
-    private static <T> HttpResponse<T> internalHttpRequest(Command cmd, HttpRequest.Builder url,
-        HttpResponse.BodyHandler<T> bodyHandler) throws DocException
-    {
-        var client = getHTTPClient(cmd);
-        var request = setHeadersFromCommand(
-            cmd,
-            url
-        ).build();
-
-        try {
-            return client.send(request, bodyHandler);
-        } catch (IOException | InterruptedException e) {
-            throw new DocException(e);
-        }
     }
 
     /**
@@ -272,7 +249,7 @@ public final class Utils
 
             try {
                 dom = reader.read(new StringReader(xml));
-                dom.getRootElement().add(new Namespace("xwiki", "http://www.xwiki.org"));
+                dom.getRootElement().add(new Namespace(XWIKI, "http://www.xwiki.org"));
             } catch (DocumentException e) {
                 throw new DocException(e);
             }
@@ -324,13 +301,14 @@ public final class Utils
 
     /**
      * @param cmd the Command to use.
+     * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
     public static String getDocRestURLFromCommand(Command cmd, boolean withObjects) throws DocException
     {
         var wiki = cmd.wiki;
         if (wiki == null || wiki.isEmpty()) {
-            wiki = "xwiki";
+            wiki = XWIKI;
         }
 
         if (cmd.page == null) {
@@ -352,6 +330,12 @@ public final class Utils
         return v == null || v.isEmpty();
     }
 
+    /**
+     * Escape string for XML encoding.
+     *
+     * @param str string to escape
+     * @return the escaped value for XML content
+     */
     public static String escapeXML(String str)
     {
         return str
@@ -360,5 +344,40 @@ public final class Utils
             .replace("\"", "&quot;")
             .replace("<", "&lt;")
             .replace(">", "&gt;");
+    }
+
+    private static HttpClient getHTTPClient(Command cmd)
+    {
+        return HttpClient.newBuilder().build();
+    }
+
+    private static HttpRequest.Builder setHeadersFromCommand(Command cmd, HttpRequest.Builder builder)
+    {
+        for (var header : cmd.headers.entrySet()) {
+            builder.header(header.getKey(), header.getValue());
+        }
+
+        if (present(cmd.user) && present(cmd.pass)) {
+            builder.header("Authorization",
+                "Basic " + Base64.getEncoder().encodeToString((cmd.user + ":" + cmd.pass).getBytes())
+            );
+        }
+        return builder;
+    }
+
+    private static <T> HttpResponse<T> internalHttpRequest(Command cmd, HttpRequest.Builder url,
+        HttpResponse.BodyHandler<T> bodyHandler) throws DocException
+    {
+        var client = getHTTPClient(cmd);
+        var request = setHeadersFromCommand(
+            cmd,
+            url
+        ).build();
+
+        try {
+            return client.send(request, bodyHandler);
+        } catch (IOException | InterruptedException e) {
+            throw new DocException(e);
+        }
     }
 }

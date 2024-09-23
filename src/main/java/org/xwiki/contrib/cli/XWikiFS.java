@@ -42,6 +42,17 @@ import ru.serce.jnrfuse.struct.FuseFileInfo;
 
 class XWikiFS extends FuseStubFS
 {
+
+    private static final String DIR_NAME_PROPERTIES = "properties";
+
+    private static final String ATTACHMENTS_PATTERN = "^/attachments/([^/]+)$";
+
+    private static final Pattern ATTACHMENTS_PATTERN_MATCHER = Pattern.compile(ATTACHMENTS_PATTERN);
+
+    private static final String DIR_NAME_SPACES = "spaces";
+
+    private static final String DIR_NAME_PAGES = "pages";
+
     private static final Pattern ATTACHMENT_PATTERN =
         Pattern.compile("^(/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/attachments)/([^/]+)$");
 
@@ -84,6 +95,30 @@ class XWikiFS extends FuseStubFS
     private static final Pattern CLASS_PROPERTY_MATCHER =
         Pattern.compile("^(/wikis/[^/]+)/spaces((?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)/class/properties/([^/]+)$");
 
+    private static final String URL_PART_REST = "/rest";
+
+    private static final String URL_PART_SPACES = "/spaces/";
+
+    private static final String DOT = ".";
+
+    private static final String SLASH = "/";
+
+    private static final String ESCAPED_DOT = "\\.";
+
+    private static final String URL_PART_CLASSES = "/classes/";
+
+    private static final String URL_PART_CONTENT = "/content";
+
+    private static final String URL_PART_TITLE = "/title";
+
+    private static final String DIR_NAME_CONTENT = "content";
+
+    private static final Pattern PAGES_PATTERN_MATCHER =
+        Pattern.compile("^/wikis/([^/]+)/(spaces(?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)");
+
+    private static final Pattern OBJECTS_PROPERTIES_PATTERN_MATCHER =
+        Pattern.compile("^/objects/([^/]+)/([^/]+)/properties/([^/]+)$");
+
     private final Command command;
 
     XWikiFS(Command command)
@@ -99,7 +134,7 @@ class XWikiFS extends FuseStubFS
         if (matcher.find()) {
             String filename = matcher.group(2);
             String encodedURLPart = escapeURLWithSlashes(matcher.group(1));
-            String attachmentsRestURL = this.command.url + "/rest" + encodedURLPart;
+            String attachmentsRestURL = this.command.url + URL_PART_REST + encodedURLPart;
             String a = null;
             try {
                 a = Utils.httpGet(this.command, attachmentsRestURL).body();
@@ -139,18 +174,6 @@ class XWikiFS extends FuseStubFS
         return result;
     }
 
-    private String pageToSpacesAndPagesRESTURLPart(String page)
-    {
-        // TODO: handle \.
-        long lastDot = page.lastIndexOf('.');
-        if (lastDot == -1) {
-            return "/spaces/" + page;
-        }
-
-        return "/spaces/" + page.substring(0, (int) lastDot).replace(".", "/spaces/")
-            + "/pages/" + page.substring((int) (lastDot + 1));
-    }
-
     @Override
     public int readlink(String path, Pointer buf, long size)
     {
@@ -181,25 +204,6 @@ class XWikiFS extends FuseStubFS
         return -ErrorCodes.ENOENT();
     }
 
-    private String getSpaceFromPathPart(String part)
-    {
-        StringBuilder expectedSpace = new StringBuilder();
-        if (part.length() != 0) {
-            boolean keepElement = false;
-            String[] splitParts = part.split("/");
-            for (String space : splitParts) {
-                if (keepElement) {
-                    if (expectedSpace.length() != 0) {
-                        expectedSpace.append(".");
-                    }
-                    expectedSpace.append(space.replace(".", "\\."));
-                }
-                keepElement = !keepElement;
-            }
-        }
-        return expectedSpace.toString();
-    }
-
     @Override
     public int readdir(String path, Pointer buf, FuseFillDir filter, long offset, FuseFileInfo fi)
     {
@@ -216,7 +220,7 @@ class XWikiFS extends FuseStubFS
 
     public String[] listDir(String path, boolean onlyTestIfExists) throws DocException
     {
-        if (path.equals("/")) {
+        if (path.equals(SLASH)) {
             return new String[] { "wikis" };
         }
 
@@ -250,10 +254,10 @@ class XWikiFS extends FuseStubFS
                 String id = node.selectSingleNode("xwiki:id").getText();
                 String name = node.selectSingleNode("xwiki:name").getText();
                 if (expectedSpace.isEmpty()) {
-                    if (Objects.equals(id, wiki + ":" + name)) {
+                    if (Objects.equals(id, wiki + ':' + name)) {
                         spaces.add(name);
                     }
-                } else if (id.equals(wiki + ":" + expectedSpace + "." + name)) {
+                } else if (id.equals(wiki + ':' + expectedSpace + '.' + name)) {
                     spaces.add(name);
                 }
             }
@@ -262,12 +266,12 @@ class XWikiFS extends FuseStubFS
 
         // Match contents of the root of the wiki directory of every wiki
         if (WIKI_DIRECTORY_CONTENTS_PATTERN.matcher(path).matches()) {
-            return new String[] { "spaces", "classes"/*, "wiki.xml"*/ };
+            return new String[] { DIR_NAME_SPACES, "classes"/*, "wiki.xml"*/ };
         }
 
         // Match pattern: /^/wikis/(?:[^/]+)/classes$/
         if (CLASSES_PATTERN.matcher(path).matches()) {
-            String classesRestURL = command.url + "/rest" + escapeURLWithSlashes(path);
+            String classesRestURL = command.url + URL_PART_REST + escapeURLWithSlashes(path);
             return getRootOfRestDocument(classesRestURL)
                 .selectNodes("/xwiki:classes/xwiki:class/xwiki:id")
                 .stream()
@@ -276,14 +280,14 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SPACE_CONTENT_PATTERN.matcher(path).matches()) {
-            return new String[] { "spaces", "pages"/*, "space.xml"*/ };
+            return new String[] { DIR_NAME_SPACES, DIR_NAME_PAGES/*, "space.xml"*/ };
         }
 
         if (PAGES_DIRECTORY_PATTERN.matcher(path).matches()) {
             if (onlyTestIfExists) {
                 return null;
             }
-            String pagesRestURL = command.url + "/rest" + escapeURLWithSlashes(path);
+            String pagesRestURL = command.url + URL_PART_REST + escapeURLWithSlashes(path);
             Element root = getRootOfRestDocument(pagesRestURL);
             return root.selectNodes("/xwiki:pages/xwiki:pageSummary/xwiki:name")
                 .stream()
@@ -292,7 +296,7 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SINGLE_PAGE_DIRECTORY_PATTERN.matcher(path).matches()) {
-            return new String[] { "attachments", "class", "objects", /*"page.xml", */"content", "content.xwiki",
+            return new String[] { "attachments", "class", "objects", /*"page.xml", */DIR_NAME_CONTENT, "content.xwiki",
                 "title" };
         }
 
@@ -300,7 +304,7 @@ class XWikiFS extends FuseStubFS
             if (onlyTestIfExists) {
                 return null;
             }
-            String attachmentsRestURL = command.url + "/rest" + escapeURLWithSlashes(path);
+            String attachmentsRestURL = command.url + URL_PART_REST + escapeURLWithSlashes(path);
             Element root = getRootOfRestDocument(attachmentsRestURL);
             return root.selectNodes("/xwiki:attachments/xwiki:attachment/xwiki:name")
                 .stream()
@@ -309,14 +313,14 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SINGLE_CLASS_DIRECTORY_PATTERN.matcher(path).matches()) {
-            return new String[] {/*"class.xml", */"properties" };
+            return new String[] {/*"class.xml", */DIR_NAME_PROPERTIES };
         }
 
         if (OBJECTS_DIRECTORY_PATTERN.matcher(path).matches()) {
             if (onlyTestIfExists) {
                 return null;
             }
-            String objectsRestURL = command.url + "/rest" + escapeURLWithSlashes(path);
+            String objectsRestURL = command.url + URL_PART_REST + escapeURLWithSlashes(path);
             Element root = getRootOfRestDocument(objectsRestURL);
             return root.selectNodes("/xwiki:objects/xwiki:objectSummary/xwiki:className")
                 .stream()
@@ -330,7 +334,7 @@ class XWikiFS extends FuseStubFS
             if (onlyTestIfExists) {
                 return null;
             }
-            String objectsRestURL = command.url + "/rest" + escapeURLWithSlashes(objectInstancesMatcher.group(1));
+            String objectsRestURL = command.url + URL_PART_REST + escapeURLWithSlashes(objectInstancesMatcher.group(1));
             Element root = getRootOfRestDocument(objectsRestURL);
             return root.selectNodes(
                     String.format("/xwiki:objects/xwiki:objectSummary[xwiki:className/text() = %s]/xwiki:number",
@@ -341,7 +345,7 @@ class XWikiFS extends FuseStubFS
         }
 
         if (OBJECT_CONTENT_PATTERN.matcher(path).matches()) {
-            return new String[] { "properties"/*, "object.xml"*/ };
+            return new String[] { DIR_NAME_PROPERTIES/*, "object.xml"*/ };
         }
 
         Matcher propertiesDirectoryMatcher = PROPERTIES_DIRECTORY_PATTERN.matcher(path);
@@ -350,7 +354,8 @@ class XWikiFS extends FuseStubFS
                 return null;
             }
             List<String> properties = new ArrayList<>();
-            String objectRestURL = command.url + "/rest" + escapeURLWithSlashes(propertiesDirectoryMatcher.group(1));
+            String objectRestURL =
+                command.url + URL_PART_REST + escapeURLWithSlashes(propertiesDirectoryMatcher.group(1));
             Element root = getRootOfRestDocument(objectRestURL);
             for (Node node : root.selectNodes("/xwiki:object/xwiki:property/@name")) {
                 String name = node.getText();
@@ -363,14 +368,14 @@ class XWikiFS extends FuseStubFS
                         properties.add(name + ".js");
                     }
                 } else if (name.equals("script_content") && className.equals("XWiki.ScriptComponentClass")) {
-                    Node scriptLanguage = root.selectSingleNode("/xwiki:object/xwiki:property[@name = "
-                        + "'script_language']/xwiki:value");
+                    Node scriptLanguage = root.selectSingleNode(
+                        "/xwiki:object/xwiki:property[@name = 'script_language']/xwiki:value");
                     if (scriptLanguage != null) {
-                        properties.add(name + "." + extFromLanguageName(scriptLanguage.getText()));
+                        properties.add(name + '.' + extFromLanguageName(scriptLanguage.getText()));
                     }
-                } else if (name.equals("content") && className.equals("XWiki.XWikiSkinFileOverrideClass")) {
-                    Node templatePath = root.selectSingleNode("/xwiki:object/xwiki:property[@name = "
-                        + "'path']/xwiki:value");
+                } else if (name.equals(DIR_NAME_CONTENT) && className.equals("XWiki.XWikiSkinFileOverrideClass")) {
+                    Node templatePath = root.selectSingleNode(
+                        "/xwiki:object/xwiki:property[@name = 'path']/xwiki:value");
                     if (templatePath != null) {
                         properties.add(name + ".vm");
                     }
@@ -387,9 +392,9 @@ class XWikiFS extends FuseStubFS
             if (onlyTestIfExists) {
                 return null;
             }
-            String fullName = getSpaceFromPathPart(matcher.group(2)) + "." + matcher.group(3);
-            Element root = getRootOfRestDocument(command.url + "/rest"
-                + escapeURLWithSlashes(matcher.group(1)) + "/classes/" + Utils.encodeURLPart(fullName));
+            String fullName = getSpaceFromPathPart(matcher.group(2)) + '.' + matcher.group(3);
+            Element root = getRootOfRestDocument(command.url + URL_PART_REST
+                + escapeURLWithSlashes(matcher.group(1)) + URL_PART_CLASSES + Utils.encodeURLPart(fullName));
             return root.selectNodes("/xwiki:class/xwiki:property/@name")
                 .stream()
                 .map(Node::getText)
@@ -398,9 +403,9 @@ class XWikiFS extends FuseStubFS
 
         matcher = CLASS_PROPERTY_MATCHER.matcher(path);
         if (matcher.find()) {
-            String fullName = getSpaceFromPathPart(matcher.group(2)) + "." + matcher.group(3);
-            Element root = getRootOfRestDocument(command.url + "/rest"
-                + escapeURLWithSlashes(matcher.group(1)) + "/classes/" + Utils.encodeURLPart(fullName));
+            String fullName = getSpaceFromPathPart(matcher.group(2)) + '.' + matcher.group(3);
+            Element root = getRootOfRestDocument(command.url + URL_PART_REST
+                + escapeURLWithSlashes(matcher.group(1)) + URL_PART_CLASSES + Utils.encodeURLPart(fullName));
             Element property = (Element) root.selectSingleNode(String.format("/xwiki:class/xwiki:property[name = %s]",
                 Utils.escapeXPathString(matcher.group(4))));
             if (property != null) {
@@ -425,29 +430,6 @@ class XWikiFS extends FuseStubFS
         throw new DocException("Unknown directory");
     }
 
-    private String extFromLanguageName(String scriptLanguage)
-    {
-        return switch (scriptLanguage) {
-            case "ruby" -> "rb";
-            case "velocity" -> "vm";
-            case "python" -> "py";
-            // php, groovy
-            default -> scriptLanguage;
-        };
-    }
-
-    private static String escapeURLWithSlashes(String path)
-    {
-        return Arrays.stream(path.split("/")).map(Utils::encodeURLPart).collect(
-            Collectors.joining("/"));
-    }
-
-    private Element getRootOfRestDocument(String wikisRestURL) throws DocException
-    {
-        String s = Utils.httpGet(this.command, wikisRestURL).body();
-        return Utils.parseXML(s).getRootElement();
-    }
-
     @Override
     public int open(String path, FuseFileInfo fi)
     {
@@ -469,71 +451,6 @@ class XWikiFS extends FuseStubFS
         }
 
         return 0;
-    }
-
-    private byte[] getValue(String path)
-    {
-        Pattern pagePattern = Pattern.compile("^/wikis/([^/]+)/(spaces(?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)");
-        Matcher pageMatcher = pagePattern.matcher(path);
-        if (pageMatcher.find()) {
-            this.command.wiki = pageMatcher.group(1);
-            String space = getSpaceFromPathPart(pageMatcher.group(2));
-            String page = pageMatcher.group(3).replace(".", "\\.");
-            this.command.page = space + "." + page;
-
-            try {
-                MultipleDoc document = new MultipleDoc(this.command);
-
-                String remainingPath = path.substring(pageMatcher.end());
-
-                Pattern propertyPattern = Pattern.compile("^/objects/([^/]+)/([^/]+)/properties/([^/]+)$");
-                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
-                if (propertyMatcher.matches()) {
-                    String className = propertyMatcher.group(1);
-                    String objectNumber = propertyMatcher.group(2);
-                    String propertyName = propertyMatcher.group(3);
-
-                    return document.getValue(className, objectNumber, propertyName).getBytes(StandardCharsets.UTF_8);
-                }
-
-                if (remainingPath.equals("/content")) {
-                    return document.getContent().getBytes(StandardCharsets.UTF_8);
-                }
-
-                if (remainingPath.equals("/title")) {
-                    return document.getTitle().getBytes(StandardCharsets.UTF_8);
-                }
-
-                /*
-                Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
-                Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
-                if (classPropertyMatcher.matches()) {
-                    String propertyName = classPropertyMatcher.group(1);
-                    String attributeName = classPropertyMatcher.group(2);
-
-                    return document.getClassAttribute(propertyName, attributeName).getBytes(StandardCharsets.UTF_8);
-                }
-                */
-
-                Pattern attachmentPattern = Pattern.compile("^/attachments/([^/]+)$");
-                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
-                if (attachmentMatcher.matches()) {
-                    /*
-                    String attachmentName = attachmentMatcher.group(1);
-
-                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
-                     */
-                    String attachmentURL = this.command.url + "/rest" + escapeURLWithSlashes(path);
-                    return Utils.httpGetBytes(this.command, attachmentURL).body();
-                }
-            } catch (DocException | IOException e) {
-                if (command.debug) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        return new byte[0];
     }
 
     @Override
@@ -574,22 +491,141 @@ class XWikiFS extends FuseStubFS
         return content.length;
     }
 
-    private int putValue(String path, byte[] value)
+    private String pageToSpacesAndPagesRESTURLPart(String page)
     {
-        Pattern pagePattern = Pattern.compile("^/wikis/([^/]+)/(spaces(?:/[^/]+/spaces)*/[^/]+)/pages/([^/]+)");
+        // TODO: handle \.
+        long lastDot = page.lastIndexOf('.');
+        if (lastDot == -1) {
+            return URL_PART_SPACES + page;
+        }
+
+        return URL_PART_SPACES + page.substring(0, (int) lastDot).replace(DOT, URL_PART_SPACES)
+            + "/pages/" + page.substring((int) (lastDot + 1));
+    }
+
+    private String getSpaceFromPathPart(String part)
+    {
+        StringBuilder expectedSpace = new StringBuilder();
+        if (part.length() != 0) {
+            boolean keepElement = false;
+            String[] splitParts = part.split(SLASH);
+            for (String space : splitParts) {
+                if (keepElement) {
+                    if (expectedSpace.length() != 0) {
+                        expectedSpace.append('.');
+                    }
+                    expectedSpace.append(space.replace(DOT, ESCAPED_DOT));
+                }
+                keepElement = !keepElement;
+            }
+        }
+        return expectedSpace.toString();
+    }
+
+    private String extFromLanguageName(String scriptLanguage)
+    {
+        return switch (scriptLanguage) {
+            case "ruby" -> "rb";
+            case "velocity" -> "vm";
+            case "python" -> "py";
+            // php, groovy
+            default -> scriptLanguage;
+        };
+    }
+
+    private static String escapeURLWithSlashes(String path)
+    {
+        return Arrays.stream(path.split(SLASH)).map(Utils::encodeURLPart).collect(
+            Collectors.joining(SLASH));
+    }
+
+    private Element getRootOfRestDocument(String wikisRestURL) throws DocException
+    {
+        String s = Utils.httpGet(this.command, wikisRestURL).body();
+        return Utils.parseXML(s).getRootElement();
+    }
+
+    private byte[] getValue(String path)
+    {
+        Pattern pagePattern = PAGES_PATTERN_MATCHER;
         Matcher pageMatcher = pagePattern.matcher(path);
         if (pageMatcher.find()) {
             this.command.wiki = pageMatcher.group(1);
             String space = getSpaceFromPathPart(pageMatcher.group(2));
-            String page = pageMatcher.group(3).replace(".", "\\.");
-            this.command.page = space + "." + page;
+            String page = pageMatcher.group(3).replace(DOT, ESCAPED_DOT);
+            this.command.page = space + '.' + page;
 
             try {
                 MultipleDoc document = new MultipleDoc(this.command);
 
                 String remainingPath = path.substring(pageMatcher.end());
 
-                Pattern propertyPattern = Pattern.compile("^/objects/([^/]+)/([^/]+)/properties/([^/]+)$");
+                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
+                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                if (propertyMatcher.matches()) {
+                    String className = propertyMatcher.group(1);
+                    String objectNumber = propertyMatcher.group(2);
+                    String propertyName = propertyMatcher.group(3);
+
+                    return document.getValue(className, objectNumber, propertyName).getBytes(StandardCharsets.UTF_8);
+                }
+
+                if (remainingPath.equals(URL_PART_CONTENT)) {
+                    return document.getContent().getBytes(StandardCharsets.UTF_8);
+                }
+
+                if (remainingPath.equals(URL_PART_TITLE)) {
+                    return document.getTitle().getBytes(StandardCharsets.UTF_8);
+                }
+
+                /*
+                Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
+                Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
+                if (classPropertyMatcher.matches()) {
+                    String propertyName = classPropertyMatcher.group(1);
+                    String attributeName = classPropertyMatcher.group(2);
+
+                    return document.getClassAttribute(propertyName, attributeName).getBytes(StandardCharsets.UTF_8);
+                }
+                */
+
+                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
+                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                if (attachmentMatcher.matches()) {
+                    /*
+                    String attachmentName = attachmentMatcher.group(1);
+
+                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
+                     */
+                    String attachmentURL = this.command.url + URL_PART_REST + escapeURLWithSlashes(path);
+                    return Utils.httpGetBytes(this.command, attachmentURL).body();
+                }
+            } catch (DocException | IOException e) {
+                if (command.debug) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return new byte[0];
+    }
+
+    private int putValue(String path, byte[] value)
+    {
+        Pattern pagePattern = PAGES_PATTERN_MATCHER;
+        Matcher pageMatcher = pagePattern.matcher(path);
+        if (pageMatcher.find()) {
+            this.command.wiki = pageMatcher.group(1);
+            String space = getSpaceFromPathPart(pageMatcher.group(2));
+            String page = pageMatcher.group(3).replace(DOT, ESCAPED_DOT);
+            this.command.page = space + '.' + page;
+
+            try {
+                MultipleDoc document = new MultipleDoc(this.command);
+
+                String remainingPath = path.substring(pageMatcher.end());
+
+                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
                 Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
                 if (propertyMatcher.matches()) {
                     String className = propertyMatcher.group(1);
@@ -602,10 +638,10 @@ class XWikiFS extends FuseStubFS
                     return value.length;
                 }
 
-                if (remainingPath.equals("/content") || remainingPath.equals("/title")) {
+                if (remainingPath.equals(URL_PART_CONTENT) || remainingPath.equals(URL_PART_TITLE)) {
                     String stringValue = new String(value, StandardCharsets.UTF_8);
 
-                    if (remainingPath.equals("/title")) {
+                    if (remainingPath.equals(URL_PART_TITLE)) {
                         document.setTitle(stringValue.stripTrailing());
                     } else {
                         document.setContent(stringValue);
@@ -625,7 +661,7 @@ class XWikiFS extends FuseStubFS
                 }
                 */
 
-                Pattern attachmentPattern = Pattern.compile("^/attachments/([^/]+)$");
+                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
                 Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
                     /*
@@ -633,7 +669,7 @@ class XWikiFS extends FuseStubFS
 
                     return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
                      */
-                    String attachmentURL = this.command.url + "/rest" + escapeURLWithSlashes(path);
+                    String attachmentURL = this.command.url + URL_PART_REST + escapeURLWithSlashes(path);
                     Utils.httpPut(this.command, attachmentURL, value, "application/octet-stream");
                     return value.length;
                 }

@@ -31,15 +31,10 @@ import java.nio.file.StandardWatchEventKinds;
 
 class Editing
 {
-    interface EditingCallback
-    {
-        void run(String newValue);
-    }
-
     public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
         throws IOException, InterruptedException
     {
-        try (final var writer = new BufferedWriter(new FileWriter(file))) {
+        try (var writer = new BufferedWriter(new FileWriter(file))) {
             writer.write(oldValue);
         }
 
@@ -47,14 +42,14 @@ class Editing
         var editor = getEditor(cmd);
 
         if (Utils.isEmpty(editor)) {
-            System.out.println("Please select an editor with --editor or set an EDITOR environnement variable");
+            System.out.println("Please select an editor with --editor or set an EDITOR environment variable");
             return;
         }
 
         new ProcessBuilder(editor, filename).inheritIO().start();
         final var path = FileSystems.getDefault().getPath(folder.getAbsolutePath());
 
-        try (final var watchService = FileSystems.getDefault().newWatchService()) {
+        try (var watchService = FileSystems.getDefault().newWatchService()) {
             path.register(watchService, StandardWatchEventKinds.ENTRY_MODIFY, StandardWatchEventKinds.ENTRY_CREATE);
             while (true) {
                 //TODO: catch if a ENTRY_MODIFY and ENTRY_CREATE are fired together
@@ -163,5 +158,10 @@ class Editing
             }
         }
         doc.save();
+    }
+
+    interface EditingCallback
+    {
+        void run(String newValue);
     }
 }

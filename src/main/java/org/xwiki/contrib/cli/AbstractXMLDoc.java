@@ -34,7 +34,6 @@ import static java.lang.System.err;
 
 abstract class AbstractXMLDoc
 {
-
     private static final String NODE_NAME_CLASS_NAME = "className";
 
     private static final String NODE_NAME_NUMBER = "number";
@@ -69,7 +68,7 @@ abstract class AbstractXMLDoc
 
     protected Document dom;
 
-    boolean fromRest;
+    private boolean fromRest;
 
     AbstractXMLDoc(Command cmd)
     {

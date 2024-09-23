@@ -31,11 +31,13 @@ class Command
 
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
 
-    public static final String EDIT_PREFIX_CONTENT = "content-";
+    private static final String EDIT_PREFIX_CONTENT = "content-";
+    private static final String OBJECT_PROPERTY_NAME_CODE = "code";
 
-    public static final String EDIT_SUFFIX_XWIKI = ".xwiki";
+    private static final String EDIT_SUFFIX_XWIKI = ".xwiki";
+    private static final String XWIKI_FILE_EXTENSION = ".xwiki";
 
-    public static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
+    private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
 
     enum Action
     {
@@ -240,7 +242,7 @@ class Command
                             --debug                  Enable debug mode (for now, more verbose logs)
                             --print-xml              Print received XML code (for debugging)
                             -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
-                            --editor EDITOR          Use this editor (necessary if environnement variable EDITOR is not set)
+                            --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
                             -p PAGE                  Specify the page (dotted notation)
                             -u, --url URL            Specify the page's URL
                             -w WIKI                  Specify the wiki
@@ -362,18 +364,18 @@ class Command
     private static String protectValue(String value)
     {
         if (value.indexOf('\n') == -1) {
-            return value + "\n";
+            return value + '\n';
         }
 
         var line = "----";
 
         while (value.contains(line)) {
-            line += "-";
+            line += '-';
         }
 
-        var lineWithNL = "\n" + line + "\n";
+        var lineWithNL = '\n' + line + '\n';
 
-        return lineWithNL + value + lineWithNL + "\n";
+        return lineWithNL + value + lineWithNL + '\n';
     }
 
     private static boolean severalLines(String value)
@@ -399,14 +401,14 @@ class Command
     private static String getFileExtension(String objectClass, String property)
     {
         // TODO add support for XWiki.ScriptComponentClass as same as in org/xwiki/contrib/cli/XWikiFS.java:361
-        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
+        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
             return ".less";
-        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
+        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
             return ".js";
         } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
             return ".vm";
         } else {
-            return ".xwiki";
+            return XWIKI_FILE_EXTENSION;
         }
     }
 }
