@@ -22,6 +22,7 @@ package org.xwiki.contrib.cli;
 
 /**
  * Exception related to document manipulations.
+ *
  * @version $Id$
  */
 public class DocException extends Exception

@@ -22,24 +22,28 @@ package org.xwiki.contrib.cli;
 
 /**
  * A writable document. Write only if InputDoc is not also implemented.
+ *
  * @version $Id$
-*/
+ */
 interface OutputDoc
 {
     /**
      * Set the content of the document.
+     *
      * @param str the new content
      */
     void setContent(String str) throws DocException;
 
     /**
      * Set the title of the document.
+     *
      * @param str the new title
      */
     void setTitle(String str) throws DocException;
 
     /**
      * Set the value of the property in the first object specified by the given parameters.
+     *
      * @param objectClass the class of the object to update, or empty if no class is specified.
      * @param objectNumber the number of the object to update, or empty if not specified.
      * @param property the property to set.

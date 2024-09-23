@@ -27,8 +27,8 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -42,6 +42,7 @@ import org.xml.sax.SAXException;
 
 /**
  * Utils.
+ *
  * @version $Id$
  */
 public final class Utils
@@ -53,10 +54,9 @@ public final class Utils
         // Intentionally left blank.
     }
 
-
     /**
-     * @return the part of a rest url to reach the given page. Example: Main.WebHome -> /spaces/Main/pages/WebHome
      * @param page the page, in dotted notation.
+     * @return the part of a rest url to reach the given page. Example: Main.WebHome -> /spaces/Main/pages/WebHome
      */
     public static String pageToRestURLPart(String page)
     {
@@ -92,10 +92,11 @@ public final class Utils
     }
 
     /**
-     * @return the part of a XAR dir path to reach the given page. Example: Main.WebHome -> Main/WebHome
      * @param page the page, in dotted notation.
+     * @return the part of a XAR dir path to reach the given page. Example: Main.WebHome -> Main/WebHome
      */
-    public static String pageToXARPath(String page) {
+    public static String pageToXARPath(String page)
+    {
         final var urlPart = new StringBuilder();
         final var len = page.length();
         var i = 0;
@@ -134,7 +135,6 @@ public final class Utils
         return param != null && !param.isEmpty();
     }
 
-
     private static HttpRequest.Builder setHeadersFromCommand(Command cmd, HttpRequest.Builder builder)
     {
         for (var header : cmd.headers.entrySet()) {
@@ -151,8 +151,9 @@ public final class Utils
 
     /**
      * Perform a PUT request.
-     * @param cmd the Command produced by parsing arguments from the cli.
-     *            It contains authentication and custom headers to use.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
      * @param url the URL to use.
      * @param content the content to set.
      * @param mimetype the mimetype of the content to set. null to use the default "text/plain; charset=utf8".
@@ -169,8 +170,9 @@ public final class Utils
 
     /**
      * Perform a PUT request.
-     * @param cmd the Command produced by parsing arguments from the cli.
-     *            It contains authentication and custom headers to use.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
      * @param url the URL to use.
      * @param content the content to set.
      * @param mimetype the mimetype of the content to set. null to use the default "text/plain; charset=utf8".
@@ -184,10 +186,12 @@ public final class Utils
             .header("Content-Type", mimetype == null ? "text/plain; charset=utf8" : mimetype)
             .PUT(BodyPublishers.ofByteArray(content)), HttpResponse.BodyHandlers.ofString());
     }
+
     /**
      * Perform a GET request.
-     * @param cmd the Command produced by parsing arguments from the cli.
-     *            It contains authentication and custom headers to use.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
      * @param url the URL to use.
      * @return the HTTP reponse.
      */
@@ -200,8 +204,9 @@ public final class Utils
 
     /**
      * Perform a GET request.
-     * @param cmd the Command produced by parsing arguments from the cli.
-     *            It contains authentication and custom headers to use.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
      * @param url the URL to use.
      * @return the HTTP reponse.
      */
@@ -298,9 +303,8 @@ public final class Utils
     }
 
     /**
-     * @return the base, with an HTTP scheme if it's missing.
-     *         Uses https://, except of IPv4 or localhost addresses.
      * @param base the base to use.
+     * @return the base, with an HTTP scheme if it's missing. Uses https://, except of IPv4 or localhost addresses.
      */
     public static String ensureScheme(String base)
     {
@@ -310,7 +314,8 @@ public final class Utils
 
         if (base.equals("localhost") || base.startsWith("localhost:")
             || base.matches("[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+")
-        ) {
+        )
+        {
             return "http://" + base;
         }
 
@@ -318,8 +323,8 @@ public final class Utils
     }
 
     /**
-     * @return the REST document URL specified by the given user-provided command.
      * @param cmd the Command to use.
+     * @return the REST document URL specified by the given user-provided command.
      */
     public static String getDocRestURLFromCommand(Command cmd, boolean withObjects) throws DocException
     {
@@ -334,15 +339,16 @@ public final class Utils
 
         return cmd.base
             + "/xwiki/rest/wikis/" + wiki
-            +  Utils.pageToRestURLPart(cmd.page)
+            + Utils.pageToRestURLPart(cmd.page)
             + (withObjects ? "?objects=true&attachments=true" : "");
     }
 
     /**
-     * @return the given value is null or empty.
      * @param v the value to test.
+     * @return the given value is null or empty.
      */
-    public static boolean isEmpty(String v) {
+    public static boolean isEmpty(String v)
+    {
         return v == null || v.isEmpty();
     }
 

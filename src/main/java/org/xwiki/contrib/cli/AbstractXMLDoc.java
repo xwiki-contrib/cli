@@ -48,7 +48,7 @@ abstract class AbstractXMLDoc
     protected String xml;
     protected Document dom;
 
-    boolean fromRest = false;
+    boolean fromRest;
 
     private final Command cmd;
 
@@ -300,7 +300,7 @@ abstract class AbstractXMLDoc
 
     public static String getObjectSpec(Element object)
     {
-        var classNameElement = getElement(object, "className");
+        var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
         if (classNameElement == null) {
             return null;
         }
@@ -309,7 +309,7 @@ abstract class AbstractXMLDoc
         if (Utils.isEmpty(className)) {
             return null;
         }
-        var numberElement = getElement(object, "number");
+        var numberElement = getElement(object, NODE_NAME_NUMBER);
         if (numberElement == null) {
             return null;
         }

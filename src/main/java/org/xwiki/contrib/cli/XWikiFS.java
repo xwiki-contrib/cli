@@ -28,6 +28,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
@@ -105,7 +106,7 @@ class XWikiFS extends FuseStubFS
                 Document doc = Utils.parseXML(a);
                 Element root = doc.getRootElement();
                 Node attachment = root.selectSingleNode(String.format("/xwiki:attachments/xwiki:attachment[./xwiki:name"
-                        + "/text() = %s]", Utils.escapeXPathString(filename)));
+                    + "/text() = %s]", Utils.escapeXPathString(filename)));
                 if (attachment != null) {
                     Node sizeNode = attachment.selectSingleNode("xwiki:longSize | xwiki:size");
                     long size = Long.parseLong(sizeNode.getText());
@@ -120,7 +121,8 @@ class XWikiFS extends FuseStubFS
         } else if (path.matches("/wikis/[^/]+/classes/[^/]+$")
             || path.matches("^.+/properties/[^/]+\\.[^/]+$")
             || path.matches("^.+/class/properties/[^/]+/[^/]+\\.[^/]+$")
-            || path.matches("^.+/pages/[^/]+/content\\.[^/]+$")) {
+            || path.matches("^.+/pages/[^/]+/content\\.[^/]+$"))
+        {
             stat.st_mode.set(FileStat.S_IFLNK | 0644);
             stat.st_size.set(0);
         } else {
@@ -248,7 +250,7 @@ class XWikiFS extends FuseStubFS
                 String id = node.selectSingleNode("xwiki:id").getText();
                 String name = node.selectSingleNode("xwiki:name").getText();
                 if (expectedSpace.isEmpty()) {
-                    if (Objects.equals(id,  wiki + ":" + name)) {
+                    if (Objects.equals(id, wiki + ":" + name)) {
                         spaces.add(name);
                     }
                 } else if (id.equals(wiki + ":" + expectedSpace + "." + name)) {
@@ -260,7 +262,7 @@ class XWikiFS extends FuseStubFS
 
         // Match contents of the root of the wiki directory of every wiki
         if (WIKI_DIRECTORY_CONTENTS_PATTERN.matcher(path).matches()) {
-            return new String[]{"spaces", "classes"/*, "wiki.xml"*/};
+            return new String[] { "spaces", "classes"/*, "wiki.xml"*/ };
         }
 
         // Match pattern: /^/wikis/(?:[^/]+)/classes$/
@@ -274,7 +276,7 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SPACE_CONTENT_PATTERN.matcher(path).matches()) {
-            return new String[]{"spaces", "pages"/*, "space.xml"*/};
+            return new String[] { "spaces", "pages"/*, "space.xml"*/ };
         }
 
         if (PAGES_DIRECTORY_PATTERN.matcher(path).matches()) {
@@ -290,7 +292,8 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SINGLE_PAGE_DIRECTORY_PATTERN.matcher(path).matches()) {
-            return new String[]{"attachments", "class", "objects", /*"page.xml", */"content", "content.xwiki", "title"};
+            return new String[] { "attachments", "class", "objects", /*"page.xml", */"content", "content.xwiki",
+                "title" };
         }
 
         if (ATTACHMENTS_DIRECTORY_PATTERN.matcher(path).matches()) {
@@ -306,7 +309,7 @@ class XWikiFS extends FuseStubFS
         }
 
         if (SINGLE_CLASS_DIRECTORY_PATTERN.matcher(path).matches()) {
-            return new String[]{/*"class.xml", */"properties"};
+            return new String[] {/*"class.xml", */"properties" };
         }
 
         if (OBJECTS_DIRECTORY_PATTERN.matcher(path).matches()) {
@@ -330,15 +333,15 @@ class XWikiFS extends FuseStubFS
             String objectsRestURL = command.url + "/rest" + escapeURLWithSlashes(objectInstancesMatcher.group(1));
             Element root = getRootOfRestDocument(objectsRestURL);
             return root.selectNodes(
-                String.format("/xwiki:objects/xwiki:objectSummary[xwiki:className/text() = %s]/xwiki:number",
-                    Utils.escapeXPathString(objectInstancesMatcher.group(2))))
+                    String.format("/xwiki:objects/xwiki:objectSummary[xwiki:className/text() = %s]/xwiki:number",
+                        Utils.escapeXPathString(objectInstancesMatcher.group(2))))
                 .stream()
                 .map(Node::getText)
                 .toArray(String[]::new);
         }
 
         if (OBJECT_CONTENT_PATTERN.matcher(path).matches()) {
-            return new String[]{"properties"/*, "object.xml"*/};
+            return new String[] { "properties"/*, "object.xml"*/ };
         }
 
         Matcher propertiesDirectoryMatcher = PROPERTIES_DIRECTORY_PATTERN.matcher(path);
@@ -368,7 +371,7 @@ class XWikiFS extends FuseStubFS
                 } else if (name.equals("content") && className.equals("XWiki.XWikiSkinFileOverrideClass")) {
                     Node templatePath = root.selectSingleNode("/xwiki:object/xwiki:property[@name = "
                         + "'path']/xwiki:value");
-                    if (templatePath != null){
+                    if (templatePath != null) {
                         properties.add(name + ".vm");
                     }
                 }
@@ -432,7 +435,6 @@ class XWikiFS extends FuseStubFS
             default -> scriptLanguage;
         };
     }
-
 
     private static String escapeURLWithSlashes(String path)
     {
@@ -603,7 +605,7 @@ class XWikiFS extends FuseStubFS
                 if (remainingPath.equals("/content") || remainingPath.equals("/title")) {
                     String stringValue = new String(value, StandardCharsets.UTF_8);
 
-                    if (remainingPath.equals("/title")){
+                    if (remainingPath.equals("/title")) {
                         document.setTitle(stringValue.stripTrailing());
                     } else {
                         document.setContent(stringValue);
@@ -644,5 +646,4 @@ class XWikiFS extends FuseStubFS
 
         return 0;
     }
-
 }

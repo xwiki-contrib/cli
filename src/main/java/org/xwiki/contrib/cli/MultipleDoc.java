@@ -27,12 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
-import static java.lang.System.out;
 import static java.lang.System.err;
+import static java.lang.System.out;
 
 class MultipleDoc implements InputDoc, OutputDoc
 {
     private final List<InputDoc> inputDocs;
+
     private final List<OutputDoc> outputDocs;
 
     MultipleDoc(Command cmd) throws DocException, IOException
@@ -50,24 +51,24 @@ class MultipleDoc implements InputDoc, OutputDoc
             outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile));
         }
 
-        if (Utils.present(cmd.xmlReadDir)){
+        if (Utils.present(cmd.xmlReadDir)) {
             inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlReadDir));
         }
 
-        if (Utils.present(cmd.xmlWriteDir)){
+        if (Utils.present(cmd.xmlWriteDir)) {
             outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlWriteDir));
         }
 
-        if (Utils.present(cmd.xmlDir)){
+        if (Utils.present(cmd.xmlDir)) {
             inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
             outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlDir));
         }
 
         if (Utils.present(cmd.base)) {
-            if (!cmd.wikiWriteonly){
+            if (!cmd.wikiWriteonly) {
                 inputDocs.add(new InputXMLRestPage(cmd));
             }
-            if (!cmd.wikiReadonly){
+            if (!cmd.wikiReadonly) {
                 outputDocs.add(new OutputXMLRestPage(cmd));
             }
         }
@@ -77,7 +78,7 @@ class MultipleDoc implements InputDoc, OutputDoc
     {
         out.println(
             "Input documents have various " + what
-            + ". Please select one of these choices, or 'c' to cancel."
+                + ". Please select one of these choices, or 'c' to cancel."
         );
 
         var i = 1;

@@ -23,8 +23,11 @@ package org.xwiki.contrib.cli;
 class Attachment
 {
     public final String name;
+
     public final long size;
+
     public final byte[] content;
+
     Attachment(String name, long size, byte[] content)
     {
         this.name = name;

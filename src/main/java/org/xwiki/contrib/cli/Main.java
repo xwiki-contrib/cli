@@ -23,8 +23,8 @@ package org.xwiki.contrib.cli;
 import java.util.HashMap;
 import java.util.regex.Pattern;
 
-import static java.lang.System.out;
 import static java.lang.System.err;
+import static java.lang.System.out;
 
 final class Main
 {
@@ -110,11 +110,11 @@ final class Main
                     cmd.inputFile = getNextParameter(args, i);
                     i++;
                 }
-                case "--read-from-xml-dir" ->  {
+                case "--read-from-xml-dir" -> {
                     cmd.xmlReadDir = getNextParameter(args, i);
                     i++;
                 }
-                case "--write-to-xml-dir" ->  {
+                case "--write-to-xml-dir" -> {
                     cmd.xmlWriteDir = getNextParameter(args, i);
                     i++;
                 }

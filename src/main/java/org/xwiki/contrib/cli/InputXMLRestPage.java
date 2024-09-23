@@ -37,9 +37,9 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         } else {
             throw new MessageForUserDocException(
                 "Unexpected status "
-                + status
-                + ". "
-                + (cmd.debug
+                    + status
+                    + ". "
+                    + (cmd.debug
                     ? "Body: " + response.body()
                     : " Use --debug to print the body of the HTTP request")
             );

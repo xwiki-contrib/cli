@@ -22,15 +22,16 @@ package org.xwiki.contrib.cli;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.Charset;
 
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
 
 /**
  * This class represents a "XAR" XML file.
+ *
  * @version $Id$
  */
 public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
@@ -63,7 +64,7 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         outFormat.setExpandEmptyElements(false);
         outFormat.setOmitEncoding(true);
         outFormat.setSuppressDeclaration(true);
-        try  {
+        try {
             var out = new FileOutputStream(outputFile);
             out.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n\n".getBytes(Charset.forName("UTF-8")));
             XMLWriter writer = new XMLWriter(out, outFormat);

@@ -22,6 +22,7 @@ package org.xwiki.contrib.cli;
 
 /**
  * An exception thrown that contains a message for the user.
+ *
  * @version $Id$
  */
 class MessageForUserDocException extends DocException

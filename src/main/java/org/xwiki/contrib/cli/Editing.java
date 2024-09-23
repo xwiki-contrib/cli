@@ -33,7 +33,7 @@ class Editing
 {
     interface EditingCallback
     {
-      void run(String newValue);
+        void run(String newValue);
     }
 
     public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
@@ -79,17 +79,18 @@ class Editing
         Editing.editValue(cmd, oldValue, dirFile, tmpFile, callback);
     }
 
-    public static String getEditor(Command cmd) {
+    public static String getEditor(Command cmd)
+    {
         var editor = "";
-            if (!Utils.isEmpty(cmd.editor)) {
-                editor = cmd.editor;
-            } else {
-                try {
-                    editor = System.getenv("EDITOR");
-                } catch (Exception e) {
-                    //Variable either doesn't exist or a security manager has denied access to it
-                }
+        if (!Utils.isEmpty(cmd.editor)) {
+            editor = cmd.editor;
+        } else {
+            try {
+                editor = System.getenv("EDITOR");
+            } catch (Exception e) {
+                //Variable either doesn't exist or a security manager has denied access to it
             }
+        }
         return editor;
     }
 
