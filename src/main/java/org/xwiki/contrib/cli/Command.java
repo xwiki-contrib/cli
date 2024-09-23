@@ -413,6 +413,8 @@ class Command
             return ".js";
         } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
             return ".vm";
+        } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
+            return ".groovy";
         } else {
             return XWIKI_FILE_EXTENSION;
         }
