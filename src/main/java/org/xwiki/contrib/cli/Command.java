@@ -243,6 +243,7 @@ class Command
                             --print-xml              Print received XML code (for debugging)
                             -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
                             --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
+                            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
                             -p PAGE                  Specify the page (dotted notation)
                             -u, --url URL            Specify the page's URL
                             -w WIKI                  Specify the wiki
@@ -324,6 +325,8 @@ class Command
     public boolean printXML;
 
     public boolean debug;
+
+    public boolean pom;
 
     public boolean acceptNewDocument;
 

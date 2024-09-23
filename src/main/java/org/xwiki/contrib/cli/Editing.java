@@ -24,6 +24,7 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,6 +70,18 @@ class Editing
         throws IOException, InterruptedException
     {
         var dir = Files.createTempDirectory("xwiki-cli");
+        if (cmd.pom) {
+            Path pomFilePath = null;
+            try {
+                // Get the path of the executing JAR, to get the path to the pom file
+                pomFilePath =
+                    Path.of(Editing.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParent().getParent().resolve("resources/pom.xml");
+            } catch (URISyntaxException e) {
+                throw new RuntimeException(e);
+            }
+            Files.copy(pomFilePath,dir.resolve("pom.xml"));
+            dir = Files.createDirectories(dir.resolve("src/main/groovy"));
+        }
         var dirFile = dir.toFile();
         var tmpFile = File.createTempFile(prefix, suffix, dirFile);
         Editing.editValue(cmd, oldValue, dirFile, tmpFile, callback);
