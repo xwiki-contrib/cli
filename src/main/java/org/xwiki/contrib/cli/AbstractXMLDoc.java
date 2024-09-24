@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli;
 
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -222,7 +223,6 @@ abstract class AbstractXMLDoc
                     ? String.format(NODE_PROPERTY_NAME, property)
                     : String.format(NODE_PROPERTY, property)
             );
-
             if (propertyElement == null) {
                 continue;
             }
@@ -294,11 +294,20 @@ abstract class AbstractXMLDoc
         var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
         var res = new ArrayList<Attachment>(attachments.size());
         for (var attachment : attachments) {
-            res.add(new Attachment(
-                getElement((Element) attachment, NODE_NAME).getText(),
-                Long.parseLong(getElement((Element) attachment, "size").getText()),
-                null
-            ));
+            if (fromRest) {
+                // TODO test if it works well
+                res.add(new Attachment(
+                    getElement((Element) attachment, NODE_NAME).getText(),
+                    Long.parseLong(getElement((Element) attachment, "size").getText()),
+                    null
+                ));
+            } else {
+                res.add(new Attachment(
+                    getElement((Element) attachment, "filename").getText(),
+                    Long.parseLong(getElement((Element) attachment, "filesize").getText()),
+                    Base64.getDecoder().decode(getElement((Element) attachment, "content").getText())
+                ));
+            }
         }
 
         return res;
@@ -324,6 +333,11 @@ abstract class AbstractXMLDoc
         }
 
         propertyElement.setText(value);
+    }
+
+    public String getReference() throws DocException
+    {
+        return getDom().valueOf("//xwikidoc/@reference");
     }
 
     protected void setXML(String str, boolean fromRest)

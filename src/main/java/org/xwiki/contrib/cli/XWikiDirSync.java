@@ -72,17 +72,17 @@ public class XWikiDirSync
     private void syncFileFromMvnRepos(Path srcFile) throws DocException, IOException
     {
         var xmlFile = new XMLFileDoc(command, srcFile.toString());
-        var dstFile = pageReferenceToDirPath(xmlFile.getDom().valueOf("//xwikidoc/@reference"));
+        var dstFile = pageReferenceToDirPath(xmlFile.getReference());
         var content = xmlFile.getContent();
         var contentFilePath = Path.of(dstFile, "content");
         Files.createDirectories(contentFilePath.getParent());
-        Files.write(contentFilePath, content.getBytes());
+        Files.write(contentFilePath, content.getBytes(StandardCharsets.UTF_8));
         managedFiles.add(contentFilePath);
 
         var title = xmlFile.getTitle();
         var titleFilePath = Path.of(dstFile, "title");
         Files.createDirectories(titleFilePath.getParent());
-        Files.write(titleFilePath, title.getBytes());
+        Files.write(titleFilePath, title.getBytes(StandardCharsets.UTF_8));
         managedFiles.add(titleFilePath);
 
         for (var attachment : xmlFile.getAttachments()) {
@@ -101,7 +101,7 @@ public class XWikiDirSync
                 var propertyValueFileName = Path.of(dstFile, "objects", objClass, objNumber, "properties",
                     property.getKey());
                 Files.createDirectories(propertyValueFileName.getParent());
-                Files.write(propertyValueFileName,  property.getValue().getBytes());
+                Files.write(propertyValueFileName,  property.getValue().getBytes(StandardCharsets.UTF_8));
                 managedFiles.add(propertyValueFileName);
             }
         }
@@ -113,6 +113,8 @@ public class XWikiDirSync
         urlPart.append(command.syncPath);
         final var len = reference.length();
         var i = 0;
+
+        // TODO Write unit test to validate this method
 
         // TODO improve check to manage case of reference like this A.B\.xx which will return space
         //  instead of pages
@@ -154,16 +156,11 @@ public class XWikiDirSync
     {
         System.out.println("Sync file at path: " + file);
         var relativePath = syncPath.relativize(file);
-        System.out.println("rel path" + relativePath);
-
-        System.out.println("kind" + kind);
 
         // TODO improve it !!
         // We should not in all case rewrite the value
         write(file);
     }
-
-    ///// Copied from XWikiFS
 
     private void write(Path path) throws IOException
     {
@@ -243,8 +240,6 @@ public class XWikiDirSync
 
         return 0;
     }
-
-    //////////////////
 
     private void watchDir(HashMap<WatchKey, Path> keyMaps, Path path, WatchService watcher) throws IOException
     {
