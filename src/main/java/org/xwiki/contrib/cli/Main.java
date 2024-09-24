@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static java.lang.System.err;
@@ -45,24 +46,52 @@ final class Main
 
     private static Command parseArgs(String[] args) throws CommandException
     {
+        Command.Action action = null;
+        String base = null;
+        String wiki = null;
+        String page = null;
+        String objectClass = null;
+        String objectNumber = null;
+        String property = null;
+        String value = null;
+        String editor = null;
+        boolean wikiReadonly = false;
+        boolean wikiWriteonly = false;
+        String outputFile = null;
+        String inputFile = null;
+        String xmlReadDir = null;
+        String xmlWriteDir = null;
+        Map<String, String> headers = new HashMap<>();
+        String url = null;
+        String user = null;
+        String pass = null;
+        String content = null;
+        String title = null;
+        String mountPath = null;
+        String syncPath = null;
+        String syncDataSource = null;
+        boolean printXML = false;
+        String fileExtension = null;
+        boolean debug = false;
+        boolean pom = false;
+        boolean acceptNewDocument = false;
+
         var i = 0;
-        var cmd = new Command();
-        cmd.headers = new HashMap<>();
         while (i < args.length) {
             switch (args[i]) {
                 case "-b" -> {
-                    cmd.base = Utils.ensureScheme(getNextParameter(args, i));
+                    base = Utils.ensureScheme(getNextParameter(args, i));
                     i++;
                 }
                 case "-p" -> {
-                    cmd.page = getNextParameter(args, i);
+                    page = getNextParameter(args, i);
                     i++;
                 }
                 case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
-                    cmd.objectClass = objectParts[0];
+                    objectClass = objectParts[0];
                     if (objectParts.length == 2) {
-                        cmd.objectNumber = objectParts[1];
+                        objectNumber = objectParts[1];
                     } else if (objectParts.length != 1) {
                         throw new CommandException(
                             "Too many slashes in value "
@@ -73,122 +102,129 @@ final class Main
                     i++;
                 }
                 case "-w" -> {
-                    cmd.wiki = getNextParameter(args, i);
+                    wiki = getNextParameter(args, i);
                     i++;
                 }
                 case "-v" -> {
-                    cmd.value = getNextParameter(args, i);
+                    value = getNextParameter(args, i);
                     i++;
                 }
                 case "--editor" -> {
-                    cmd.editor = getNextParameter(args, i);
+                    editor = getNextParameter(args, i);
                     i++;
                 }
-                case "--pom" -> cmd.pom = true;
+                case "--pom" -> pom = true;
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
-                    cmd.headers.put(header[0], header[1]);
+                    headers.put(header[0], header[1]);
                 }
                 case "--user" -> {
-                    cmd.user = getNextParameter(args, i);
+                    user = getNextParameter(args, i);
                     i++;
                 }
                 case "--pass" -> {
-                    cmd.pass = getNextParameter(args, i);
+                    pass = getNextParameter(args, i);
                     i++;
                 }
                 case "--wiki-readonly" -> {
-                    cmd.wikiReadonly = true;
+                    wikiReadonly = true;
                 }
                 case "--wiki-writeonly" -> {
-                    cmd.wikiWriteonly = true;
+                    wikiWriteonly = true;
                 }
                 case "--write-to-xml" -> {
-                    cmd.outputFile = getNextParameter(args, i);
+                    outputFile = getNextParameter(args, i);
                     i++;
                 }
                 case "--read-from-xml" -> {
-                    cmd.inputFile = getNextParameter(args, i);
+                    inputFile = getNextParameter(args, i);
                     i++;
                 }
                 case "--write-to-mvn-repository" -> {
-                    cmd.xmlWriteDir = getNextParameter(args, i);
+                    xmlWriteDir = getNextParameter(args, i);
                     i++;
                 }
                 case "--xml-file" -> {
-                    cmd.inputFile = getNextParameter(args, i);
-                    cmd.outputFile = cmd.inputFile;
+                    inputFile = getNextParameter(args, i);
+                    outputFile = inputFile;
                     i++;
                 }
                 case "--sync-data-source" -> {
-                    cmd.syncDataSource = getNextParameter(args, i);
+                    syncDataSource = getNextParameter(args, i);
                     i++;
                 }
                 case "-u", "--url" -> {
-                    cmd.url = getNextParameter(args, i);
+                    url = getNextParameter(args, i);
                     i++;
                 }
-                case "--edit-page" -> cmd.action = Command.Action.EDIT_PAGE;
-                case "--edit-content" -> cmd.action = Command.Action.EDIT_CONTENT;
-                case "--list-properties" -> cmd.action = Command.Action.LIST_PROPERTIES;
-                case "--list-objects" -> cmd.action = Command.Action.LIST_OBJECTS;
-                case "--list-attachments" -> cmd.action = Command.Action.LIST_ATTACHMENTS;
-                case "--get-content" -> cmd.action = Command.Action.GET_CONTENT;
-                case "--get-title" -> cmd.action = Command.Action.GET_TITLE;
+                case "--edit-page" -> action = Command.Action.EDIT_PAGE;
+                case "--edit-content" -> action = Command.Action.EDIT_CONTENT;
+                case "--list-properties" -> action = Command.Action.LIST_PROPERTIES;
+                case "--list-objects" -> action = Command.Action.LIST_OBJECTS;
+                case "--list-attachments" -> action = Command.Action.LIST_ATTACHMENTS;
+                case "--get-content" -> action = Command.Action.GET_CONTENT;
+                case "--get-title" -> action = Command.Action.GET_TITLE;
                 case "--set-content" -> {
-                    cmd.content = getNextParameter(args, i);
+                    content = getNextParameter(args, i);
                     i++;
-                    cmd.action = Command.Action.SET_CONTENT;
+                    action = Command.Action.SET_CONTENT;
                 }
                 case "--set-title" -> {
-                    cmd.title = getNextParameter(args, i);
+                    title = getNextParameter(args, i);
                     i++;
-                    cmd.action = Command.Action.SET_TITLE;
+                    action = Command.Action.SET_TITLE;
                 }
                 case "--get-property" -> {
-                    cmd.property = getNextParameter(args, i);
+                    property = getNextParameter(args, i);
                     i++;
-                    cmd.action = Command.Action.GET_PROPERTY_VALUE;
+                    action = Command.Action.GET_PROPERTY_VALUE;
                 }
                 case "--set-property" -> {
-                    cmd.property = getNextParameter(args, i);
+                    property = getNextParameter(args, i);
                     i++;
-                    cmd.action = Command.Action.SET_PROPERTY_VALUE;
+                    action = Command.Action.SET_PROPERTY_VALUE;
                 }
                 case "--edit-property" -> {
-                    cmd.property = getNextParameter(args, i);
+                    property = getNextParameter(args, i);
                     i++;
-                    cmd.action = Command.Action.EDIT_PROPERTY;
+                    action = Command.Action.EDIT_PROPERTY;
                 }
                 case "--mount" -> {
-                    cmd.mountPath = getNextParameter(args, i);
+                    mountPath = getNextParameter(args, i);
                     ++i;
-                    cmd.action = Command.Action.MOUNT;
+                    action = Command.Action.MOUNT;
                 }
                 case "--sync" -> {
-                    cmd.syncPath = getNextParameter(args, i);
+                    syncPath = getNextParameter(args, i);
                     ++i;
-                    cmd.action = Command.Action.SYNC;
+                    action = Command.Action.SYNC;
                 }
-                case "--ext" -> cmd.fileExtension = getNextParameter(args, i++);
-                case "--debug" -> cmd.debug = true;
-                case "--print-xml" -> cmd.printXML = true;
-                case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;
-                case "-n", "--new" -> cmd.acceptNewDocument = true;
+                case "--ext" -> fileExtension = getNextParameter(args, i++);
+                case "--debug" -> debug = true;
+                case "--print-xml" -> printXML = true;
+                case "--help", "-help", "-h", "help" -> action = Command.Action.HELP;
+                case "-n", "--new" -> acceptNewDocument = true;
 
                 default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
             }
             i++;
         }
+        if (action == Command.Action.SYNC) {
+            xmlWriteDir = syncDataSource;
+        }
 
         if (args.length == 0) {
-            cmd.action = Command.Action.HELP;
+            action = Command.Action.HELP;
         }
 
-        if (cmd.action == null) {
+        var cmd =
+            new Command(action, base, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
+                wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
+                mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
+
+        if (cmd.getAction() == null) {
             throw new CommandException("Please specify an action. Try --help for help.");
         }
-
         return cmd;
     }
 
@@ -202,13 +238,13 @@ final class Main
             return;
         }
 
-        if (cmd.debug) {
+        if (cmd.isDebug()) {
             cmd.print();
             out.println();
         }
 
         try {
-            cmd.action.run(cmd);
+            cmd.getAction().run(cmd);
         } catch (CancelledOperationDocException e) {
             out.println("Operation cancelled by the user.");
         } catch (MessageForUserDocException e) {

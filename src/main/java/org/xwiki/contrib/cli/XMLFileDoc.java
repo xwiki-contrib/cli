@@ -25,7 +25,10 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Base64;
 
+import org.dom4j.Element;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
 
@@ -73,6 +76,29 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         } catch (IOException e) {
             throw new DocException(e);
         }
+    }
+
+    @Override
+    public void setAttachment(String attachmentName, byte[] content)
+    {
+        // TODO
+    }
+
+    @Override
+    public byte[] getAttachment(String attachmentName) throws DocException
+    {
+        var domdoc = getDom();
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+        var root = domdoc.getRootElement();
+        var attachments = root.selectNodes(NODE_NAME_ATTACHMENT);
+        for (var attachment : attachments) {
+            if (attachmentName.equals(getElement((Element) attachment, "filename").getText())) {
+                return Base64.getDecoder().decode(getElement((Element) attachment, "content").getText());
+            }
+        }
+        return null;
     }
 
     @Override

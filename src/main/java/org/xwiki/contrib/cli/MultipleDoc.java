@@ -36,35 +36,35 @@ class MultipleDoc implements InputDoc, OutputDoc
 
     private final List<OutputDoc> outputDocs;
 
-    MultipleDoc(Command cmd) throws DocException, IOException
+    MultipleDoc(Command cmd, String wiki, String page) throws DocException, IOException
     {
         inputDocs = new ArrayList<>();
         outputDocs = new ArrayList<>();
 
         inputDocs.add(new CommandDoc(cmd));
 
-        if (Utils.present(cmd.inputFile)) {
-            inputDocs.add(new XMLFileDoc(cmd, cmd.inputFile));
+        if (Utils.present(cmd.getInputFile())) {
+            inputDocs.add(new XMLFileDoc(cmd, cmd.getInputFile()));
         }
 
-        if (Utils.present(cmd.outputFile)) {
-            outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile));
+        if (Utils.present(cmd.getOutputFile())) {
+            outputDocs.add(new XMLFileDoc(cmd, cmd.getOutputFile()));
         }
 
-        if (Utils.present(cmd.xmlReadDir)) {
-            inputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlReadDir));
+        if (Utils.present(cmd.getXmlReadDir())) {
+            inputDocs.add(new XMLDirFileDoc(cmd, cmd.getXmlReadDir()));
         }
 
-        if (Utils.present(cmd.xmlWriteDir)) {
-            outputDocs.add(new XMLDirFileDoc(cmd, cmd.xmlWriteDir));
+        if (Utils.present(cmd.getXmlWriteDir())) {
+            outputDocs.add(new XMLDirFileDoc(cmd, cmd.getXmlWriteDir()));
         }
 
-        if (Utils.present(cmd.base)) {
-            if (!cmd.wikiWriteonly) {
-                inputDocs.add(new InputXMLRestPage(cmd));
+        if (Utils.present(cmd.getBase())) {
+            if (!cmd.isWikiWriteonly()) {
+                inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
             }
-            if (!cmd.wikiReadonly) {
-                outputDocs.add(new OutputXMLRestPage(cmd));
+            if (!cmd.isWikiReadonly()) {
+                outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
             }
         }
     }
@@ -151,18 +151,33 @@ class MultipleDoc implements InputDoc, OutputDoc
         return objects;
     }
 
-    public Collection<Attachment> getAttachments() throws DocException
+    public Collection<AttachmentInfo> getAttachments() throws DocException
     {
-        Collection<Attachment> attachments = null;
+        Collection<AttachmentInfo> attachmentInfos = null;
         for (var inputDoc : inputDocs) {
             var newAttachments = inputDoc.getAttachments();
-            if (attachments == null) {
-                attachments = newAttachments;
-            } else if (newAttachments != null && !attachments.equals(newAttachments)) {
+            if (attachmentInfos == null) {
+                attachmentInfos = newAttachments;
+            } else if (newAttachments != null && !attachmentInfos.equals(newAttachments)) {
                 return pickInputFile("the attachment list").getAttachments();
             }
         }
-        return attachments;
+        return attachmentInfos;
+    }
+
+    @Override
+    public byte[] getAttachment(String attachmentName) throws DocException
+    {
+        byte[] attachment = null;
+        for (var inputDoc : inputDocs) {
+            var newAttachment = inputDoc.getAttachment(attachmentName);
+            if (attachment == null) {
+                attachment = newAttachment;
+            } else if (newAttachment != null && !attachment.equals(newAttachment)) {
+                return pickInputFile("the attachment list").getAttachment(attachmentName);
+            }
+        }
+        return attachment;
     }
 
     public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
@@ -221,6 +236,14 @@ class MultipleDoc implements InputDoc, OutputDoc
     {
         for (var outputDoc : outputDocs) {
             outputDoc.save();
+        }
+    }
+
+    @Override
+    public void setAttachment(String attachmentName, byte[] content) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.setAttachment(attachmentName, content);
         }
     }
 

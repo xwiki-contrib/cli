@@ -56,6 +56,8 @@ interface OutputDoc
      */
     void save() throws DocException;
 
+    void setAttachment(String attachmentName, byte[] content) throws DocException;
+
     /**
      * @return a friendly string like "the XML file SomeDoc.xml"
      */

@@ -30,6 +30,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.stream.Collectors;
@@ -129,6 +130,38 @@ public final class Utils
         }
         urlPart.append(".xml");
         return urlPart.toString();
+    }
+
+    public static PageReference deserialize(String reference)
+    {
+        var spaces = new ArrayList<String>();
+        var currentSpace = new StringBuilder(reference.length());
+        final var len = reference.length();
+        var i = 0;
+
+        while (i < len) {
+            char c = reference.charAt(i);
+            switch (c) {
+                case '.':
+                    spaces.add(currentSpace.toString());
+                    currentSpace = new StringBuilder(reference.length());
+                    break;
+                case '\\':
+                    if (i + 1 < len) {
+                        i++;
+                    }
+                    c = reference.charAt(i);
+                    currentSpace.append(c);
+                    break;
+
+                default:
+                    currentSpace.append(c);
+            }
+            i++;
+        }
+        var page = spaces.get(spaces.size() - 1);
+        spaces.remove(spaces.size() - 1);
+        return new PageReference(spaces, page);
     }
 
     /**
@@ -304,21 +337,38 @@ public final class Utils
      * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
-    public static String getDocRestURLFromCommand(Command cmd, boolean withObjects) throws DocException
+    public static String getDocRestURLFromCommand(Command cmd, String wiki, String page, boolean withObjects)
+        throws DocException
     {
-        var wiki = cmd.wiki;
         if (wiki == null || wiki.isEmpty()) {
             wiki = XWIKI;
         }
 
-        if (cmd.page == null) {
+        if (page == null) {
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.base
+        return cmd.getBase()
             + "/xwiki/rest/wikis/" + wiki
-            + Utils.pageToRestURLPart(cmd.page)
+            + Utils.pageToRestURLPart(page)
             + (withObjects ? "?objects=true&attachments=true" : "");
+    }
+
+    public static String getAttachmentRestURLFromCommand(Command cmd, String wiki, String page, String attachmentName)
+        throws MessageForUserDocException
+    {
+        if (wiki == null || wiki.isEmpty()) {
+            wiki = XWIKI;
+        }
+
+        if (page == null) {
+            throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
+        }
+
+        return cmd.getBase()
+            + "/xwiki/rest/wikis/" + wiki
+            + Utils.pageToRestURLPart(cmd.getPage())
+            + "/attachments/" + attachmentName;
     }
 
     /**
@@ -353,13 +403,13 @@ public final class Utils
 
     private static HttpRequest.Builder setHeadersFromCommand(Command cmd, HttpRequest.Builder builder)
     {
-        for (var header : cmd.headers.entrySet()) {
+        for (var header : cmd.getHeaders().entrySet()) {
             builder.header(header.getKey(), header.getValue());
         }
 
-        if (present(cmd.user) && present(cmd.pass)) {
+        if (present(cmd.getUser()) && present(cmd.getPass())) {
             builder.header("Authorization",
-                "Basic " + Base64.getEncoder().encodeToString((cmd.user + ":" + cmd.pass).getBytes())
+                "Basic " + Base64.getEncoder().encodeToString((cmd.getUser() + ":" + cmd.getPass()).getBytes())
             );
         }
         return builder;

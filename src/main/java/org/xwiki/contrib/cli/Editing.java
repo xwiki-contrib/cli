@@ -70,16 +70,17 @@ class Editing
         throws IOException, InterruptedException
     {
         var dir = Files.createTempDirectory("xwiki-cli");
-        if (cmd.pom) {
+        if (cmd.isPom()) {
             Path pomFilePath = null;
             try {
                 // Get the path of the executing JAR, to get the path to the pom file
                 pomFilePath =
-                    Path.of(Editing.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParent().getParent().resolve("resources/pom.xml");
+                    Path.of(Editing.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath())
+                        .getParent().getParent().resolve("resources/pom.xml");
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-            Files.copy(pomFilePath,dir.resolve("pom.xml"));
+            Files.copy(pomFilePath, dir.resolve("pom.xml"));
             dir = Files.createDirectories(dir.resolve("src/main/groovy"));
         }
         var dirFile = dir.toFile();
@@ -90,8 +91,8 @@ class Editing
     public static String getEditor(Command cmd)
     {
         var editor = "";
-        if (!Utils.isEmpty(cmd.editor)) {
-            editor = cmd.editor;
+        if (!Utils.isEmpty(cmd.getEditor())) {
+            editor = cmd.getEditor();
         } else {
             try {
                 editor = System.getenv("EDITOR");

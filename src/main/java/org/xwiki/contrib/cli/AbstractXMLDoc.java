@@ -21,7 +21,6 @@
 package org.xwiki.contrib.cli;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -35,39 +34,44 @@ import static java.lang.System.err;
 
 abstract class AbstractXMLDoc
 {
-    private static final String NODE_NAME_CLASS_NAME = "className";
+    protected static final String NODE_NAME_CLASS_NAME = "className";
 
-    private static final String NODE_NAME_NUMBER = "number";
+    protected static final String NODE_NAME_NUMBER = "number";
 
-    private static final String NODE_NAME_CONTENT = "content";
+    protected static final String NODE_NAME_CONTENT = "content";
 
-    private static final String NODE_NAME_TITLE = "title";
+    protected static final String NODE_NAME_TITLE = "title";
 
-    private static final String NODE_NAME_OBJECT = "object";
+    protected static final String NODE_NAME_OBJECT = "object";
 
-    private static final String NODE_XWIKI_SPACE = "xwiki:";
+    protected static final String NODE_XWIKI_SPACE = "xwiki:";
 
-    private static final String NODE_NAME = "name";
+    protected static final String NODE_NAME = "name";
 
-    private static final String NODE_NAME_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
+    protected static final String NODE_NAME_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
 
-    private static final String NODE_NAME_PROPERTY = "property";
+    protected static final String NODE_NAME_PROPERTY = "property";
 
-    private static final String NODE_NAME_ATTACHMENT = "attachment";
+    protected static final String NODE_NAME_ATTACHMENT = "attachment";
 
-    private static final String NODE_NAME_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
+    protected static final String NODE_NAME_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
 
-    private static final String LINE = "\n-----\n";
+    protected static final String LINE = "\n-----\n";
 
-    private static final String NODE_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
+    protected static final String NODE_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
 
-    private static final String NODE_PROPERTY = "property/%s";
+    protected static final String NODE_PROPERTY = "property/%s";
 
-    private final Command cmd;
+    protected final Command cmd;
 
     protected String xml;
 
     protected Document dom;
+
+    protected boolean isFromRest()
+    {
+        return fromRest;
+    }
 
     private boolean fromRest;
 
@@ -282,7 +286,7 @@ abstract class AbstractXMLDoc
         return objs;
     }
 
-    public Collection<Attachment> getAttachments() throws DocException
+    public Collection<AttachmentInfo> getAttachments() throws DocException
     {
         var domdoc = getDom();
 
@@ -292,20 +296,18 @@ abstract class AbstractXMLDoc
 
         var root = domdoc.getRootElement();
         var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
-        var res = new ArrayList<Attachment>(attachments.size());
+        var res = new ArrayList<AttachmentInfo>(attachments.size());
         for (var attachment : attachments) {
             if (fromRest) {
                 // TODO test if it works well
-                res.add(new Attachment(
-                    getElement((Element) attachment, NODE_NAME).getText(),
-                    Long.parseLong(getElement((Element) attachment, "size").getText()),
-                    null
+                res.add(new AttachmentInfo(
+                    getElement((Element) attachment, "name").getText(),
+                    Long.parseLong(getElement((Element) attachment, "size").getText())
                 ));
             } else {
-                res.add(new Attachment(
+                res.add(new AttachmentInfo(
                     getElement((Element) attachment, "filename").getText(),
-                    Long.parseLong(getElement((Element) attachment, "filesize").getText()),
-                    Base64.getDecoder().decode(getElement((Element) attachment, "content").getText())
+                    Long.parseLong(getElement((Element) attachment, "filesize").getText())
                 ));
             }
         }
@@ -363,7 +365,7 @@ abstract class AbstractXMLDoc
             try {
                 this.dom = Utils.parseXML(this.xml);
             } catch (DocException e) {
-                if (cmd.debug) {
+                if (cmd.isDebug()) {
                     err.println(
                         "A parse error occured. Here is the content we attempted to parse."
                             + LINE + xml + LINE
@@ -373,7 +375,7 @@ abstract class AbstractXMLDoc
                 throw e;
             }
 
-            if (cmd.printXML) {
+            if (cmd.isPrintXML()) {
                 err.println(LINE + xml + LINE);
             }
         }
@@ -381,7 +383,7 @@ abstract class AbstractXMLDoc
         return dom;
     }
 
-    private static Element getElement(Element parent, String nodeName)
+    protected static Element getElement(Element parent, String nodeName)
     {
         var element = (Element) parent.selectSingleNode(nodeName);
         if (element == null) {

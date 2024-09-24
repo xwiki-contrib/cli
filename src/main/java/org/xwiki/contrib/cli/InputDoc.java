@@ -62,7 +62,9 @@ interface InputDoc
     /**
      * @return the name of attachments.
      */
-    Collection<Attachment> getAttachments() throws DocException;
+    Collection<AttachmentInfo> getAttachments() throws DocException;
+
+    byte[] getAttachment(String attachmentName) throws DocException;
 
     /**
      * @param objectClass the class of object to consider, or empty if no class is specified.

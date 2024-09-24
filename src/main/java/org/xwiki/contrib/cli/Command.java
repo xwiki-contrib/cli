@@ -46,7 +46,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 Editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newValue -> {
                     try {
                         doc.setContent(newValue);
@@ -63,7 +63,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 var properties = doc.getProperties(null, null, null, true);
                 String res = "title=" + doc.getTitle() + "\n\n";
                 for (var p : properties.entrySet()) {
@@ -85,7 +85,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 var val = doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property);
                 if (val == null) {
                     throw new MessageForUserDocException("This property does not exist");
@@ -101,7 +101,7 @@ class Command
                     ? '.' + cmd.fileExtension
                     : cmd.getFileExtension(objectClass, cmd.property);
 
-                Editing.editValue(cmd           , val, "property-", ext, newValue -> {
+                Editing.editValue(cmd, val, "property-", ext, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
@@ -117,7 +117,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 out.println(value(cmd, doc.getContent()));
             }
         },
@@ -125,7 +125,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 doc.setContent(cmd.content);
                 doc.save();
             }
@@ -134,7 +134,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 out.println(value(cmd, doc.getTitle()));
             }
         },
@@ -142,7 +142,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 doc.setTitle(cmd.title);
                 doc.save();
             }
@@ -151,7 +151,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 out.println(value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property)));
             }
         },
@@ -159,7 +159,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 if (cmd.value == null) {
                     err.println("--set-property: please provide a value to set with -v VALUE");
                 }
@@ -171,7 +171,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
                     out.println(object);
                 }
@@ -181,7 +181,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 for (var prop : doc.getProperties(cmd.objectClass, cmd.objectNumber, cmd.property, false).entrySet()) {
                     var val = prop.getValue();
                     if (val == null) {
@@ -227,7 +227,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd);
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 for (var attachment : doc.getAttachments()) {
                     out.println(attachment.name() + " (size: " + attachment.size() + ")");
                 }
@@ -305,63 +305,245 @@ class Command
         }
     }
 
-    public Action action;
+    private final Action action;
 
-    public String base;
+    private final String base;
 
-    public String wiki;
+    private final String wiki;
 
-    public String page;
+    private final String page;
 
-    public String objectClass;
+    private final String objectClass;
 
-    public String objectNumber;
+    private final String objectNumber;
 
-    public String property;
+    private final String property;
 
-    public String value;
+    private final String value;
 
-    public String editor;
+    private final String editor;
 
-    public boolean wikiReadonly;
+    private final boolean wikiReadonly;
 
-    public boolean wikiWriteonly;
+    private final boolean wikiWriteonly;
 
-    public String outputFile;
+    private final String outputFile;
 
-    public String inputFile;
+    private final String inputFile;
 
-    public String xmlReadDir;
+    private final String xmlReadDir;
 
-    public String xmlWriteDir;
+    private final String xmlWriteDir;
 
-    public Map<String, String> headers;
+    private final Map<String, String> headers;
 
-    public String url;
+    private final String url;
 
-    public String user;
+    private final String user;
 
-    public String pass;
+    private final String pass;
 
-    public String content;
+    private final String content;
 
-    public String title;
+    private final String title;
 
-    public String mountPath;
+    private final String mountPath;
 
-    public String syncPath;
+    private final String syncPath;
 
-    public String syncDataSource;
+    private final String syncDataSource;
 
-    public boolean printXML;
+    private final boolean printXML;
 
-    public boolean debug;
+    private final String fileExtension;
 
-    public boolean pom;
+    private final boolean debug;
 
-    public boolean acceptNewDocument;
+    private final boolean pom;
 
-    public String fileExtension;
+    private final boolean acceptNewDocument;
+
+    public Command(Action action, String base, String wiki, String page, String objectClass, String objectNumber,
+        String property, String value, String editor, boolean wikiReadonly, boolean wikiWriteonly, String outputFile,
+        String inputFile, String xmlReadDir, String xmlWriteDir, Map<String, String> headers, String url, String user,
+        String pass, String content, String title, String mountPath, String syncPath, String syncDataSource,
+        boolean printXML, String fileExtension, boolean debug, boolean pom, boolean acceptNewDocument)
+    {
+        this.action = action;
+        this.base = base;
+        this.wiki = wiki;
+        this.page = page;
+        this.objectClass = objectClass;
+        this.objectNumber = objectNumber;
+        this.property = property;
+        this.value = value;
+        this.editor = editor;
+        this.wikiReadonly = wikiReadonly;
+        this.wikiWriteonly = wikiWriteonly;
+        this.outputFile = outputFile;
+        this.inputFile = inputFile;
+        this.xmlReadDir = xmlReadDir;
+        this.xmlWriteDir = xmlWriteDir;
+        this.headers = headers;
+        this.url = url;
+        this.user = user;
+        this.pass = pass;
+        this.content = content;
+        this.title = title;
+        this.mountPath = mountPath;
+        this.syncPath = syncPath;
+        this.syncDataSource = syncDataSource;
+        this.printXML = printXML;
+        this.fileExtension = fileExtension;
+        this.debug = debug;
+        this.pom = pom;
+        this.acceptNewDocument = acceptNewDocument;
+    }
+
+    public Action getAction()
+    {
+        return action;
+    }
+
+    public String getBase()
+    {
+        return base;
+    }
+
+    public String getWiki()
+    {
+        return wiki;
+    }
+
+    public String getPage()
+    {
+        return page;
+    }
+
+    public String getObjectClass()
+    {
+        return objectClass;
+    }
+
+    public String getObjectNumber()
+    {
+        return objectNumber;
+    }
+
+    public String getProperty()
+    {
+        return property;
+    }
+
+    public String getValue()
+    {
+        return value;
+    }
+
+    public String getEditor()
+    {
+        return editor;
+    }
+
+    public boolean isWikiReadonly()
+    {
+        return wikiReadonly;
+    }
+
+    public boolean isWikiWriteonly()
+    {
+        return wikiWriteonly;
+    }
+
+    public String getOutputFile()
+    {
+        return outputFile;
+    }
+
+    public String getInputFile()
+    {
+        return inputFile;
+    }
+
+    public String getXmlReadDir()
+    {
+        return xmlReadDir;
+    }
+
+    public String getXmlWriteDir()
+    {
+        return xmlWriteDir;
+    }
+
+    public Map<String, String> getHeaders()
+    {
+        return headers;
+    }
+
+    public String getUrl()
+    {
+        return url;
+    }
+
+    public String getUser()
+    {
+        return user;
+    }
+
+    public String getPass()
+    {
+        return pass;
+    }
+
+    public String getContent()
+    {
+        return content;
+    }
+
+    public String getTitle()
+    {
+        return title;
+    }
+
+    public String getMountPath()
+    {
+        return mountPath;
+    }
+
+    public String getSyncPath()
+    {
+        return syncPath;
+    }
+
+    public String getSyncDataSource()
+    {
+        return syncDataSource;
+    }
+
+    public boolean isPrintXML()
+    {
+        return printXML;
+    }
+
+    public boolean isDebug()
+    {
+        return debug;
+    }
+
+    public boolean isPom()
+    {
+        return pom;
+    }
+
+    public boolean isAcceptNewDocument()
+    {
+        return acceptNewDocument;
+    }
+
+    public String getFileExtension()
+    {
+        return fileExtension;
+    }
 
     void print()
     {
@@ -426,7 +608,7 @@ class Command
     private String getDocURL(boolean withObjects)
     {
         try {
-            return Utils.getDocRestURLFromCommand(this, withObjects);
+            return Utils.getDocRestURLFromCommand(this, wiki, page, withObjects);
         } catch (DocException e) {
             return "(N/A)";
         }

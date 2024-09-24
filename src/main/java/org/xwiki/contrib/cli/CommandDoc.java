@@ -34,12 +34,12 @@ class CommandDoc implements InputDoc
 
     public String getContent()
     {
-        return cmd.content;
+        return cmd.getContent();
     }
 
     public String getTitle()
     {
-        return cmd.title;
+        return cmd.getTitle();
     }
 
     public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
@@ -52,14 +52,20 @@ class CommandDoc implements InputDoc
         return null;
     }
 
-    public Collection<Attachment> getAttachments()
+    public Collection<AttachmentInfo> getAttachments()
     {
         return null;
     }
 
+    @Override
+    public byte[] getAttachment(String attachmentName) throws DocException
+    {
+        throw new UnsupportedOperationException("Not Implemented");
+    }
+
     public String getValue(String objectClass, String objectNumber, String property)
     {
-        return cmd.value;
+        return cmd.getValue();
     }
 
     public String getFriendlyName()

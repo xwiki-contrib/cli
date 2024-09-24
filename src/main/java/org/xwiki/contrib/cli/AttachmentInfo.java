@@ -20,6 +20,6 @@
 
 package org.xwiki.contrib.cli;
 
-record Attachment(String name, long size, byte[] content)
+record AttachmentInfo(String name, long size)
 {
 }

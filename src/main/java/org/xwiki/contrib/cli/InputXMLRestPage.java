@@ -26,17 +26,24 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {
     private final String url;
 
-    InputXMLRestPage(Command cmd) throws DocException
+    protected final String wiki;
+
+    protected final String page;
+
+    InputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, true);
+
+        this.page = page;
+        this.wiki = wiki;
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, true);
 
         var response = Utils.httpGet(cmd, url);
         var status = response.statusCode();
         if (status == 200) {
             handleResponse(response);
         } else {
-            if (status == 404 && cmd.acceptNewDocument) {
+            if (status == 404 && cmd.isAcceptNewDocument()) {
                 // 404 : Document not found, we assume it's a document we would like to create
                 response = Utils.httpPut(cmd, url, "", null);
                 status = response.statusCode();
@@ -46,11 +53,28 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
                 } else {
                     handleUnexpectedStatus(status, cmd, response);
                 }
-            }
-            else {
+            } else {
                 handleUnexpectedStatus(status, cmd, response);
             }
         }
+    }
+
+    public String getWiki()
+    {
+        return wiki;
+    }
+
+    public String getPage()
+    {
+        return page;
+    }
+
+    @Override
+    public byte[] getAttachment(String attachmentName) throws DocException
+    {
+
+        String attachmentURL = Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, attachmentName);
+        return Utils.httpGetBytes(cmd, attachmentURL).body();
     }
 
     @Override
@@ -59,7 +83,8 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         return "the page at [" + url + "]";
     }
 
-    private void handleResponse(HttpResponse<String> response) {
+    private void handleResponse(HttpResponse<String> response)
+    {
         var body = response.body();
         setXML(body, true);
     }
@@ -68,9 +93,9 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
     {
         throw new MessageForUserDocException(
             "Unexpected status "
-            + status
-            + ". "
-            + (cmd.debug
+                + status
+                + ". "
+                + (cmd.isDebug()
                 ? "Body: " + response.body()
                 : " Use --debug to print the body of the HTTP request")
         );

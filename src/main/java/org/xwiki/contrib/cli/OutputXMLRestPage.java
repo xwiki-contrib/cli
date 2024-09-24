@@ -32,8 +32,6 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private final String url;
 
-    private final Command cmd;
-
     private String content;
 
     private String title;
@@ -42,18 +40,16 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private InputXMLRestPage input;
 
-    OutputXMLRestPage(Command cmd) throws DocException
+    OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, false);
-        this.cmd = cmd;
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
     }
 
-    OutputXMLRestPage(Command cmd, InputXMLRestPage input) throws DocException
+    OutputXMLRestPage(Command cmd, InputXMLRestPage input, String wiki, String page) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, false);
-        this.cmd = cmd;
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
         this.input = input;
     }
 
@@ -73,7 +69,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         String objectSpec;
         if (Utils.isEmpty(objectClass) || Utils.isEmpty(objectClass)) {
             if (input == null) {
-                input = new InputXMLRestPage(cmd);
+                input = new InputXMLRestPage(cmd, input.getWiki(), input.getPage());
             }
             objectSpec = input.getObjectSpec(objectClass, objectNumber, property);
         } else {
@@ -164,6 +160,13 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     }
 
     @Override
+    public void setAttachment(String attachmentName, byte[] content) throws DocException
+    {
+        String attachmentURL =  Utils.getAttachmentRestURLFromCommand(cmd, input.getWiki(), input.getPage(), attachmentName);
+        Utils.httpPut(cmd, attachmentURL, content, "application/octet-stream");
+    }
+
+    @Override
     public String getFriendlyName()
     {
         return "the page at [" + url + "]";
@@ -181,7 +184,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             "Unexpected status "
                 + status
                 + ". "
-                + (cmd.debug
+                + (cmd.isDebug()
                 ? "Body: " + response.body()
                 : " Use --debug to print the body of the HTTP request")
         );

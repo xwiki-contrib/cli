@@ -48,9 +48,8 @@ public class XWikiDirSync
     public XWikiDirSync(Command cmd)
     {
         command = cmd;
-        XMLFileDirPath = Path.of(cmd.syncDataSource, "src", "main", "resources");
-        syncPath = Path.of(cmd.syncPath);
-        command.xmlWriteDir = cmd.syncDataSource;
+        XMLFileDirPath = Path.of(cmd.getSyncDataSource(), "src", "main", "resources");
+        syncPath = Path.of(cmd.getSyncPath());
     }
 
     public void sync() throws DocException, IOException
@@ -86,7 +85,7 @@ public class XWikiDirSync
         managedFiles.add(titleFilePath);
 
         for (var attachment : xmlFile.getAttachments()) {
-            var attachmentContent = attachment.content();
+            var attachmentContent = xmlFile.getAttachment(attachment.name());
             var attachmentFilePath = Path.of(dstFile, "attachments", attachment.name());
             Files.createDirectories(attachmentFilePath.getParent());
             Files.write(attachmentFilePath, attachmentContent);
@@ -97,11 +96,11 @@ public class XWikiDirSync
             // TODO use change getObject to return already split data instead of splitting here
             var objClass = obj.split("/")[0];
             var objNumber = obj.split("/")[1];
-            for (var property : xmlFile.getProperties( objClass, objNumber, null,false).entrySet()) {
+            for (var property : xmlFile.getProperties(objClass, objNumber, null, false).entrySet()) {
                 var propertyValueFileName = Path.of(dstFile, "objects", objClass, objNumber, "properties",
                     property.getKey());
                 Files.createDirectories(propertyValueFileName.getParent());
-                Files.write(propertyValueFileName,  property.getValue().getBytes(StandardCharsets.UTF_8));
+                Files.write(propertyValueFileName, property.getValue().getBytes(StandardCharsets.UTF_8));
                 managedFiles.add(propertyValueFileName);
             }
         }
@@ -110,7 +109,7 @@ public class XWikiDirSync
     private String pageReferenceToDirPath(String reference)
     {
         final var urlPart = new StringBuilder();
-        urlPart.append(command.syncPath);
+        urlPart.append(command.getSyncPath());
         final var len = reference.length();
         var i = 0;
 
@@ -170,17 +169,16 @@ public class XWikiDirSync
         }
     }
 
-    private int putValue(String path, byte[] value)
+    private void putValue(String path, byte[] value)
     {
         Pattern pagePattern = PAGES_PATTERN_MATCHER;
         Matcher pageMatcher = pagePattern.matcher(path);
         if (pageMatcher.find()) {
             String space = FSDirUtils.getSpaceFromPathPart(pageMatcher.group(1));
             String page = pageMatcher.group(2).replace(FSDirUtils.DOT, FSDirUtils.ESCAPED_DOT);
-            this.command.page = space + '.' + page;
 
             try {
-                MultipleDoc document = new MultipleDoc(this.command);
+                MultipleDoc document = new MultipleDoc(command, command.getWiki(), space + '.' + page);
 
                 String remainingPath = path.substring(pageMatcher.end());
 
@@ -194,7 +192,7 @@ public class XWikiDirSync
 
                     document.setValue(className, objectNumber, propertyName, stringValue);
                     document.save();
-                    return value.length;
+                    return;
                 }
 
                 if (remainingPath.equals(URL_PART_CONTENT) || remainingPath.equals(URL_PART_TITLE)) {
@@ -205,7 +203,7 @@ public class XWikiDirSync
                         document.setContent(stringValue);
                     }
                     document.save();
-                    return value.length;
+                    return;
                 }
 
                 /*
@@ -222,23 +220,15 @@ public class XWikiDirSync
                 Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
                 Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
-                    /*
                     String attachmentName = attachmentMatcher.group(1);
-
-                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
-                     */
-                    String attachmentURL = this.command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(path);
-                    Utils.httpPut(this.command, attachmentURL, value, "application/octet-stream");
-                    return value.length;
+                    document.setAttachment(attachmentName, value);
                 }
             } catch (DocException | IOException e) {
-                if (command.debug) {
+                if (command.isDebug()) {
                     e.printStackTrace();
                 }
             }
         }
-
-        return 0;
     }
 
     private void watchDir(HashMap<WatchKey, Path> keyMaps, Path path, WatchService watcher) throws IOException
