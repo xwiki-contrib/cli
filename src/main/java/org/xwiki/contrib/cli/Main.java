@@ -170,6 +170,7 @@ final class Main
                     ++i;
                     cmd.action = Command.Action.SYNC;
                 }
+                case "--ext" -> cmd.fileExtension = getNextParameter(args, i++);
                 case "--debug" -> cmd.debug = true;
                 case "--print-xml" -> cmd.printXML = true;
                 case "--help", "-help", "-h", "help" -> cmd.action = Command.Action.HELP;

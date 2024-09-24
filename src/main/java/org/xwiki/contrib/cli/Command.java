@@ -96,7 +96,12 @@ class Command
                         .stream().findFirst().get()
                         .split("/")[0];
                 }
-                Editing.editValue(cmd, val, "property-", getFileExtension(objectClass, cmd.property), newValue -> {
+
+                String ext = Utils.present(cmd.fileExtension)
+                    ? '.' + cmd.fileExtension
+                    : cmd.getFileExtension(objectClass, cmd.property);
+
+                Editing.editValue(cmd           , val, "property-", ext, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
@@ -278,7 +283,12 @@ class Command
                             --sync-data-source DIR   Path to the maven repository
                             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
                             -n, --new                Enable creation of a new XWiki document when using --edit-content action (and no input file given)
-
+                            -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
+                            --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
+                            --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
+                            --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
+                            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
+                            --ext EXT                Use this as a file extension when editing a file
 
                         Authentication:
                             --user USENAME
@@ -350,6 +360,8 @@ class Command
     public boolean pom;
 
     public boolean acceptNewDocument;
+
+    public String fileExtension;
 
     void print()
     {
@@ -425,9 +437,8 @@ class Command
         return "(" + (v == null ? "not " : "") + "given)";
     }
 
-    private static String getFileExtension(String objectClass, String property)
+    private String getFileExtension(String objectClass, String property)
     {
-        // TODO add support for XWiki.ScriptComponentClass as same as in org/xwiki/contrib/cli/XWikiFS.java:361
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
             return ".less";
         } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
@@ -435,6 +446,8 @@ class Command
         } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
             return ".vm";
         } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
+            return ".groovy";
+        } else if (this.pom) {
             return ".groovy";
         } else {
             return XWIKI_FILE_EXTENSION;
