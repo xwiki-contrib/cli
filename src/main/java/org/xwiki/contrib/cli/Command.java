@@ -276,9 +276,9 @@ class Command
                             --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
                             --write-to-mvn-repository DIR   Same as --write-to-xml but for a maven repository
                             --sync-data-source DIR   Path to the maven repository
-                            -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
+                            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
                             -n, --new                Enable creation of a new XWiki document when using --edit-content action (and no input file given)
-                                                     
+
 
                         Authentication:
                             --user USENAME
