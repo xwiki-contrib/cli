@@ -27,12 +27,12 @@ package org.xwiki.contrib.cli;
  */
 public class DocException extends Exception
 {
-    DocException(Exception e)
+    public DocException(Exception e)
     {
         super(e);
     }
 
-    DocException(String reason)
+    public DocException(String reason)
     {
         super(reason);
     }

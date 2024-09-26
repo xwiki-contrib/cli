@@ -18,19 +18,21 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Base64;
 
 import org.dom4j.Element;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
 
 /**
  * This class represents a "XAR" XML file.

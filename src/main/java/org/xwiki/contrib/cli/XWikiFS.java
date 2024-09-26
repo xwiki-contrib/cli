@@ -31,6 +31,7 @@ import java.util.regex.Pattern;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.xwiki.contrib.cli.document.MultipleDoc;
 
 import jnr.ffi.Pointer;
 import ru.serce.jnrfuse.ErrorCodes;

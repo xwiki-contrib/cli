@@ -23,10 +23,12 @@ package org.xwiki.contrib.cli;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.xwiki.contrib.cli.document.MultipleDoc;
+
 import static java.lang.System.err;
 import static java.lang.System.out;
 
-class Command
+public class Command
 {
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
 

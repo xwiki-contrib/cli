@@ -18,16 +18,21 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.util.Collection;
 import java.util.Map;
 
-class CommandDoc implements InputDoc
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
+
+public class CommandDoc implements InputDoc
 {
     private final Command cmd;
 
-    CommandDoc(Command cmd)
+    public CommandDoc(Command cmd)
     {
         this.cmd = cmd;
     }

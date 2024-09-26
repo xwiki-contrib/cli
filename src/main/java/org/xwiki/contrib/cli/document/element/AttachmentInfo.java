@@ -18,8 +18,8 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document.element;
 
-record AttachmentInfo(String name, long size)
+public record AttachmentInfo(String name, long size)
 {
 }

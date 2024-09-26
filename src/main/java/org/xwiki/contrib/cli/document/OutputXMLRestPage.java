@@ -18,13 +18,19 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
+
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.MessageForUserDocException;
+import org.xwiki.contrib.cli.Utils;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
+import org.xwiki.contrib.cli.document.element.Property;
 
 class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {

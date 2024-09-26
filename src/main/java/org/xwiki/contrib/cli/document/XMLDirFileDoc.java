@@ -1,7 +1,11 @@
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.io.IOException;
 import java.nio.file.Path;
+
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.Utils;
 
 /**
  * This class represents a "XAR" directory.

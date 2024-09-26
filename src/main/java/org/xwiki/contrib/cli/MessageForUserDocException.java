@@ -25,9 +25,9 @@ package org.xwiki.contrib.cli;
  *
  * @version $Id$
  */
-class MessageForUserDocException extends DocException
+public class MessageForUserDocException extends DocException
 {
-    MessageForUserDocException(String message)
+    public MessageForUserDocException(String message)
     {
         super(message);
     }

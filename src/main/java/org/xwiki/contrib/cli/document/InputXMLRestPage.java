@@ -18,9 +18,14 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
+
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.MessageForUserDocException;
+import org.xwiki.contrib.cli.Utils;
 
 class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {

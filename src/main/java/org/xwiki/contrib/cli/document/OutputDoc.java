@@ -18,14 +18,16 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
+
+import org.xwiki.contrib.cli.DocException;
 
 /**
  * A writable document. Write only if InputDoc is not also implemented.
  *
  * @version $Id$
  */
-interface OutputDoc
+public interface OutputDoc
 {
     /**
      * Set the content of the document.

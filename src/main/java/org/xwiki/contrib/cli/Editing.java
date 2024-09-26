@@ -30,6 +30,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 
+import org.xwiki.contrib.cli.document.OutputDoc;
+
 class Editing
 {
     public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)

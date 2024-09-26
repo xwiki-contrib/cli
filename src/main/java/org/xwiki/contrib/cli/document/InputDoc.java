@@ -18,10 +18,14 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.util.Collection;
 import java.util.Map;
+
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
  * A readable document. Readonly if OutputDoc is not also implemented.

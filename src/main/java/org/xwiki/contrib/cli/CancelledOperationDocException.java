@@ -20,9 +20,9 @@
 
 package org.xwiki.contrib.cli;
 
-class CancelledOperationDocException extends DocException
+public class CancelledOperationDocException extends DocException
 {
-    CancelledOperationDocException()
+    public CancelledOperationDocException()
     {
         super("The user cancelled the operation");
     }

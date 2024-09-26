@@ -18,7 +18,7 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,16 +27,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
 
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.CancelledOperationDocException;
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
+import org.xwiki.contrib.cli.Utils;
+
 import static java.lang.System.err;
 import static java.lang.System.out;
 
-class MultipleDoc implements InputDoc, OutputDoc
+public class MultipleDoc implements InputDoc, OutputDoc
 {
     private final List<InputDoc> inputDocs;
 
     private final List<OutputDoc> outputDocs;
 
-    MultipleDoc(Command cmd, String wiki, String page) throws DocException, IOException
+    public MultipleDoc(Command cmd, String wiki, String page) throws DocException, IOException
     {
         inputDocs = new ArrayList<>();
         outputDocs = new ArrayList<>();

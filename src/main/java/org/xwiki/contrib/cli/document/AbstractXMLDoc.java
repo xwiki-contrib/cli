@@ -18,17 +18,24 @@
  * 02110-1301 USA, or see the FSF site: http://www.fsf.org.
  */
 
-package org.xwiki.contrib.cli;
+package org.xwiki.contrib.cli.document;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.xwiki.contrib.cli.Command;
+import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.Utils;
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
+import org.xwiki.contrib.cli.document.element.Property;
 
 import static java.lang.System.err;
 
