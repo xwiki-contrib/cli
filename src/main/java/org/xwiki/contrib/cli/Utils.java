@@ -32,6 +32,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.dom4j.Document;
@@ -61,74 +65,38 @@ public final class Utils
     }
 
     /**
-     * @param page the page, in dotted notation.
-     * @return the part of a rest url to reach the given page. Example: Main.WebHome -> /spaces/Main/pages/WebHome
+     * @param reference the page, in dotted notation.
+     * @return the maven repos path to reach the given page. Example: Main.WebHome -> Main/WebHome
      */
-    public static String pageToRestURLPart(String page)
+    public static String fromReferenceToMvnReposPath(String reference)
     {
-        var urlPart = "";
-        var lastPart = "";
-        var i = 0;
-        var len = page.length();
+        // TODO unit test
+        return fromReferenceToMvnReposPath(deserialize(reference));
+    }
 
-        while (i < len) {
-            char c = page.charAt(i);
-            switch (c) {
-                case '.':
-                    urlPart += "/spaces/" + lastPart;
-                    lastPart = "";
-                    break;
-
-                case '\\':
-                    if (i + 1 < len) {
-                        i++;
-                    }
-                    c = page.charAt(i);
-                    lastPart += c;
-                    break;
-
-                default:
-                    lastPart += c;
-            }
-
-            i++;
-        }
-
-        return urlPart + "/pages/" + lastPart;
+    public static String fromReferenceToMvnReposPath(PageReference reference)
+    {
+        // TODO unit test
+        return String.join("/", reference.spaces()) + "/" + reference.page();
     }
 
     /**
-     * @param page the page, in dotted notation.
-     * @return the part of a XAR dir path to reach the given page. Example: Main.WebHome -> Main/WebHome
+     * Convert a page reference to a path in the XFF format. Note we use this format for the REST API and also for the
+     * synced dir path.
+     *
+     * @param reference the page, in dotted notation.
+     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome
      */
-    public static String pageToMvnRepositoryPath(String page)
+    public static String fromReferenceToXFFPath(String reference)
     {
-        final var urlPart = new StringBuilder();
-        final var len = page.length();
-        var i = 0;
+        // TODO unit test
+        return fromReferenceToXFFPath(deserialize(reference));
+    }
 
-        while (i < len) {
-            char c = page.charAt(i);
-            switch (c) {
-                case '.':
-                    urlPart.append(File.separator);
-                    break;
-
-                case '\\':
-                    if (i + 1 < len) {
-                        i++;
-                    }
-                    c = page.charAt(i);
-                    urlPart.append(c);
-                    break;
-
-                default:
-                    urlPart.append(c);
-            }
-            i++;
-        }
-        urlPart.append(".xml");
-        return urlPart.toString();
+    public static String fromReferenceToXFFPath(PageReference reference)
+    {
+        // TODO unit test
+        return String.join("/spaces/", reference.spaces()) + "/pages/" + reference.page();
     }
 
     public static PageReference deserialize(String reference)
@@ -428,5 +396,53 @@ public final class Utils
         } catch (IOException | InterruptedException e) {
             throw new DocException(e);
         }
+    }
+
+    public static List<String> getContentScriptingLanguage(String content) throws DocException
+    {
+        // For now we only support velocity, groovy, python, php macro
+        // We can at any time extends this list
+        final Map<String, String> macroRegex = Map.ofEntries(
+            Map.entry("velocity", "vm"),
+            Map.entry("groovy", "groovy"),
+            Map.entry("python", "py"),
+            Map.entry("php", "php")
+        );
+        var res = new ArrayList<String>(macroRegex.size());
+        for (var macro : macroRegex.entrySet()) {
+            if (content.contains("{{/" + macro.getKey() + "}}")) {
+                res.add(macro.getValue());
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Give all the file extension for script files of object properties.
+     * @param properties map of all properties of the object. Needed for some object to deduce the extension.
+     * @param objectClass class of the object.
+     * @param property properties for which we need to return the extension.
+     * @return the extension if it's a scripting file.
+     */
+    public static Optional<String> getScriptLangFromObjectInfo(HashMap<String, String> properties, String objectClass,
+        String property)
+    {
+        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
+            return Optional.of("less");
+        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
+            return Optional.of("js");
+        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
+            return Optional.of("vm");
+        } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
+            var scriptLanguage = properties.get("script_language");
+            switch (scriptLanguage) {
+                case "ruby" -> Optional.of("rb");
+                case "velocity" -> Optional.of("vm");
+                case "python" -> Optional.of("py");
+                // php, groovy
+                default -> Optional.of(scriptLanguage);
+            }
+        }
+        return Optional.empty();
     }
 }

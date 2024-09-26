@@ -41,18 +41,18 @@ import org.xwiki.contrib.cli.DocException;
  */
 public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
 {
-    private String outputFile;
+    private String filename;
 
     XMLFileDoc(Command cmd)
     {
         super(cmd);
     }
 
-    XMLFileDoc(Command cmd, String filename) throws DocException, IOException
+    public XMLFileDoc(Command cmd, String filename) throws DocException, IOException
     {
         super(cmd);
         setXML(Files.readString(Path.of(filename)), false);
-        outputFile = filename;
+        this.filename = filename;
     }
 
     @Override
@@ -70,7 +70,7 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         outFormat.setOmitEncoding(true);
         outFormat.setSuppressDeclaration(true);
         try {
-            var out = new FileOutputStream(outputFile);
+            var out = new FileOutputStream(filename);
             out.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n\n".getBytes(Charset.forName("UTF-8")));
             XMLWriter writer = new XMLWriter(out, outFormat);
             writer.write(dom);
@@ -81,9 +81,20 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
     }
 
     @Override
-    public void setAttachment(String attachmentName, byte[] content)
+    public void setAttachment(String attachmentName, byte[] content) throws DocException
     {
-        // TODO
+        var domdoc = getDom();
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+        var root = (Element) domdoc.getRootElement();
+        var attachments = root.selectNodes( NODE_NAME_ATTACHMENT);
+        for (var attachment : attachments) {
+            if (attachmentName.equals(getElement((Element) attachment, "filename").getText())) {
+                getElement((Element) attachment, "content").setText(Base64.getEncoder().encodeToString(content));
+            }
+        }
+        throw new DocException(String.format("Can't find attachment with name '%s'", attachmentName));
     }
 
     @Override
@@ -100,12 +111,12 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
                 return Base64.getDecoder().decode(getElement((Element) attachment, "content").getText());
             }
         }
-        return null;
+        throw new DocException(String.format("Can't find attachment with name '%s'", attachmentName));
     }
 
     @Override
     public String getFriendlyName()
     {
-        return "the XML file [" + outputFile + "]";
+        return "the XML file [" + filename + "]";
     }
 }

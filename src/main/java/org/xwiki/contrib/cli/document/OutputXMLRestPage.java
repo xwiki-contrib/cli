@@ -42,21 +42,20 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private String title;
 
-    private Map<String, List<ObjectValueSetter>> values;
+    private List<ObjectInfo> values;
 
-    private InputXMLRestPage input;
+    private InputXMLRestPage inputPage;
+
+    protected final String wiki;
+
+    protected final String page;
 
     OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
         url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
-    }
-
-    OutputXMLRestPage(Command cmd, InputXMLRestPage input, String wiki, String page) throws DocException
-    {
-        super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
-        this.input = input;
+        this.wiki = wiki;
+        this.page = page;
     }
 
     @Override
@@ -68,26 +67,30 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
-        if (values == null) {
-            values = new HashMap<>();
-        }
-
-        String objectSpec;
-        if (Utils.isEmpty(objectClass) || Utils.isEmpty(objectClass)) {
-            if (input == null) {
-                input = new InputXMLRestPage(cmd, input.getWiki(), input.getPage());
-            }
-            objectSpec = input.getObjectSpec(objectClass, objectNumber, property);
+        ObjectInfo objectSpec;
+        if (Utils.isEmpty(objectClass) || Utils.isEmpty(objectNumber)) {
+            objectSpec = getInputPage().getObjectSpec(objectClass, objectNumber, property);
         } else {
-            objectSpec = objectClass + '/' + objectNumber;
+            objectSpec = new ObjectInfo(objectClass, Integer.parseInt(objectNumber), new LinkedList<>());
         }
+        var valuesForGivenObjectSpec = values.stream()
+            .filter(o -> objectSpec.objectClass().equals(o.objectClass()) && objectSpec.number() == o.number())
+            .findFirst().orElseGet(() -> {
+                values.add(objectSpec);
+                return objectSpec;
+            });
+        var previousToRemove = valuesForGivenObjectSpec.properties()
+            .stream().filter(p -> p.name().equals(property)).toList();
+        previousToRemove.forEach(o -> valuesForGivenObjectSpec.properties().remove(o));
+        valuesForGivenObjectSpec.properties().add(new Property(property, value, Optional.empty()));
+    }
 
-        var valuesForGivenObjectSpec = values.get(objectSpec);
-        if (valuesForGivenObjectSpec == null) {
-            valuesForGivenObjectSpec = new ArrayList<>();
-            values.put(objectSpec, valuesForGivenObjectSpec);
+    private InputXMLRestPage getInputPage() throws DocException
+    {
+        if (inputPage == null) {
+            inputPage = new InputXMLRestPage(cmd, wiki, page);
         }
-        valuesForGivenObjectSpec.add(new ObjectValueSetter(property, value));
+        return inputPage;
     }
 
     @Override
@@ -114,35 +117,30 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         // }
 
         if (values != null) {
-            for (var byObjectSpec : values.entrySet()) {
+            for (var objectSpec : values) {
+                var objectClassName = objectSpec.objectClass();
+                var objectNumber = objectSpec.number();
 
-                var objectSpec = byObjectSpec.getKey();
-                var slash = objectSpec.indexOf('/');
-                var objectClassName = objectSpec.substring(0, slash);
-                var objectNumber = objectSpec.substring(slash + 1);
-
-                int builderSize = 500 + byObjectSpec.getValue().stream()
-                    .map(i -> i.value.length() + 100).reduce(0, Integer::sum);
+                int builderSize =
+                    500 + objectSpec.properties().stream().map(i -> i.value().length() + 100).reduce(0, Integer::sum);
                 StringBuilder xml = new StringBuilder(builderSize);
                 xml.append("<object xmlns='http://www.xwiki.org'>");
                 xml.append("<className>").append(objectClassName).append("</className>");
                 xml.append("<number>").append(objectNumber).append("</number>");
 
-                for (var propWithValue : byObjectSpec.getValue()) {
-                    xml.append("<property name='").append(Utils.escapeXML(propWithValue.property)).append("'>")
-                        .append("<value>").append(Utils.escapeXML(propWithValue.value)).append("</value>")
+                for (var propWithValue : objectSpec.properties()) {
+                    xml.append("<property name='").append(Utils.escapeXML(propWithValue.name())).append("'>")
+                        .append("<value>").append(Utils.escapeXML(propWithValue.value())).append("</value>")
                         .append("</property>");
                 }
                 xml.append("</object>");
-                checkStatus(Utils.httpPut(cmd,
-                    url + "/objects/" + objectClassName + '/' + objectNumber,
-                    xml.toString(), APPLICATION_XML_CHARSET_UTF_8));
+                checkStatus(Utils.httpPut(cmd, url + "/objects/" + objectClassName + '/' + objectNumber, xml.toString(),
+                    APPLICATION_XML_CHARSET_UTF_8));
             }
         }
 
         if (content != null || title != null) {
-            int builderSize = (content == null ? 0 : content.length())
-                + (title == null ? 0 : title.length()) + 500;
+            int builderSize = (content == null ? 0 : content.length()) + (title == null ? 0 : title.length()) + 500;
             var xml = new StringBuilder(builderSize);
             xml.append("<page xmlns='http://www.xwiki.org'>");
 
@@ -168,7 +166,8 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void setAttachment(String attachmentName, byte[] content) throws DocException
     {
-        String attachmentURL =  Utils.getAttachmentRestURLFromCommand(cmd, input.getWiki(), input.getPage(), attachmentName);
+        String attachmentURL =
+            Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, attachmentName);
         Utils.httpPut(cmd, attachmentURL, content, "application/octet-stream");
     }
 
@@ -185,27 +184,12 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         if (status >= 200 && status < 300) {
             return;
         }
-
         throw new MessageForUserDocException(
-            "Unexpected status "
-                + status
-                + ". "
-                + (cmd.isDebug()
-                ? "Body: " + response.body()
-                : " Use --debug to print the body of the HTTP request")
-        );
+            "Unexpected status " + status + ". " + (cmd.isDebug() ? "Body: " + response.body() :
+                " Use --debug to print the body of the HTTP request"));
     }
 
-    private class ObjectValueSetter
+    private record ObjectValueSetter(String property, String value)
     {
-        String property;
-
-        String value;
-
-        ObjectValueSetter(String property, String value)
-        {
-            this.property = property;
-            this.value = value;
-        }
     }
 }

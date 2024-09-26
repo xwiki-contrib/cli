@@ -66,10 +66,12 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                var properties = doc.getProperties(null, null, null, true);
+                var objects = doc.getObjects(null, null, null);
                 String res = "title=" + doc.getTitle() + "\n\n";
-                for (var p : properties.entrySet()) {
-                    res += p.getKey() + "=" + protectValue(p.getValue());
+                for (var o : objects) {
+                    for (var p : o.properties()) {
+                        res += o.objectClass() + "/" + o.number() + "." + p.name() + "=" + protectValue(p.value());
+                    }
                 }
                 res += "\n\ncontent=" + protectValue(doc.getContent());
                 Editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newRes -> {
@@ -96,7 +98,7 @@ public class Command
                 if (Utils.isEmpty(objectClass)) {
                     objectClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
                         .stream().findFirst().get()
-                        .split("/")[0];
+                        .objectClass();
                 }
 
                 String ext = Utils.present(cmd.fileExtension)
@@ -175,7 +177,7 @@ public class Command
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
-                    out.println(object);
+                    out.println(object.objectClass() + "/" + object.number());
                 }
             }
         },
@@ -184,16 +186,18 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                for (var prop : doc.getProperties(cmd.objectClass, cmd.objectNumber, cmd.property, false).entrySet()) {
-                    var val = prop.getValue();
-                    if (val == null) {
-                        val = "\u001B[33m(missing value)\u001B[0m";
-                    } else if (val.isEmpty()) {
-                        val = "\u001B[32m(empty)\u001B[0m";
-                    } else if (severalLines(val)) {
-                        val = LINE + '\n' + val + LINE;
+                for (var obj : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
+                    for (var prop : obj.properties()) {
+                        var val = prop.value();
+                        if (val == null) {
+                            val = "\u001B[33m(missing value)\u001B[0m";
+                        } else if (val.isEmpty()) {
+                            val = "\u001B[32m(empty)\u001B[0m";
+                        } else if (severalLines(val)) {
+                            val = LINE + '\n' + val + LINE;
+                        }
+                        out.println(prop.name() + " = " + val);
                     }
-                    out.println(prop.getKey() + " = " + val);
                 }
             }
         },

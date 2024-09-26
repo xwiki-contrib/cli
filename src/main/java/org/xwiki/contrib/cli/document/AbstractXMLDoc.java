@@ -141,51 +141,7 @@ abstract class AbstractXMLDoc
         xml = null;
     }
 
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-        throws DocException
-    {
-        var domdoc = getDom();
-
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-
-        var properties = new HashMap<String, String>();
-
-        var root = (Element) domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
-        for (var object : objects) {
-            if (!objectMatchesFilter(object, objectClass, objectNumber)) {
-                continue;
-            }
-
-            String propertyName = null;
-            Element propertyElement = null;
-
-            for (var prop : getElements(object, NODE_NAME_PROPERTY)) {
-                if (fromRest) {
-                    propertyElement = (Element) prop.selectSingleNode("xwiki:value");
-                    propertyName = ((Element) prop).attributeValue(NODE_NAME);
-                } else {
-                    for (var pElement : ((Element) prop).elements()) {
-                        propertyName = pElement.getName();
-                        propertyElement = pElement;
-                    }
-                }
-
-                if (propertyElement != null && (property == null || property.equals(propertyName))) {
-                    if (fullPath) {
-                        propertyName = getObjectSpec((Element) object) + "." + propertyName;
-                    }
-                    properties.put(propertyName, propertyElement.getText());
-                }
-            }
-        }
-
-        return properties;
-    }
-
-    public static String getObjectSpec(Element object)
+    private ObjectInfo getObjectSpec(Element object)
     {
         var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
         if (classNameElement == null) {
@@ -206,11 +162,32 @@ abstract class AbstractXMLDoc
             return null;
         }
 
-        return className + '/' + number;
+        var propertiesElements = getElements(object, NODE_NAME_PROPERTY);
+        var properties = new HashMap<String, String>();
+        for (var prop : propertiesElements) {
+            String propertyName = null;
+            Element propertyElement = null;
+            if (fromRest) {
+                propertyElement = (Element) prop.selectSingleNode("xwiki:value");
+                propertyName = ((Element) prop).attributeValue(NODE_NAME);
+            } else {
+                for (var pElement : ((Element) prop).elements()) {
+                    propertyName = pElement.getName();
+                    propertyElement = pElement;
+                }
+            }
+            if (propertyElement != null) {
+              properties.put(propertyName, propertyElement.getText());
+            }
+        }
+        return new ObjectInfo(className, Integer.parseInt(number),
+            properties.entrySet().stream()
+                .map(i -> new Property(i.getKey(), i.getValue(),
+                    Utils.getScriptLangFromObjectInfo(properties, className, i.getKey())))
+                .toList());
     }
 
-    public String getObjectSpec(String objectClass, String objectNumber, String property)
-        throws DocException
+    public ObjectInfo getObjectSpec(String objectClass, String objectNumber, String property) throws DocException
     {
         var domdoc = getDom();
 
@@ -230,21 +207,19 @@ abstract class AbstractXMLDoc
             }
 
             var propertyElement = object.selectSingleNode(
-                fromRest
-                    ? String.format(NODE_PROPERTY_NAME, property)
-                    : String.format(NODE_PROPERTY, property)
-            );
+                fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
             if (propertyElement == null) {
                 continue;
             }
-
             return getObjectSpec((Element) object);
         }
 
-        return null;
+        throw new DocException(
+            String.format("Can't find object with objectClass '%s', number '%s', property '%s'",
+                objectClass, objectNumber, property));
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
+    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
         throws DocException
     {
         var domdoc = getDom();
@@ -255,39 +230,17 @@ abstract class AbstractXMLDoc
 
         var root = domdoc.getRootElement();
         var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
-        var objs = new ArrayList<String>();
+        var objs = new ArrayList<ObjectInfo>();
         for (var object : objects) {
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
                 continue;
             }
-
-            var classNameElement = getElement((Element) object, NODE_NAME_CLASS_NAME);
-            if (classNameElement == null) {
-                throw new MissingNodeException("class name of object");
+            var propertyElement = object.selectSingleNode(
+                fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
+            if (propertyElement == null) {
+                continue;
             }
-
-            String className = classNameElement.getText();
-
-            var numberElement = getElement((Element) object, NODE_NAME_NUMBER);
-            if (numberElement == null) {
-                throw new MissingNodeException("number of object");
-            }
-
-            String number = numberElement.getText();
-
-            if (!Utils.isEmpty(property)) {
-                var propertyElement = object.selectSingleNode(
-                    fromRest
-                        ? String.format(NODE_PROPERTY_NAME, property)
-                        : String.format(NODE_PROPERTY, property)
-                );
-
-                if (propertyElement == null) {
-                    continue;
-                }
-            }
-
-            objs.add(className + "/" + number);
+            objs.add(getObjectSpec((Element) object));
         }
 
         return objs;
@@ -307,23 +260,17 @@ abstract class AbstractXMLDoc
         for (var attachment : attachments) {
             if (fromRest) {
                 // TODO test if it works well
-                res.add(new AttachmentInfo(
-                    getElement((Element) attachment, "name").getText(),
-                    Long.parseLong(getElement((Element) attachment, "size").getText())
-                ));
+                res.add(new AttachmentInfo(getElement((Element) attachment, "name").getText(),
+                    Long.parseLong(getElement((Element) attachment, "size").getText())));
             } else {
-                res.add(new AttachmentInfo(
-                    getElement((Element) attachment, "filename").getText(),
-                    Long.parseLong(getElement((Element) attachment, "filesize").getText())
-                ));
+                res.add(new AttachmentInfo(getElement((Element) attachment, "filename").getText(),
+                    Long.parseLong(getElement((Element) attachment, "filesize").getText())));
             }
         }
-
         return res;
     }
 
-    public String getValue(String objectClass, String objectNumber, String property)
-        throws DocException
+    public String getValue(String objectClass, String objectNumber, String property) throws DocException
     {
         var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
         if (propertyElement == null) {
@@ -333,8 +280,7 @@ abstract class AbstractXMLDoc
         return propertyElement.getText();
     }
 
-    public void setValue(String objectClass, String objectNumber, String property, String value)
-        throws DocException
+    public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
         if (propertyElement == null) {
@@ -374,9 +320,7 @@ abstract class AbstractXMLDoc
             } catch (DocException e) {
                 if (cmd.isDebug()) {
                     err.println(
-                        "A parse error occured. Here is the content we attempted to parse."
-                            + LINE + xml + LINE
-                    );
+                        "A parse error occured. Here is the content we attempted to parse." + LINE + xml + LINE);
                 }
 
                 throw e;
@@ -435,8 +379,7 @@ abstract class AbstractXMLDoc
         return true;
     }
 
-    private Node getPropertyValueElement(String objectClass, String objectNumber, String property)
-        throws DocException
+    private Node getPropertyValueElement(String objectClass, String objectNumber, String property) throws DocException
     {
         var domdoc = getDom();
 
@@ -456,10 +399,7 @@ abstract class AbstractXMLDoc
             }
 
             var propertyElement = object.selectSingleNode(
-                fromRest
-                    ? "xwiki:property[@name = '" + property + "']/xwiki:value"
-                    : "property/" + property
-            );
+                fromRest ? "xwiki:property[@name = '" + property + "']/xwiki:value" : "property/" + property);
 
             if (propertyElement == null) {
                 continue;

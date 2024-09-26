@@ -52,7 +52,7 @@ public class CommandDoc implements InputDoc
         return null;
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber, String property)
+    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
     {
         return null;
     }

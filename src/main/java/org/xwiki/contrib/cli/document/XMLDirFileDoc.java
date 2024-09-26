@@ -22,6 +22,6 @@ public class XMLDirFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
     XMLDirFileDoc(Command cmd, String baseDir) throws DocException, IOException
     {
         super(cmd, Path.of(baseDir, "src", "main", "resources",
-            Utils.pageToMvnRepositoryPath(cmd.getPage())).toString());
+            Utils.fromReferenceToMvnReposPath(cmd.getPage())) + ".xml");
     }
 }

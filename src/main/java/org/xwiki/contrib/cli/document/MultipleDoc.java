@@ -66,7 +66,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
             outputDocs.add(new XMLDirFileDoc(cmd, cmd.getXmlWriteDir()));
         }
 
-        if (Utils.present(cmd.getBase())) {
+        if (Utils.present(cmd.getUrl())) {
             if (!cmd.isWikiWriteonly()) {
                 inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
             }
@@ -143,9 +143,9 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return title;
     }
 
-    public Collection<String> getObjects(String objectClass, String objectNumber, String property) throws DocException
+    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property) throws DocException
     {
-        Collection<String> objects = null;
+        Collection<ObjectInfo> objects = null;
         for (var inputDoc : inputDocs) {
             var newObjects = inputDoc.getObjects(objectClass, objectNumber, property);
             if (objects == null) {
@@ -185,22 +185,6 @@ public class MultipleDoc implements InputDoc, OutputDoc
             }
         }
         return attachment;
-    }
-
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-        throws DocException
-    {
-        Map<String, String> properties = null;
-        for (var inputDoc : inputDocs) {
-            var newProperties = inputDoc.getProperties(objectClass, objectNumber, property, fullPath);
-            if (properties == null) {
-                properties = newProperties;
-            } else if (newProperties != null && !properties.equals(newProperties)) {
-                return pickInputFile("the property list").getProperties(objectClass, objectNumber, property, fullPath);
-            }
-        }
-
-        return properties;
     }
 
     public String getValue(String objectClass, String objectNumber, String property) throws DocException

@@ -74,17 +74,17 @@ public class XWikiDirSync
     private void syncFileFromMvnRepos(Path srcFile) throws DocException, IOException
     {
         var xmlFile = new XMLFileDoc(command, srcFile.toString());
-        var dstFile = pageReferenceToDirPath(xmlFile.getReference());
+        var dstFile = Utils.fromReferenceToXFFPath(xmlFile.getReference());
         var content = xmlFile.getContent();
         var contentFilePath = Path.of(dstFile, "content");
         Files.createDirectories(contentFilePath.getParent());
-        Files.write(contentFilePath, content.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(contentFilePath, content);
         managedFiles.add(contentFilePath);
 
         var title = xmlFile.getTitle();
         var titleFilePath = Path.of(dstFile, "title");
         Files.createDirectories(titleFilePath.getParent());
-        Files.write(titleFilePath, title.getBytes(StandardCharsets.UTF_8));
+        Files.writeString(titleFilePath, title);
         managedFiles.add(titleFilePath);
 
         for (var attachment : xmlFile.getAttachments()) {
@@ -96,62 +96,22 @@ public class XWikiDirSync
         }
 
         for (var obj : xmlFile.getObjects(null, null, null)) {
-            // TODO use change getObject to return already split data instead of splitting here
-            var objClass = obj.split("/")[0];
-            var objNumber = obj.split("/")[1];
-            for (var property : xmlFile.getProperties(objClass, objNumber, null, false).entrySet()) {
+            var objClass = obj.objectClass();
+            var objNumber = Integer.toString(obj.number());
+            for (var property : obj.properties()) {
                 var propertyValueFileName = Path.of(dstFile, "objects", objClass, objNumber, "properties",
-                    property.getKey());
+                    property.name());
                 Files.createDirectories(propertyValueFileName.getParent());
-                Files.write(propertyValueFileName, property.getValue().getBytes(StandardCharsets.UTF_8));
+                Files.writeString(propertyValueFileName, property.value());
                 managedFiles.add(propertyValueFileName);
+                if (property.scriptingExtension().isPresent()) {
+                    Files.createLink(
+                        Path.of(propertyValueFileName + "." + property.scriptingExtension().get()),
+                        Path.of(property.name()));
+                    ;
+                }
             }
         }
-    }
-
-    private String pageReferenceToDirPath(String reference)
-    {
-        final var urlPart = new StringBuilder();
-        urlPart.append(command.getSyncPath());
-        final var len = reference.length();
-        var i = 0;
-
-        // TODO Write unit test to validate this method
-
-        // TODO improve check to manage case of reference like this A.B\.xx which will return space
-        //  instead of pages
-        if (reference.contains(".")) {
-            urlPart.append("/spaces/");
-        } else {
-            urlPart.append("/pages/");
-        }
-        while (i < len) {
-            char c = reference.charAt(i);
-            switch (c) {
-                case '.':
-                    // TODO improve check to manage case of reference like this A.B\.xx which will return space
-                    //  instead of pages
-                    if (reference.indexOf(".", i + 1) > 0) {
-                        urlPart.append("/spaces/");
-                    } else {
-                        urlPart.append("/pages/");
-                    }
-                    break;
-
-                case '\\':
-                    if (i + 1 < len) {
-                        i++;
-                    }
-                    c = reference.charAt(i);
-                    urlPart.append(c);
-                    break;
-
-                default:
-                    urlPart.append(c);
-            }
-            i++;
-        }
-        return urlPart.toString();
     }
 
     private void syncFileFromSyncedDir(Path file, WatchEvent.Kind<?> kind) throws IOException
@@ -174,8 +134,7 @@ public class XWikiDirSync
 
     private void putValue(String path, byte[] value)
     {
-        Pattern pagePattern = PAGES_PATTERN_MATCHER;
-        Matcher pageMatcher = pagePattern.matcher(path);
+        Matcher pageMatcher = PAGES_PATTERN_MATCHER.matcher(path);
         if (pageMatcher.find()) {
             String space = FSDirUtils.getSpaceFromPathPart(pageMatcher.group(1));
             String page = pageMatcher.group(2).replace(FSDirUtils.DOT, FSDirUtils.ESCAPED_DOT);
@@ -185,8 +144,7 @@ public class XWikiDirSync
 
                 String remainingPath = path.substring(pageMatcher.end());
 
-                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
-                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                Matcher propertyMatcher = OBJECTS_PROPERTIES_PATTERN_MATCHER.matcher(remainingPath);
                 if (propertyMatcher.matches()) {
                     String className = propertyMatcher.group(1);
                     String objectNumber = propertyMatcher.group(2);
@@ -220,8 +178,7 @@ public class XWikiDirSync
                 }
                 */
 
-                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
-                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                Matcher attachmentMatcher = ATTACHMENTS_PATTERN_MATCHER.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
                     String attachmentName = attachmentMatcher.group(1);
                     document.setAttachment(attachmentName, value);

@@ -47,21 +47,10 @@ interface InputDoc
     /**
      * @param objectClass the class of object to consider, or empty if no class is specified.
      * @param objectNumber the number of the object to consider, or empty if not specified.
-     * @param property the property name, or empty if not specified.
-     * @param fullPath whether the property names should be prefixed with the object class and number, also allowing
-     *     duplicate properties.
-     * @return a key:value map of properties matching the given filters.
-     */
-    Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-        throws DocException;
-
-    /**
-     * @param objectClass the class of object to consider, or empty if no class is specified.
-     * @param objectNumber the number of the object to consider, or empty if not specified.
      * @param property if not empty, the object should contain this property.
      * @return the name of objects matching the given filters.
      */
-    Collection<String> getObjects(String objectClass, String objectNumber, String property) throws DocException;
+    Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property) throws DocException;
 
     /**
      * @return the name of attachments.
