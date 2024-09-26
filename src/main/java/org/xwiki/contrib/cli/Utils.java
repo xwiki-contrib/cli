@@ -348,9 +348,9 @@ public final class Utils
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.getBase()
-            + "/xwiki/rest/wikis/" + wiki
-            + Utils.pageToRestURLPart(page)
+        return cmd.getUrl()
+            + "/rest/wikis/" + wiki
+            + Utils.fromReferenceToXFFPath(page)
             + (withObjects ? "?objects=true&attachments=true" : "");
     }
 
@@ -365,9 +365,9 @@ public final class Utils
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.getBase()
-            + "/xwiki/rest/wikis/" + wiki
-            + Utils.pageToRestURLPart(cmd.getPage())
+        return cmd.getUrl()
+            + "/rest/wikis/" + wiki
+            + Utils.fromReferenceToXFFPath(cmd.getPage())
             + "/attachments/" + attachmentName;
     }
 

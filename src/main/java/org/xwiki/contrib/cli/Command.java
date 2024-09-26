@@ -307,8 +307,6 @@ class Command
 
     private final Action action;
 
-    private final String base;
-
     private final String wiki;
 
     private final String page;
@@ -363,14 +361,13 @@ class Command
 
     private final boolean acceptNewDocument;
 
-    public Command(Action action, String base, String wiki, String page, String objectClass, String objectNumber,
+    public Command(Action action, String wiki, String page, String objectClass, String objectNumber,
         String property, String value, String editor, boolean wikiReadonly, boolean wikiWriteonly, String outputFile,
         String inputFile, String xmlReadDir, String xmlWriteDir, Map<String, String> headers, String url, String user,
         String pass, String content, String title, String mountPath, String syncPath, String syncDataSource,
         boolean printXML, String fileExtension, boolean debug, boolean pom, boolean acceptNewDocument)
     {
         this.action = action;
-        this.base = base;
         this.wiki = wiki;
         this.page = page;
         this.objectClass = objectClass;
@@ -403,11 +400,6 @@ class Command
     public Action getAction()
     {
         return action;
-    }
-
-    public String getBase()
-    {
-        return base;
     }
 
     public String getWiki()
@@ -549,7 +541,6 @@ class Command
     {
         out.println(""
             + "\nAction:        " + action
-            + "\nBase:          " + base
             + "\nWiki:          " + wiki
             + "\nPage:          " + page
             + "\nObject Class:  " + objectClass
