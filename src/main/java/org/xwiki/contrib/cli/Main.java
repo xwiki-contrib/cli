@@ -47,7 +47,6 @@ final class Main
     private static Command parseArgs(String[] args) throws CommandException
     {
         Command.Action action = null;
-        String base = null;
         String wiki = null;
         String page = null;
         String objectClass = null;
@@ -79,10 +78,6 @@ final class Main
         var i = 0;
         while (i < args.length) {
             switch (args[i]) {
-                case "-b" -> {
-                    base = Utils.ensureScheme(getNextParameter(args, i));
-                    i++;
-                }
                 case "-p" -> {
                     page = getNextParameter(args, i);
                     i++;
@@ -218,7 +213,7 @@ final class Main
         }
 
         var cmd =
-            new Command(action, base, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
+            new Command(action, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
                 wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
                 mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
 
