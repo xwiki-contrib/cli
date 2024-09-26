@@ -42,7 +42,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private String title;
 
-    private List<ObjectInfo> values;
+    private List<ObjectInfo> values = new LinkedList<>();
 
     private InputXMLRestPage inputPage;
 

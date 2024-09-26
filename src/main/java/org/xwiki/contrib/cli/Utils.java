@@ -96,7 +96,7 @@ public final class Utils
     public static String fromReferenceToXFFPath(PageReference reference)
     {
         // TODO unit test
-        return String.join("/spaces/", reference.spaces()) + "/pages/" + reference.page();
+        return "/spaces/" + String.join("/spaces/", reference.spaces()) + "/pages/" + reference.page();
     }
 
     public static PageReference deserialize(String reference)
@@ -126,8 +126,7 @@ public final class Utils
             }
             i++;
         }
-        var page = spaces.get(spaces.size() - 1);
-        spaces.remove(spaces.size() - 1);
+        var page = currentSpace.toString();
         return new PageReference(spaces, page);
     }
 
@@ -334,7 +333,7 @@ public final class Utils
 
         return cmd.getUrl()
             + "/rest/wikis/" + wiki
-            + Utils.fromReferenceToXFFPath(cmd.getPage())
+            + Utils.fromReferenceToXFFPath(page)
             + "/attachments/" + attachmentName;
     }
 

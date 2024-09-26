@@ -23,7 +23,6 @@ package org.xwiki.contrib.cli.document;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
@@ -88,13 +87,12 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
             throw new DocumentNotFoundException();
         }
         var root = (Element) domdoc.getRootElement();
-        var attachments = root.selectNodes( NODE_NAME_ATTACHMENT);
+        var attachments = root.selectNodes(NODE_NAME_ATTACHMENT);
         for (var attachment : attachments) {
             if (attachmentName.equals(getElement((Element) attachment, "filename").getText())) {
                 getElement((Element) attachment, "content").setText(Base64.getEncoder().encodeToString(content));
             }
         }
-        throw new DocException(String.format("Can't find attachment with name '%s'", attachmentName));
     }
 
     @Override

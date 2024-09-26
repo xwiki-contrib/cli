@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -177,7 +175,7 @@ abstract class AbstractXMLDoc
                 }
             }
             if (propertyElement != null) {
-              properties.put(propertyName, propertyElement.getText());
+                properties.put(propertyName, propertyElement.getText());
             }
         }
         return new ObjectInfo(className, Integer.parseInt(number),
@@ -235,10 +233,12 @@ abstract class AbstractXMLDoc
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
                 continue;
             }
-            var propertyElement = object.selectSingleNode(
-                fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
-            if (propertyElement == null) {
-                continue;
+            if (property != null) {
+                var propertyElement = object.selectSingleNode(
+                    fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
+                if (propertyElement == null) {
+                    continue;
+                }
             }
             objs.add(getObjectSpec((Element) object));
         }

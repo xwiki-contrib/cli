@@ -23,9 +23,9 @@ package org.xwiki.contrib.cli.document;
 import java.util.Collection;
 import java.util.Map;
 
-import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 public class CommandDoc implements InputDoc

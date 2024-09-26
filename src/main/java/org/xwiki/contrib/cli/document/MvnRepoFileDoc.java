@@ -12,16 +12,16 @@ import org.xwiki.contrib.cli.Utils;
  *
  * @version $Id$
  */
-public class XMLDirFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
+public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
 {
-    XMLDirFileDoc(Command cmd)
+    MvnRepoFileDoc(Command cmd)
     {
         super(cmd);
     }
 
-    XMLDirFileDoc(Command cmd, String baseDir) throws DocException, IOException
+    MvnRepoFileDoc(Command cmd, String baseDir, String wiki, String page) throws DocException, IOException
     {
         super(cmd, Path.of(baseDir, "src", "main", "resources",
-            Utils.fromReferenceToMvnReposPath(cmd.getPage())) + ".xml");
+            Utils.fromReferenceToMvnReposPath(page)) + ".xml");
     }
 }

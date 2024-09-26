@@ -74,7 +74,7 @@ public class XWikiDirSync
     private void syncFileFromMvnRepos(Path srcFile) throws DocException, IOException
     {
         var xmlFile = new XMLFileDoc(command, srcFile.toString());
-        var dstFile = Utils.fromReferenceToXFFPath(xmlFile.getReference());
+        var dstFile = syncPath.toString() + Utils.fromReferenceToXFFPath(xmlFile.getReference());
         var content = xmlFile.getContent();
         var contentFilePath = Path.of(dstFile, "content");
         Files.createDirectories(contentFilePath.getParent());
@@ -105,10 +105,10 @@ public class XWikiDirSync
                 Files.writeString(propertyValueFileName, property.value());
                 managedFiles.add(propertyValueFileName);
                 if (property.scriptingExtension().isPresent()) {
-                    Files.createLink(
-                        Path.of(propertyValueFileName + "." + property.scriptingExtension().get()),
-                        Path.of(property.name()));
-                    ;
+                    var linkPath = Path.of(propertyValueFileName + "." + property.scriptingExtension().get());
+                    if (!Files.exists(linkPath)) {
+                        Files.createSymbolicLink(linkPath, propertyValueFileName);
+                    }
                 }
             }
         }
@@ -182,6 +182,7 @@ public class XWikiDirSync
                 if (attachmentMatcher.matches()) {
                     String attachmentName = attachmentMatcher.group(1);
                     document.setAttachment(attachmentName, value);
+                    document.save();
                 }
             } catch (DocException | IOException e) {
                 if (command.isDebug()) {

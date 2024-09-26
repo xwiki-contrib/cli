@@ -24,15 +24,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Scanner;
 
-import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.CancelledOperationDocException;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
-import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.Utils;
+import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 import static java.lang.System.err;
 import static java.lang.System.out;
@@ -59,11 +58,11 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
 
         if (Utils.present(cmd.getXmlReadDir())) {
-            inputDocs.add(new XMLDirFileDoc(cmd, cmd.getXmlReadDir()));
+            inputDocs.add(new MvnRepoFileDoc(cmd, cmd.getXmlReadDir(), wiki, page));
         }
 
         if (Utils.present(cmd.getXmlWriteDir())) {
-            outputDocs.add(new XMLDirFileDoc(cmd, cmd.getXmlWriteDir()));
+            outputDocs.add(new MvnRepoFileDoc(cmd, cmd.getXmlWriteDir(), wiki, page));
         }
 
         if (Utils.present(cmd.getUrl())) {
@@ -76,7 +75,8 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
     }
 
-    MultipleDoc(List<OutputDoc> outputDocs, List<InputDoc> inputDocs) {
+    MultipleDoc(List<OutputDoc> outputDocs, List<InputDoc> inputDocs)
+    {
         this.inputDocs = inputDocs;
         this.outputDocs = outputDocs;
     }
@@ -143,7 +143,8 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return title;
     }
 
-    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property) throws DocException
+    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
+        throws DocException
     {
         Collection<ObjectInfo> objects = null;
         for (var inputDoc : inputDocs) {
