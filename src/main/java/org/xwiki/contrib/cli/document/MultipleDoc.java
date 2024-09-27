@@ -32,6 +32,7 @@ import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ClassProperty;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 import static java.lang.System.err;
@@ -284,5 +285,44 @@ public class MultipleDoc implements InputDoc, OutputDoc
 
         err.println("Sorry, I didn't understand your answer. Please retry.");
         return pickInputFile(what);
+
+    }
+
+    @Override
+    public Collection<ClassProperty> getClassInfo() throws DocException
+    {
+        Collection<ClassProperty> classInfo = new ArrayList<>();
+        for (var inputDoc : inputDocs) {
+            var newClassInfo = inputDoc.getClassInfo();
+            if (classInfo.isEmpty()) {
+                classInfo = newClassInfo;
+            } else if (!newClassInfo.isEmpty() && !classInfo.equals(newClassInfo)) {
+                return pickInputFile("the class").getClassInfo();
+            }
+        }
+        return classInfo;
+    }
+
+    @Override
+    public Optional<String> getClassPropertyField(String property, String field) throws DocException
+    {
+        Optional<String> classPropertyField = Optional.empty();
+        for (var inputDoc : inputDocs) {
+            var newClassPropertyField = inputDoc.getClassPropertyField(property, field);
+            if (classPropertyField.isEmpty()) {
+                classPropertyField = newClassPropertyField;
+            } else if (newClassPropertyField.isPresent() && !classPropertyField.equals(newClassPropertyField)) {
+                return pickInputFile("the class property field").getClassPropertyField(property, field);
+            }
+        }
+        return classPropertyField;
+    }
+
+    @Override
+    public void setClassPropertyField(String property, String field, String value) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.setClassPropertyField(property, field, value);
+        }
     }
 }

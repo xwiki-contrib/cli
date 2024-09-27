@@ -41,7 +41,7 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 
         this.page = page;
         this.wiki = wiki;
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, true);
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, true, true, true);
 
         var response = Utils.httpGet(cmd, url);
         var status = response.statusCode();
