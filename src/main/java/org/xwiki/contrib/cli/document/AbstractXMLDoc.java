@@ -40,7 +40,6 @@ import static java.lang.System.err;
 
 abstract class AbstractXMLDoc
 {
-
     protected static final String NODE_NAME_CLASS_NAME = "className";
 
     protected static final String NODE_NAME_NUMBER = "number";
@@ -134,52 +133,6 @@ abstract class AbstractXMLDoc
 
         title.setText(str);
         xml = null;
-    }
-
-    private Optional<ObjectInfo> getObjectSpec(Element object)
-    {
-        var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
-        if (classNameElement == null) {
-            return Optional.empty();
-        }
-
-        var className = classNameElement.getText();
-        if (Utils.isEmpty(className)) {
-            return Optional.empty();
-        }
-        var numberElement = getElement(object, NODE_NAME_NUMBER);
-        if (numberElement == null) {
-            return Optional.empty();
-        }
-
-        var number = numberElement.getText();
-        if (Utils.isEmpty(number)) {
-            return Optional.empty();
-        }
-
-        var propertiesElements = getElements(object, NODE_NAME_PROPERTY);
-        var properties = new HashMap<String, String>();
-        for (var prop : propertiesElements) {
-            String propertyName = null;
-            Element propertyElement = null;
-            if (fromRest) {
-                propertyElement = (Element) prop.selectSingleNode("xwiki:value");
-                propertyName = ((Element) prop).attributeValue(NODE_NAME);
-            } else {
-                for (var pElement : ((Element) prop).elements()) {
-                    propertyName = pElement.getName();
-                    propertyElement = pElement;
-                }
-            }
-            if (propertyElement != null) {
-                properties.put(propertyName, propertyElement.getText());
-            }
-        }
-        return Optional.of(new ObjectInfo(className, Integer.parseInt(number),
-            properties.entrySet().stream()
-                .map(i -> new Property(i.getKey(), i.getValue(),
-                    Utils.getScriptLangFromObjectInfo(properties, className, i.getKey())))
-                .toList()));
     }
 
     public Optional<ObjectInfo> getObjectSpec(String objectClass, String objectNumber, String property)
@@ -338,6 +291,55 @@ abstract class AbstractXMLDoc
             element = (Element) parent.selectSingleNode(NODE_XWIKI_SPACE + nodeName);
         }
         return element;
+    }
+
+    private Optional<ObjectInfo> getObjectSpec(Element object)
+    {
+        var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
+        if (classNameElement == null) {
+            return Optional.empty();
+        }
+
+        var className = classNameElement.getText();
+        if (Utils.isEmpty(className)) {
+            return Optional.empty();
+        }
+        var numberElement = getElement(object, NODE_NAME_NUMBER);
+        if (numberElement == null) {
+            return Optional.empty();
+        }
+
+        var number = numberElement.getText();
+        if (Utils.isEmpty(number)) {
+            return Optional.empty();
+        }
+
+        var propertiesElements = getElements(object, NODE_NAME_PROPERTY);
+        var properties = new HashMap<String, String>();
+        for (var prop : propertiesElements) {
+            String propertyName = null;
+            Element propertyElement = null;
+
+            if (fromRest) {
+                propertyElement = (Element) prop.selectSingleNode("xwiki:value");
+                propertyName = ((Element) prop).attributeValue(NODE_NAME);
+            } else {
+                for (var pElement : ((Element) prop).elements()) {
+                    propertyName = pElement.getName();
+                    propertyElement = pElement;
+                }
+            }
+
+            if (propertyElement != null) {
+                properties.put(propertyName, propertyElement.getText());
+            }
+        }
+
+        return Optional.of(new ObjectInfo(className, Integer.parseInt(number),
+            properties.entrySet().stream()
+                .map(i -> new Property(i.getKey(), i.getValue(),
+                    Utils.getScriptLangFromObjectInfo(properties, className, i.getKey())))
+                .toList()));
     }
 
     private static List<Node> getElements(Node parent, String nodeName)

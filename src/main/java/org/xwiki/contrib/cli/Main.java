@@ -36,6 +36,30 @@ final class Main
         throw new UnsupportedOperationException("Main cannot be instantiated");
     }
 
+    public static void main(String[] args) throws Exception
+    {
+        Command cmd;
+        try {
+            cmd = parseArgs(args);
+        } catch (CommandException e) {
+            err.println(e.getMessage());
+            return;
+        }
+
+        if (cmd.isDebug()) {
+            cmd.print();
+            out.println();
+        }
+
+        try {
+            cmd.getAction().run(cmd);
+        } catch (CancelledOperationDocException e) {
+            out.println("Operation cancelled by the user.");
+        } catch (MessageForUserDocException e) {
+            out.println(e.getMessage());
+        }
+    }
+
     private static String getNextParameter(String[] args, int i) throws CommandException
     {
         if (i + 1 >= args.length) {
@@ -78,10 +102,7 @@ final class Main
         var i = 0;
         while (i < args.length) {
             switch (args[i]) {
-                case "-p" -> {
-                    page = getNextParameter(args, i);
-                    i++;
-                }
+                case "-p" -> page = getNextParameter(args, i++);
                 case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
                     objectClass = objectParts[0];
@@ -96,62 +117,27 @@ final class Main
                     }
                     i++;
                 }
-                case "-w" -> {
-                    wiki = getNextParameter(args, i);
-                    i++;
-                }
-                case "-v" -> {
-                    value = getNextParameter(args, i);
-                    i++;
-                }
-                case "--editor" -> {
-                    editor = getNextParameter(args, i);
-                    i++;
-                }
+                case "-w" -> wiki = getNextParameter(args, i++);
+                case "-v" -> value = getNextParameter(args, i++);
+                case "--editor" -> editor = getNextParameter(args, i++);
                 case "--pom" -> pom = true;
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
                     headers.put(header[0], header[1]);
                 }
-                case "--user" -> {
-                    user = getNextParameter(args, i);
-                    i++;
-                }
-                case "--pass" -> {
-                    pass = getNextParameter(args, i);
-                    i++;
-                }
-                case "--wiki-readonly" -> {
-                    wikiReadonly = true;
-                }
-                case "--wiki-writeonly" -> {
-                    wikiWriteonly = true;
-                }
-                case "--write-to-xml" -> {
-                    outputFile = getNextParameter(args, i);
-                    i++;
-                }
-                case "--read-from-xml" -> {
-                    inputFile = getNextParameter(args, i);
-                    i++;
-                }
-                case "--write-to-mvn-repository" -> {
-                    xmlWriteDir = getNextParameter(args, i);
-                    i++;
-                }
+                case "--user" -> user = getNextParameter(args, i++);
+                case "--pass" -> pass = getNextParameter(args, i++);
+                case "--wiki-readonly" -> wikiReadonly = true;
+                case "--wiki-writeonly" -> wikiWriteonly = true;
+                case "--write-to-xml" -> outputFile = getNextParameter(args, i++);
+                case "--read-from-xml" -> inputFile = getNextParameter(args, i++);
+                case "--write-to-mvn-repository" -> xmlWriteDir = getNextParameter(args, i++);
                 case "--xml-file" -> {
-                    inputFile = getNextParameter(args, i);
+                    inputFile = getNextParameter(args, i++);
                     outputFile = inputFile;
-                    i++;
                 }
-                case "--sync-data-source" -> {
-                    syncDataSource = getNextParameter(args, i);
-                    i++;
-                }
-                case "-u", "--url" -> {
-                    url = getNextParameter(args, i);
-                    i++;
-                }
+                case "--sync-data-source" -> syncDataSource = getNextParameter(args, i++);
+                case "-u", "--url" -> url = getNextParameter(args, i++);
                 case "--edit-page" -> action = Command.Action.EDIT_PAGE;
                 case "--edit-content" -> action = Command.Action.EDIT_CONTENT;
                 case "--list-properties" -> action = Command.Action.LIST_PROPERTIES;
@@ -160,38 +146,31 @@ final class Main
                 case "--get-content" -> action = Command.Action.GET_CONTENT;
                 case "--get-title" -> action = Command.Action.GET_TITLE;
                 case "--set-content" -> {
-                    content = getNextParameter(args, i);
-                    i++;
+                    content = getNextParameter(args, i++);
                     action = Command.Action.SET_CONTENT;
                 }
                 case "--set-title" -> {
-                    title = getNextParameter(args, i);
-                    i++;
+                    title = getNextParameter(args, i++);
                     action = Command.Action.SET_TITLE;
                 }
                 case "--get-property" -> {
-                    property = getNextParameter(args, i);
-                    i++;
+                    property = getNextParameter(args, i++);
                     action = Command.Action.GET_PROPERTY_VALUE;
                 }
                 case "--set-property" -> {
-                    property = getNextParameter(args, i);
-                    i++;
+                    property = getNextParameter(args, i++);
                     action = Command.Action.SET_PROPERTY_VALUE;
                 }
                 case "--edit-property" -> {
-                    property = getNextParameter(args, i);
-                    i++;
+                    property = getNextParameter(args, i++);
                     action = Command.Action.EDIT_PROPERTY;
                 }
                 case "--mount" -> {
-                    mountPath = getNextParameter(args, i);
-                    ++i;
+                    mountPath = getNextParameter(args, i++);
                     action = Command.Action.MOUNT;
                 }
                 case "--sync" -> {
-                    syncPath = getNextParameter(args, i);
-                    ++i;
+                    syncPath = getNextParameter(args, i++);
                     action = Command.Action.SYNC;
                 }
                 case "--ext" -> fileExtension = getNextParameter(args, i++);
@@ -212,38 +191,15 @@ final class Main
             action = Command.Action.HELP;
         }
 
-        var cmd =
-            new Command(action, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
-                wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
-                mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
+        var cmd = new Command(
+            action, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
+            wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
+            mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
 
         if (cmd.getAction() == null) {
             throw new CommandException("Please specify an action. Try --help for help.");
         }
+
         return cmd;
-    }
-
-    public static void main(String[] args) throws Exception
-    {
-        Command cmd;
-        try {
-            cmd = parseArgs(args);
-        } catch (CommandException e) {
-            err.println(e.getMessage());
-            return;
-        }
-
-        if (cmd.isDebug()) {
-            cmd.print();
-            out.println();
-        }
-
-        try {
-            cmd.getAction().run(cmd);
-        } catch (CancelledOperationDocException e) {
-            out.println("Operation cancelled by the user.");
-        } catch (MessageForUserDocException e) {
-            out.println(e.getMessage());
-        }
     }
 }

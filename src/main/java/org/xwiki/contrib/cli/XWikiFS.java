@@ -65,25 +65,25 @@ class XWikiFS extends FuseStubFS
     private static final Pattern CLASSES_PATTERN = Pattern.compile("^/wikis/[^/]+/classes$");
 
     private static final Pattern PAGES_DIRECTORY_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages$");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages$");
 
     private static final Pattern SINGLE_PAGE_DIRECTORY_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+$");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+$");
 
     private static final Pattern ATTACHMENTS_DIRECTORY_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/attachments");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/attachments");
 
     private static final Pattern SINGLE_CLASS_DIRECTORY_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/class$");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/class$");
 
     private static final Pattern OBJECTS_DIRECTORY_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects$");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects$");
 
     private static final Pattern OBJECT_INSTANCES_PATTERN =
-        Pattern.compile("^(/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects)/([^/]+)$");
+        Pattern.compile("^(/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects)/([^/]+)$");
 
     private static final Pattern OBJECT_CONTENT_PATTERN =
-        Pattern.compile("^/wikis/(?:[^/]+)/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects/[^/]+/[^/]+$");
+        Pattern.compile("^/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects/[^/]+/[^/]+$");
 
     private static final Pattern PROPERTIES_DIRECTORY_PATTERN =
         Pattern.compile("^(/wikis/[^/]+/spaces(?:/[^/]+/spaces)*/[^/]+/pages/[^/]+/objects/([^/]+)/[^/]+)/properties$");
@@ -541,7 +541,8 @@ class XWikiFS extends FuseStubFS
                     String objectNumber = propertyMatcher.group(2);
                     String propertyName = propertyMatcher.group(3);
 
-                    return document.getValue(className, objectNumber, propertyName).orElse("").getBytes(StandardCharsets.UTF_8);
+                    return document.getValue(className, objectNumber, propertyName).orElse("")
+                        .getBytes(StandardCharsets.UTF_8);
                 }
 
                 if (remainingPath.equals(URL_PART_CONTENT)) {
@@ -581,8 +582,7 @@ class XWikiFS extends FuseStubFS
 
     private int putValue(String path, byte[] value)
     {
-        Pattern pagePattern = PAGES_PATTERN_MATCHER;
-        Matcher pageMatcher = pagePattern.matcher(path);
+        Matcher pageMatcher = PAGES_PATTERN_MATCHER.matcher(path);
         if (pageMatcher.find()) {
 
             String space = FSDirUtils.getSpaceFromPathPart(pageMatcher.group(2));
@@ -593,8 +593,7 @@ class XWikiFS extends FuseStubFS
 
                 String remainingPath = path.substring(pageMatcher.end());
 
-                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
-                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                Matcher propertyMatcher = OBJECTS_PROPERTIES_PATTERN_MATCHER.matcher(remainingPath);
                 if (propertyMatcher.matches()) {
                     String className = propertyMatcher.group(1);
                     String objectNumber = propertyMatcher.group(2);
@@ -618,19 +617,7 @@ class XWikiFS extends FuseStubFS
                     return value.length;
                 }
 
-                /*
-                Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
-                Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
-                if (classPropertyMatcher.matches()) {
-                    String propertyName = classPropertyMatcher.group(1);
-                    String attributeName = classPropertyMatcher.group(2);
-
-                    return document.getClassAttribute(propertyName, attributeName).getBytes(StandardCharsets.UTF_8);
-                }
-                */
-
-                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
-                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                Matcher attachmentMatcher = ATTACHMENTS_PATTERN_MATCHER.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
                     String attachmentName = attachmentMatcher.group(1);
                     document.setAttachment(attachmentName, value);

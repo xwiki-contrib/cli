@@ -36,6 +36,10 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
     private static final String APPLICATION_XML_CHARSET_UTF_8 = "application/xml; charset=utf-8";
 
+    protected final String wiki;
+
+    protected final String page;
+
     private final String url;
 
     private String content;
@@ -45,10 +49,6 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     private List<ObjectInfo> objectValues = new LinkedList<>();
 
     private InputXMLRestPage inputPage;
-
-    protected final String wiki;
-
-    protected final String page;
 
     OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
@@ -76,6 +76,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         } else {
             objectSpec = new ObjectInfo(objectClass, Integer.parseInt(objectNumber), new LinkedList<>());
         }
+
         var valuesForGivenObjectSpec = objectValues.stream()
             .filter(o -> objectSpec.objectClass().equals(o.objectClass()) && objectSpec.number() == o.number())
             .findFirst().orElseGet(() -> {
@@ -86,14 +87,6 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             .stream().filter(p -> p.name().equals(property)).toList();
         previousToRemove.forEach(o -> valuesForGivenObjectSpec.properties().remove(o));
         valuesForGivenObjectSpec.properties().add(new Property(property, value, Optional.empty()));
-    }
-
-    private InputXMLRestPage getInputPage() throws DocException
-    {
-        if (inputPage == null) {
-            inputPage = new InputXMLRestPage(cmd, wiki, page);
-        }
-        return inputPage;
     }
 
     @Override
@@ -108,16 +101,6 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         if (content == null && title == null && objectValues == null) {
             return;
         }
-
-        // if (content == null && title == null && values != null && onlyOneValue()) {
-        //     var v = values.get(0);
-        //     checkStatus(Utils.httpPut(
-        //         cmd,
-        //         url + "/objects/" + v.objectSpec + "/properties/" + v.property,
-        //         v.value,
-        //         "text/plain; charset=utf-8"));
-        //     return;
-        // }
 
         if (objectValues != null) {
             for (var objectSpec : objectValues) {
@@ -154,6 +137,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             if (title != null) {
                 xml.append("<title>").append(Utils.escapeXML(title)).append("</title>");
             }
+
             xml.append("</page>");
 
             if (objectValues != null) {
@@ -179,6 +163,14 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         return "the page at [" + url + "]";
     }
 
+    private InputXMLRestPage getInputPage() throws DocException
+    {
+        if (inputPage == null) {
+            inputPage = new InputXMLRestPage(cmd, wiki, page);
+        }
+        return inputPage;
+    }
+
     private void checkStatus(HttpResponse<String> response) throws MessageForUserDocException
     {
         var status = response.statusCode();
@@ -186,6 +178,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         if (status >= 200 && status < 300) {
             return;
         }
+
         throw new MessageForUserDocException(
             "Unexpected status " + status + ". " + (cmd.isDebug() ? "Body: " + response.body() :
                 " Use --debug to print the body of the HTTP request"));

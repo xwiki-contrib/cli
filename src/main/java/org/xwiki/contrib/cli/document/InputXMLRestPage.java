@@ -29,11 +29,11 @@ import org.xwiki.contrib.cli.Utils;
 
 class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {
-    private final String url;
-
     protected final String wiki;
 
     protected final String page;
+
+    private final String url;
 
     InputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
@@ -47,20 +47,18 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         var status = response.statusCode();
         if (status == 200) {
             handleResponse(response);
-        } else {
-            if (status == 404 && cmd.isAcceptNewDocument()) {
-                // 404 : Document not found, we assume it's a document we would like to create
-                response = Utils.httpPut(cmd, url, "", null);
-                status = response.statusCode();
-                if (status == 201) {
-                    // 201 : New Document Created
-                    handleResponse(response);
-                } else {
-                    handleUnexpectedStatus(status, cmd, response);
-                }
+        } else if (status == 404 && cmd.isAcceptNewDocument()) {
+            // 404 : Document not found, we assume it's a document we would like to create
+            response = Utils.httpPut(cmd, url, "", null);
+            status = response.statusCode();
+            if (status == 201) {
+                // 201 : New Document Created
+                handleResponse(response);
             } else {
                 handleUnexpectedStatus(status, cmd, response);
             }
+        } else {
+            handleUnexpectedStatus(status, cmd, response);
         }
     }
 

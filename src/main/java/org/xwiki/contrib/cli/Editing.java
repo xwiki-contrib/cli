@@ -32,8 +32,15 @@ import java.nio.file.StandardWatchEventKinds;
 
 import org.xwiki.contrib.cli.document.OutputDoc;
 
-class Editing
+import static java.lang.System.out;
+
+final class Editing
 {
+    private Editing()
+    {
+        // ignore
+    }
+
     public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
         throws IOException, InterruptedException
     {
@@ -45,7 +52,7 @@ class Editing
         var editor = getEditor(cmd);
 
         if (Utils.isEmpty(editor)) {
-            System.out.println("Please select an editor with --editor or set an EDITOR environment variable");
+            out.println("Please select an editor with --editor or set an EDITOR environment variable");
             return;
         }
 

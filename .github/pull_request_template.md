@@ -38,4 +38,4 @@ Indicate how changes were tested (e.g., what maven commands were run to validate
 
 * Prefers squash: Yes <!-- No — Explain why. -->
 * Backport on branches:
-  * 
+    * 

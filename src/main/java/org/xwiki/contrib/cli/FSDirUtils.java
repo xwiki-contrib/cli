@@ -3,13 +3,18 @@ package org.xwiki.contrib.cli;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-public class FSDirUtils
+final class FSDirUtils
 {
     public static final String DOT = ".";
 
     public static final String SLASH = "/";
+
     public static final String ESCAPED_DOT = "\\.";
 
+    private FSDirUtils()
+    {
+        // ignore
+    }
 
     public static String getSpaceFromPathPart(String part)
     {

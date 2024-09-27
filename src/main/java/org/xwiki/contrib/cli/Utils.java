@@ -362,6 +362,55 @@ public final class Utils
             .replace(">", "&gt;");
     }
 
+    public static List<String> getContentScriptingLanguage(String content) throws DocException
+    {
+        // For now we only support velocity, groovy, python, php macro
+        // We can at any time extends this list
+        final Map<String, String> macroRegex = Map.ofEntries(
+            Map.entry("velocity", "vm"),
+            Map.entry("groovy", "groovy"),
+            Map.entry("python", "py"),
+            Map.entry("php", "php")
+        );
+        var res = new ArrayList<String>(macroRegex.size());
+        for (var macro : macroRegex.entrySet()) {
+            if (content.contains("{{/" + macro.getKey() + "}}")) {
+                res.add(macro.getValue());
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Give all the file extension for script files of object properties.
+     *
+     * @param properties map of all properties of the object. Needed for some object to deduce the extension.
+     * @param objectClass class of the object.
+     * @param property properties for which we need to return the extension.
+     * @return the extension if it's a scripting file.
+     */
+    public static Optional<String> getScriptLangFromObjectInfo(HashMap<String, String> properties, String objectClass,
+        String property)
+    {
+        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
+            return Optional.of("less");
+        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
+            return Optional.of("js");
+        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
+            return Optional.of("vm");
+        } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
+            var scriptLanguage = properties.get("script_language");
+            switch (scriptLanguage) {
+                case "ruby" -> Optional.of("rb");
+                case "velocity" -> Optional.of("vm");
+                case "python" -> Optional.of("py");
+                // php, groovy
+                default -> Optional.of(scriptLanguage);
+            }
+        }
+        return Optional.empty();
+    }
+
     private static HttpClient getHTTPClient(Command cmd)
     {
         return HttpClient.newBuilder().build();
@@ -395,53 +444,5 @@ public final class Utils
         } catch (IOException | InterruptedException e) {
             throw new DocException(e);
         }
-    }
-
-    public static List<String> getContentScriptingLanguage(String content) throws DocException
-    {
-        // For now we only support velocity, groovy, python, php macro
-        // We can at any time extends this list
-        final Map<String, String> macroRegex = Map.ofEntries(
-            Map.entry("velocity", "vm"),
-            Map.entry("groovy", "groovy"),
-            Map.entry("python", "py"),
-            Map.entry("php", "php")
-        );
-        var res = new ArrayList<String>(macroRegex.size());
-        for (var macro : macroRegex.entrySet()) {
-            if (content.contains("{{/" + macro.getKey() + "}}")) {
-                res.add(macro.getValue());
-            }
-        }
-        return res;
-    }
-
-    /**
-     * Give all the file extension for script files of object properties.
-     * @param properties map of all properties of the object. Needed for some object to deduce the extension.
-     * @param objectClass class of the object.
-     * @param property properties for which we need to return the extension.
-     * @return the extension if it's a scripting file.
-     */
-    public static Optional<String> getScriptLangFromObjectInfo(HashMap<String, String> properties, String objectClass,
-        String property)
-    {
-        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
-            return Optional.of("less");
-        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
-            return Optional.of("js");
-        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
-            return Optional.of("vm");
-        } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
-            var scriptLanguage = properties.get("script_language");
-            switch (scriptLanguage) {
-                case "ruby" -> Optional.of("rb");
-                case "velocity" -> Optional.of("vm");
-                case "python" -> Optional.of("py");
-                // php, groovy
-                default -> Optional.of(scriptLanguage);
-            }
-        }
-        return Optional.empty();
     }
 }

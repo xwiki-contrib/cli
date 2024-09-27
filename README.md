@@ -7,7 +7,6 @@ XWiki CLI is a command-line tool to manipulate XWiki content on XWiki instances 
 
 Contrary to most other XWiki contrib packages, it runs outside XWiki. It is not a XWiki extension.
 
-
 * Project Lead: [Raphaël Jakse](https://www.xwiki.org/xwiki/bin/view/XWiki/rjakse)
 * Documentation & Downloads: [Documentation & Download](https://extensions.xwiki.org/xwiki/bin/view/Extension/cli)
 * [Issue Tracker](https://jira.xwiki.org/browse/CLI)
@@ -17,4 +16,5 @@ Contrary to most other XWiki contrib packages, it runs outside XWiki. It is not 
 * License: LGPL 2.1
 * Translations: N/A
 * Sonar Dashboard: N/A
-* Continuous Integration Status: [![Build Status](https://ci.xwiki.org/job/XWiki%20Contrib/job/cli/job/master/badge/icon)](https://ci.xwiki.org/job/XWiki%20Contrib/job/cli/job/master/)
+* Continuous Integration
+  Status: [![Build Status](https://ci.xwiki.org/job/XWiki%20Contrib/job/cli/job/master/badge/icon)](https://ci.xwiki.org/job/XWiki%20Contrib/job/cli/job/master/)

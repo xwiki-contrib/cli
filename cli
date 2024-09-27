@@ -1,0 +1,3 @@
+#!/bin/sh
+cd /home/raph/dl/xwiki/xwiki-cli-java
+java -cp target/cli-1.0-SNAPSHOT.jar org.xwiki.contrib.cli.Main "$@"

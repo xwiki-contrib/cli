@@ -82,38 +82,6 @@ public class MultipleDoc implements InputDoc, OutputDoc
         this.outputDocs = outputDocs;
     }
 
-    private InputDoc pickInputFile(String what) throws DocException
-    {
-        out.println(
-            "Input documents have various " + what
-                + ". Please select one of these choices, or 'c' to cancel."
-        );
-
-        var i = 1;
-        for (var d : inputDocs) {
-            out.println(i + ": " + d.getFriendlyName());
-            ++i;
-        }
-
-        out.print("> ");
-        out.flush();
-
-        final String choice = new Scanner(System.in).next().trim();
-
-        if ("c".equals(choice)) {
-            throw new CancelledOperationDocException();
-        }
-
-        try {
-            return inputDocs.get(Integer.parseInt(choice));
-        } catch (NumberFormatException e) {
-            // nothing, we'll tell the user we didn't understand the choice
-        }
-
-        err.println("Sorry, I didn't understand your answer. Please retry.");
-        return pickInputFile(what);
-    }
-
     public String getContent() throws DocException
     {
         String content = null;
@@ -129,6 +97,13 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return content;
     }
 
+    public void setContent(String str) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.setContent(str);
+        }
+    }
+
     public String getTitle() throws DocException
     {
         String title = null;
@@ -142,6 +117,13 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
 
         return title;
+    }
+
+    public void setTitle(String str) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.setTitle(str);
+        }
     }
 
     public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
@@ -204,20 +186,6 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return value;
     }
 
-    public void setContent(String str) throws DocException
-    {
-        for (var outputDoc : outputDocs) {
-            outputDoc.setContent(str);
-        }
-    }
-
-    public void setTitle(String str) throws DocException
-    {
-        for (var outputDoc : outputDocs) {
-            outputDoc.setTitle(str);
-        }
-    }
-
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         for (var outputDoc : outputDocs) {
@@ -243,5 +211,37 @@ public class MultipleDoc implements InputDoc, OutputDoc
     public String getFriendlyName()
     {
         return "the merged document";
+    }
+
+    private InputDoc pickInputFile(String what) throws DocException
+    {
+        out.println(
+            "Input documents have various " + what
+                + ". Please select one of these choices, or 'c' to cancel."
+        );
+
+        var i = 1;
+        for (var d : inputDocs) {
+            out.println(i + ": " + d.getFriendlyName());
+            ++i;
+        }
+
+        out.print("> ");
+        out.flush();
+
+        final String choice = new Scanner(System.in).next().trim();
+
+        if ("c".equals(choice)) {
+            throw new CancelledOperationDocException();
+        }
+
+        try {
+            return inputDocs.get(Integer.parseInt(choice));
+        } catch (NumberFormatException e) {
+            // nothing, we'll tell the user we didn't understand the choice
+        }
+
+        err.println("Sorry, I didn't understand your answer. Please retry.");
+        return pickInputFile(what);
     }
 }
