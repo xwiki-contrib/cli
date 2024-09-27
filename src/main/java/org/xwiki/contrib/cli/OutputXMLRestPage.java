@@ -187,16 +187,8 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         );
     }
 
-    private class ObjectValueSetter
+    private record ObjectValueSetter(String property, String value)
     {
-        String property;
-
-        String value;
-
-        ObjectValueSetter(String property, String value)
-        {
-            this.property = property;
-            this.value = value;
-        }
+        // ignore
     }
 }

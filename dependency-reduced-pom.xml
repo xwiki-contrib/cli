@@ -98,7 +98,9 @@
             <configuration>
               <fallback>false</fallback>
               <buildArgs>
-                <arg>-H:DashboardDump=xwiki-cli -H:+DashboardAll -H:ResourceConfigurationFiles=../META-INF/native-image/resource-config.json -H:ReflectionConfigurationFiles=../META-INF/native-image/reflect-config.json</arg>
+                <arg>-H:DashboardDump=xwiki-cli -H:+DashboardAll
+                  -H:ResourceConfigurationFiles=../META-INF/native-image/resource-config.json
+                  -H:ReflectionConfigurationFiles=../META-INF/native-image/reflect-config.json</arg>
               </buildArgs>
             </configuration>
           </plugin>
@@ -107,11 +109,11 @@
     </profile>
   </profiles>
   <properties>
+    <maven.compiler.target>17</maven.compiler.target>
     <imageName>xwiki-cli</imageName>
     <mainClass>org.xwiki.contrib.cli.Main</mainClass>
     <maven.compiler.source>17</maven.compiler.source>
-    <native.maven.plugin.version>0.9.12</native.maven.plugin.version>
-    <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <native.maven.plugin.version>0.9.12</native.maven.plugin.version>
   </properties>
 </project>

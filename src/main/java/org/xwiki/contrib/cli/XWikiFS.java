@@ -131,7 +131,7 @@ class XWikiFS extends FuseStubFS
         Matcher matcher = ATTACHMENT_PATTERN.matcher(path);
         if (matcher.find()) {
             String filename = matcher.group(2);
-            String encodedURLPart = FSDirUtils. escapeURLWithSlashes(matcher.group(1));
+            String encodedURLPart = FSDirUtils.escapeURLWithSlashes(matcher.group(1));
             String attachmentsRestURL = this.command.url + URL_PART_REST + encodedURLPart;
             String a = null;
             try {
@@ -269,7 +269,7 @@ class XWikiFS extends FuseStubFS
 
         // Match pattern: /^/wikis/(?:[^/]+)/classes$/
         if (CLASSES_PATTERN.matcher(path).matches()) {
-            String classesRestURL = command.url + URL_PART_REST + FSDirUtils. escapeURLWithSlashes(path);
+            String classesRestURL = command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(path);
             return getRootOfRestDocument(classesRestURL)
                 .selectNodes("/xwiki:classes/xwiki:class/xwiki:id")
                 .stream()
@@ -333,7 +333,7 @@ class XWikiFS extends FuseStubFS
                 return null;
             }
             String objectsRestURL =
-                command.url + URL_PART_REST + FSDirUtils. escapeURLWithSlashes(objectInstancesMatcher.group(1));
+                command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(objectInstancesMatcher.group(1));
             Element root = getRootOfRestDocument(objectsRestURL);
             return root.selectNodes(
                     String.format("/xwiki:objects/xwiki:objectSummary[xwiki:className/text() = %s]/xwiki:number",
@@ -586,8 +586,7 @@ class XWikiFS extends FuseStubFS
 
     private int putValue(String path, byte[] value)
     {
-        Pattern pagePattern = PAGES_PATTERN_MATCHER;
-        Matcher pageMatcher = pagePattern.matcher(path);
+        Matcher pageMatcher = PAGES_PATTERN_MATCHER.matcher(path);
         if (pageMatcher.find()) {
             this.command.wiki = pageMatcher.group(1);
             String space = FSDirUtils.getSpaceFromPathPart(pageMatcher.group(2));
@@ -599,8 +598,7 @@ class XWikiFS extends FuseStubFS
 
                 String remainingPath = path.substring(pageMatcher.end());
 
-                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
-                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                Matcher propertyMatcher = OBJECTS_PROPERTIES_PATTERN_MATCHER.matcher(remainingPath);
                 if (propertyMatcher.matches()) {
                     String className = propertyMatcher.group(1);
                     String objectNumber = propertyMatcher.group(2);
@@ -624,25 +622,8 @@ class XWikiFS extends FuseStubFS
                     return value.length;
                 }
 
-                /*
-                Pattern classPropertyPattern = Pattern.compile("^/class/properties/([^/]+)/([^/]+)$");
-                Matcher classPropertyMatcher = classPropertyPattern.matcher(path);
-                if (classPropertyMatcher.matches()) {
-                    String propertyName = classPropertyMatcher.group(1);
-                    String attributeName = classPropertyMatcher.group(2);
-
-                    return document.getClassAttribute(propertyName, attributeName).getBytes(StandardCharsets.UTF_8);
-                }
-                */
-
-                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
-                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                Matcher attachmentMatcher = ATTACHMENTS_PATTERN_MATCHER.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
-                    /*
-                    String attachmentName = attachmentMatcher.group(1);
-
-                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
-                     */
                     String attachmentURL = this.command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(path);
                     Utils.httpPut(this.command, attachmentURL, value, "application/octet-stream");
                     return value.length;

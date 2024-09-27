@@ -35,6 +35,30 @@ final class Main
         throw new UnsupportedOperationException("Main cannot be instantiated");
     }
 
+    public static void main(String[] args) throws Exception
+    {
+        Command cmd;
+        try {
+            cmd = parseArgs(args);
+        } catch (CommandException e) {
+            err.println(e.getMessage());
+            return;
+        }
+
+        if (cmd.debug) {
+            cmd.print();
+            out.println();
+        }
+
+        try {
+            cmd.action.run(cmd);
+        } catch (CancelledOperationDocException e) {
+            out.println("Operation cancelled by the user.");
+        } catch (MessageForUserDocException e) {
+            out.println(e.getMessage());
+        }
+    }
+
     private static String getNextParameter(String[] args, int i) throws CommandException
     {
         if (i + 1 >= args.length) {
@@ -50,14 +74,8 @@ final class Main
         cmd.headers = new HashMap<>();
         while (i < args.length) {
             switch (args[i]) {
-                case "-b" -> {
-                    cmd.base = Utils.ensureScheme(getNextParameter(args, i));
-                    i++;
-                }
-                case "-p" -> {
-                    cmd.page = getNextParameter(args, i);
-                    i++;
-                }
+                case "-b" -> cmd.base = Utils.ensureScheme(getNextParameter(args, i++));
+                case "-p" -> cmd.page = getNextParameter(args, i++);
                 case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
                     cmd.objectClass = objectParts[0];
@@ -72,45 +90,20 @@ final class Main
                     }
                     i++;
                 }
-                case "-w" -> {
-                    cmd.wiki = getNextParameter(args, i);
-                    i++;
-                }
-                case "-v" -> {
-                    cmd.value = getNextParameter(args, i);
-                    i++;
-                }
-                case "--editor" -> {
-                    cmd.editor = getNextParameter(args, i);
-                    i++;
-                }
+                case "-w" -> cmd.wiki = getNextParameter(args, i++);
+                case "-v" -> cmd.value = getNextParameter(args, i++);
+                case "--editor" -> cmd.editor = getNextParameter(args, i++);
                 case "--pom" -> cmd.pom = true;
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
                     cmd.headers.put(header[0], header[1]);
                 }
-                case "--user" -> {
-                    cmd.user = getNextParameter(args, i);
-                    i++;
-                }
-                case "--pass" -> {
-                    cmd.pass = getNextParameter(args, i);
-                    i++;
-                }
-                case "--wiki-readonly" -> {
-                    cmd.wikiReadonly = true;
-                }
-                case "--wiki-writeonly" -> {
-                    cmd.wikiWriteonly = true;
-                }
-                case "--write-to-xml" -> {
-                    cmd.outputFile = getNextParameter(args, i);
-                    i++;
-                }
-                case "--read-from-xml" -> {
-                    cmd.inputFile = getNextParameter(args, i);
-                    i++;
-                }
+                case "--user" -> cmd.user = getNextParameter(args, i++);
+                case "--pass" -> cmd.pass = getNextParameter(args, i++);
+                case "--wiki-readonly" -> cmd.wikiReadonly = true;
+                case "--wiki-writeonly" -> cmd.wikiWriteonly = true;
+                case "--write-to-xml" -> cmd.outputFile = getNextParameter(args, i++);
+                case "--read-from-xml" -> cmd.inputFile = getNextParameter(args, i++);
                 case "--write-to-mvn-repository" -> {
                     cmd.xmlWriteDir = getNextParameter(args, i);
                     i++;
@@ -136,38 +129,31 @@ final class Main
                 case "--get-content" -> cmd.action = Command.Action.GET_CONTENT;
                 case "--get-title" -> cmd.action = Command.Action.GET_TITLE;
                 case "--set-content" -> {
-                    cmd.content = getNextParameter(args, i);
-                    i++;
+                    cmd.content = getNextParameter(args, i++);
                     cmd.action = Command.Action.SET_CONTENT;
                 }
                 case "--set-title" -> {
-                    cmd.title = getNextParameter(args, i);
-                    i++;
+                    cmd.title = getNextParameter(args, i++);
                     cmd.action = Command.Action.SET_TITLE;
                 }
                 case "--get-property" -> {
-                    cmd.property = getNextParameter(args, i);
-                    i++;
+                    cmd.property = getNextParameter(args, i++);
                     cmd.action = Command.Action.GET_PROPERTY_VALUE;
                 }
                 case "--set-property" -> {
-                    cmd.property = getNextParameter(args, i);
-                    i++;
+                    cmd.property = getNextParameter(args, i++);
                     cmd.action = Command.Action.SET_PROPERTY_VALUE;
                 }
                 case "--edit-property" -> {
-                    cmd.property = getNextParameter(args, i);
-                    i++;
+                    cmd.property = getNextParameter(args, i++);
                     cmd.action = Command.Action.EDIT_PROPERTY;
                 }
                 case "--mount" -> {
-                    cmd.mountPath = getNextParameter(args, i);
-                    ++i;
+                    cmd.mountPath = getNextParameter(args, i++);
                     cmd.action = Command.Action.MOUNT;
                 }
                 case "--sync" -> {
-                    cmd.syncPath = getNextParameter(args, i);
-                    ++i;
+                    cmd.syncPath = getNextParameter(args, i++);
                     cmd.action = Command.Action.SYNC;
                 }
                 case "--ext" -> cmd.fileExtension = getNextParameter(args, i++);
@@ -190,29 +176,5 @@ final class Main
         }
 
         return cmd;
-    }
-
-    public static void main(String[] args) throws Exception
-    {
-        Command cmd;
-        try {
-            cmd = parseArgs(args);
-        } catch (CommandException e) {
-            err.println(e.getMessage());
-            return;
-        }
-
-        if (cmd.debug) {
-            cmd.print();
-            out.println();
-        }
-
-        try {
-            cmd.action.run(cmd);
-        } catch (CancelledOperationDocException e) {
-            out.println("Operation cancelled by the user.");
-        } catch (MessageForUserDocException e) {
-            out.println(e.getMessage());
-        }
     }
 }

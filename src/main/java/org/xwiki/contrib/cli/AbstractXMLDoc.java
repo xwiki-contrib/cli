@@ -63,11 +63,11 @@ abstract class AbstractXMLDoc
 
     private static final String NODE_PROPERTY = "property/%s";
 
-    private final Command cmd;
-
     protected String xml;
 
     protected Document dom;
+
+    private final Command cmd;
 
     private boolean fromRest;
 
@@ -305,7 +305,7 @@ abstract class AbstractXMLDoc
                 res.add(new Attachment(
                     getElement((Element) attachment, "filename").getText(),
                     Long.parseLong(getElement((Element) attachment, "filesize").getText()),
-                    Base64.getDecoder().decode(getElement((Element) attachment, "content").getText())
+                    Base64.getDecoder().decode(getElement((Element) attachment, NODE_NAME_CONTENT).getText())
                 ));
             }
         }

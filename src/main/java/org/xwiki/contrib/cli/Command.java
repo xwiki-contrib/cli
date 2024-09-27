@@ -34,11 +34,126 @@ class Command
 
     private static final String OBJECT_PROPERTY_NAME_CODE = "code";
 
-    private static final String EDIT_SUFFIX_XWIKI = ".xwiki";
-
     private static final String XWIKI_FILE_EXTENSION = ".xwiki";
 
     private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
+
+    private static final String HELP_TEXT = """
+        xwiki-cli JAVA
+
+        Actions:
+            --help                   Show the help
+            --edit-page              Edit a complete XWiki document
+            --get-content            Get the content of a XWiki document
+            --set-content CONTENT    Set the content of a XWiki document
+            --edit-content           Edit the content of a XWiki document with a text editor
+            --get-title              Get the title of a XWiki document
+            --set-title TITLE        Set the title of a XWiki document
+            --list-properties        List the document's properties,
+                                     optionally from the given object
+            --list-objects           List the document's objects,
+                                     optionally from the given class
+            --edit-content PROPERTY  Edit the content of a given property with a text editor
+            --get-property PROPERTY  Get the value of the given property,
+                                     optionally from the given object
+            --set-property PROPERTY  Set the value of the given property,
+                                     optionally from the given object (see -v to give a value)
+            --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
+            --sync PATH              Sync data to PATH with content from maven repository.
+
+        Parameters:
+            --debug                  Enable debug mode (for now, more verbose logs)
+            --print-xml              Print received XML code (for debugging)
+            -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
+            --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
+            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
+            -p PAGE                  Specify the page (dotted notation)
+            -u, --url URL            Specify the page's URL
+            -w WIKI                  Specify the wiki
+            --wiki-readonly          Don't write on the wiki
+            --wiki-writeonly         Don't read from the wiki.
+                                     Note that in this case you need to use an other source,
+                                     generally the XML dir.
+            -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
+            -v VALUE                 The value to use
+            --read-from-xml FILE     Read the document from the given file
+            --write-to-xml FILE      Write the document to the given file
+            --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
+            --write-to-mvn-repository DIR   Same as --write-to-xml but for a maven repository
+            --sync-data-source DIR   Path to the maven repository
+            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
+            -n, --new                Allow creation of a document using --edit-content (and no input file given)
+            -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
+            --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
+            --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
+            --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
+            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
+            --ext EXT                Use this as a file extension when editing a file
+
+        Authentication:
+            --user USENAME
+                The XWiki username to use.
+            --pass PASS
+                The XWiki user’s password.
+        """.trim();
+
+    public Action action;
+
+    public String base;
+
+    public String wiki;
+
+    public String page;
+
+    public String objectClass;
+
+    public String objectNumber;
+
+    public String property;
+
+    public String value;
+
+    public String editor;
+
+    public boolean wikiReadonly;
+
+    public boolean wikiWriteonly;
+
+    public String outputFile;
+
+    public String inputFile;
+
+    public String xmlReadDir;
+
+    public String xmlWriteDir;
+
+    public Map<String, String> headers;
+
+    public String url;
+
+    public String user;
+
+    public String pass;
+
+    public String content;
+
+    public String title;
+
+    public String mountPath;
+
+    public String syncPath;
+
+    public String syncDataSource;
+
+    public boolean printXML;
+
+    public boolean debug;
+
+    public boolean pom;
+
+    public boolean acceptNewDocument;
+
+    public String fileExtension;
 
     enum Action
     {
@@ -47,7 +162,7 @@ class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                Editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newValue -> {
+                Editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
@@ -70,7 +185,7 @@ class Command
                     res += p.getKey() + "=" + protectValue(p.getValue());
                 }
                 res += "\n\ncontent=" + protectValue(doc.getContent());
-                Editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, EDIT_SUFFIX_XWIKI, newRes -> {
+                Editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newRes -> {
                     try {
                         Editing.updateDocFromTextPage(doc, newRes);
                     } catch (DocException e) {
@@ -90,18 +205,18 @@ class Command
                 if (val == null) {
                     throw new MessageForUserDocException("This property does not exist");
                 }
-                var objectClass = cmd.objectClass;
-                if (Utils.isEmpty(objectClass)) {
-                    objectClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
+                var objClass = cmd.objectClass;
+                if (Utils.isEmpty(objClass)) {
+                    objClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
                         .stream().findFirst().get()
                         .split("/")[0];
                 }
 
                 String ext = Utils.present(cmd.fileExtension)
                     ? '.' + cmd.fileExtension
-                    : cmd.getFileExtension(objectClass, cmd.property);
+                    : cmd.getFileExtension(objClass, cmd.property);
 
-                Editing.editValue(cmd           , val, "property-", ext, newValue -> {
+                Editing.editValue(cmd, val, "property-", ext, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
@@ -237,65 +352,7 @@ class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                out.println(
-                    """
-                        xwiki-cli JAVA
-
-                        Actions:
-                            --help                   Show the help
-                            --edit-page              Edit a complete XWiki document
-                            --get-content            Get the content of a XWiki document
-                            --set-content CONTENT    Set the content of a XWiki document
-                            --edit-content           Edit the content of a XWiki document with a text editor
-                            --get-title              Get the title of a XWiki document
-                            --set-title TITLE        Set the title of a XWiki document
-                            --list-properties        List the document's properties,
-                                                     optionally from the given object
-                            --list-objects           List the document's objects,
-                                                     optionally from the given class
-                            --edit-content PROPERTY  Edit the content of a given property with a text editor
-                            --get-property PROPERTY  Get the value of the given property,
-                                                     optionally from the given object
-                            --set-property PROPERTY  Set the value of the given property,
-                                                     optionally from the given object (see -v to give a value)
-                            --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
-                            --sync PATH              Sync data to PATH with content from maven repository.
-
-                        Parameters:
-                            --debug                  Enable debug mode (for now, more verbose logs)
-                            --print-xml              Print received XML code (for debugging)
-                            -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
-                            --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
-                            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
-                            -p PAGE                  Specify the page (dotted notation)
-                            -u, --url URL            Specify the page's URL
-                            -w WIKI                  Specify the wiki
-                            --wiki-readonly          Don't write on the wiki
-                            --wiki-writeonly         Don't read from the wiki.
-                                                     Note that in this case you need to use an other source,
-                                                     generally the XML dir.
-                            -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
-                            -v VALUE                 The value to use
-                            --read-from-xml FILE     Read the document from the given file
-                            --write-to-xml FILE      Write the document to the given file
-                            --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
-                            --write-to-mvn-repository DIR   Same as --write-to-xml but for a maven repository
-                            --sync-data-source DIR   Path to the maven repository
-                            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
-                            -n, --new                Enable creation of a new XWiki document when using --edit-content action (and no input file given)
-                            -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
-                            --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
-                            --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
-                            --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
-                            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
-                            --ext EXT                Use this as a file extension when editing a file
-
-                        Authentication:
-                            --user USENAME
-                                The XWiki username to use.
-                            --pass PASS
-                                The XWiki user’s password.
-                        """.trim());
+                out.println(HELP_TEXT);
             }
         };
 
@@ -304,64 +361,6 @@ class Command
             err.println("No action was specified");
         }
     }
-
-    public Action action;
-
-    public String base;
-
-    public String wiki;
-
-    public String page;
-
-    public String objectClass;
-
-    public String objectNumber;
-
-    public String property;
-
-    public String value;
-
-    public String editor;
-
-    public boolean wikiReadonly;
-
-    public boolean wikiWriteonly;
-
-    public String outputFile;
-
-    public String inputFile;
-
-    public String xmlReadDir;
-
-    public String xmlWriteDir;
-
-    public Map<String, String> headers;
-
-    public String url;
-
-    public String user;
-
-    public String pass;
-
-    public String content;
-
-    public String title;
-
-    public String mountPath;
-
-    public String syncPath;
-
-    public String syncDataSource;
-
-    public boolean printXML;
-
-    public boolean debug;
-
-    public boolean pom;
-
-    public boolean acceptNewDocument;
-
-    public String fileExtension;
 
     void print()
     {
@@ -441,16 +440,20 @@ class Command
     {
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
             return ".less";
-        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
-            return ".js";
-        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
-            return ".vm";
-        } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
-            return ".groovy";
-        } else if (this.pom) {
-            return ".groovy";
-        } else {
-            return XWIKI_FILE_EXTENSION;
         }
+
+        if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {
+            return ".js";
+        }
+
+        if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
+            return ".vm";
+        }
+
+        if (this.pom || (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content"))) {
+            return ".groovy";
+        }
+
+        return XWIKI_FILE_EXTENSION;
     }
 }

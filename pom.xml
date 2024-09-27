@@ -61,48 +61,48 @@
         <artifactId>maven-shade-plugin</artifactId>
         <version>3.4.1</version>
         <configuration>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>module-info.class</exclude>
-                                <exclude>META-INF/MANIFEST.MF</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>module-info.class</exclude>
+                <exclude>META-INF/MANIFEST.MF</exclude>
+              </excludes>
+            </filter>
+          </filters>
         </configuration>
         <executions>
-            <execution>
-                <phase>package</phase>
-                <goals>
-                <goal>shade</goal>
-                </goals>
-            </execution>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
         </executions>
       </plugin>
       <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-checkstyle-plugin</artifactId>
-          <version>3.3.0</version>
-          <configuration>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-checkstyle-plugin</artifactId>
+        <version>3.3.0</version>
+        <configuration>
+          <configLocation>config/checkstyle/checkstyle.xml</configLocation>
+          <failOnViolation>false</failOnViolation>
+          <consoleOutput>true</consoleOutput>
+          <failsOnError>false</failsOnError>
+          <linkXRef>false</linkXRef>
+        </configuration>
+        <executions>
+          <execution>
+            <id>validate</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+            <configuration>
               <configLocation>config/checkstyle/checkstyle.xml</configLocation>
-              <failOnViolation>false</failOnViolation>
-              <consoleOutput>true</consoleOutput>
-              <failsOnError>false</failsOnError>
-              <linkXRef>false</linkXRef>
-          </configuration>
-          <executions>
-              <execution>
-              <id>validate</id>
-              <phase>validate</phase>
-              <goals>
-                  <goal>check</goal>
-              </goals>
-              <configuration>
-                  <configLocation>config/checkstyle/checkstyle.xml</configLocation>
-              </configuration>
-              </execution>
-          </executions>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
@@ -128,7 +128,10 @@
             <configuration>
               <fallback>false</fallback>
               <buildArgs>
-                <arg>-H:DashboardDump=xwiki-cli -H:+DashboardAll -H:ResourceConfigurationFiles=../META-INF/native-image/resource-config.json -H:ReflectionConfigurationFiles=../META-INF/native-image/reflect-config.json</arg>
+                <arg>-H:DashboardDump=xwiki-cli -H:+DashboardAll
+                  -H:ResourceConfigurationFiles=../META-INF/native-image/resource-config.json
+                  -H:ReflectionConfigurationFiles=../META-INF/native-image/reflect-config.json
+                </arg>
               </buildArgs>
               <!--                         <agent>
                              <enabled>false</enabled>

@@ -46,8 +46,7 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
                 } else {
                     handleUnexpectedStatus(status, cmd, response);
                 }
-            }
-            else {
+            } else {
                 handleUnexpectedStatus(status, cmd, response);
             }
         }
@@ -59,7 +58,8 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         return "the page at [" + url + "]";
     }
 
-    private void handleResponse(HttpResponse<String> response) {
+    private void handleResponse(HttpResponse<String> response)
+    {
         var body = response.body();
         setXML(body, true);
     }
@@ -68,9 +68,9 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
     {
         throw new MessageForUserDocException(
             "Unexpected status "
-            + status
-            + ". "
-            + (cmd.debug
+                + status
+                + ". "
+                + (cmd.debug
                 ? "Body: " + response.body()
                 : " Use --debug to print the body of the HTTP request")
         );

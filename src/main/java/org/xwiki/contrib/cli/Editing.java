@@ -30,8 +30,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 
-class Editing
+import static java.lang.System.out;
+
+final class Editing
 {
+    private Editing()
+    {
+        // ignore
+    }
+
     public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
         throws IOException, InterruptedException
     {
@@ -43,7 +50,7 @@ class Editing
         var editor = getEditor(cmd);
 
         if (Utils.isEmpty(editor)) {
-            System.out.println("Please select an editor with --editor or set an EDITOR environment variable");
+            out.println("Please select an editor with --editor or set an EDITOR environment variable");
             return;
         }
 
@@ -75,11 +82,12 @@ class Editing
             try {
                 // Get the path of the executing JAR, to get the path to the pom file
                 pomFilePath =
-                    Path.of(Editing.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath()).getParent().getParent().resolve("resources/pom.xml");
+                    Path.of(Editing.class.getProtectionDomain().getCodeSource().getLocation().toURI().getPath())
+                        .getParent().getParent().resolve("resources/pom.xml");
             } catch (URISyntaxException e) {
                 throw new RuntimeException(e);
             }
-            Files.copy(pomFilePath,dir.resolve("pom.xml"));
+            Files.copy(pomFilePath, dir.resolve("pom.xml"));
             dir = Files.createDirectories(dir.resolve("src/main/groovy"));
         }
         var dirFile = dir.toFile();
