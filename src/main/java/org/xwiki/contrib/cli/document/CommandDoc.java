@@ -22,6 +22,7 @@ package org.xwiki.contrib.cli.document;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Optional;
 
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
@@ -68,9 +69,9 @@ public class CommandDoc implements InputDoc
         throw new UnsupportedOperationException("Not Implemented");
     }
 
-    public String getValue(String objectClass, String objectNumber, String property)
+    public Optional<String> getValue(String objectClass, String objectNumber, String property)
     {
-        return cmd.getValue();
+        return Optional.ofNullable(cmd.getValue());
     }
 
     public String getFriendlyName()

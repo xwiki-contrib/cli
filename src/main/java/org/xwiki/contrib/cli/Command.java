@@ -91,7 +91,7 @@ public class Command
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 var val = doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property);
-                if (val == null) {
+                if (val.isEmpty()) {
                     throw new MessageForUserDocException("This property does not exist");
                 }
                 var objectClass = cmd.objectClass;
@@ -105,7 +105,7 @@ public class Command
                     ? '.' + cmd.fileExtension
                     : cmd.getFileExtension(objectClass, cmd.property);
 
-                Editing.editValue(cmd, val, "property-", ext, newValue -> {
+                Editing.editValue(cmd, val.get(), "property-", ext, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();
@@ -156,7 +156,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property)));
+                out.println(value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property).orElse("empty")));
             }
         },
         SET_PROPERTY_VALUE {
@@ -616,6 +616,7 @@ public class Command
         return "(" + (v == null ? "not " : "") + "given)";
     }
 
+    // TODO replace by Utils.getScriptLangFromObjectInfo(...)
     private String getFileExtension(String objectClass, String property)
     {
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(OBJECT_PROPERTY_NAME_CODE)) {

@@ -42,7 +42,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private String title;
 
-    private List<ObjectInfo> values = new LinkedList<>();
+    private List<ObjectInfo> objectValues = new LinkedList<>();
 
     private InputXMLRestPage inputPage;
 
@@ -69,14 +69,17 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     {
         ObjectInfo objectSpec;
         if (Utils.isEmpty(objectClass) || Utils.isEmpty(objectNumber)) {
-            objectSpec = getInputPage().getObjectSpec(objectClass, objectNumber, property);
+            objectSpec = getInputPage()
+                .getObjectSpec(objectClass, objectNumber, property)
+                .orElseThrow(() -> new DocException(String.format("Can't find object of class %s number %s",
+                    objectClass, objectNumber)));
         } else {
             objectSpec = new ObjectInfo(objectClass, Integer.parseInt(objectNumber), new LinkedList<>());
         }
-        var valuesForGivenObjectSpec = values.stream()
+        var valuesForGivenObjectSpec = objectValues.stream()
             .filter(o -> objectSpec.objectClass().equals(o.objectClass()) && objectSpec.number() == o.number())
             .findFirst().orElseGet(() -> {
-                values.add(objectSpec);
+                objectValues.add(objectSpec);
                 return objectSpec;
             });
         var previousToRemove = valuesForGivenObjectSpec.properties()
@@ -102,7 +105,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void save() throws DocException
     {
-        if (content == null && title == null && values == null) {
+        if (content == null && title == null && objectValues == null) {
             return;
         }
 
@@ -116,8 +119,8 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         //     return;
         // }
 
-        if (values != null) {
-            for (var objectSpec : values) {
+        if (objectValues != null) {
+            for (var objectSpec : objectValues) {
                 var objectClassName = objectSpec.objectClass();
                 var objectNumber = objectSpec.number();
 
@@ -151,11 +154,10 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             if (title != null) {
                 xml.append("<title>").append(Utils.escapeXML(title)).append("</title>");
             }
-
             xml.append("</page>");
 
-            if (values != null) {
-                values.clear();
+            if (objectValues != null) {
+                objectValues.clear();
             }
             content = null;
             title = null;

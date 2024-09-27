@@ -361,6 +361,7 @@ class XWikiFS extends FuseStubFS
                 String name = node.getText();
                 String className = propertiesDirectoryMatcher.group(2);
 
+                // TODO use the Utils.getScriptLangFromObjectInfo(...) method instead
                 if (name.equals("code")) {
                     if (className.equals("XWiki.StyleSheetExtension")) {
                         properties.add(name + ".less");
@@ -540,7 +541,7 @@ class XWikiFS extends FuseStubFS
                     String objectNumber = propertyMatcher.group(2);
                     String propertyName = propertyMatcher.group(3);
 
-                    return document.getValue(className, objectNumber, propertyName).getBytes(StandardCharsets.UTF_8);
+                    return document.getValue(className, objectNumber, propertyName).orElse("").getBytes(StandardCharsets.UTF_8);
                 }
 
                 if (remainingPath.equals(URL_PART_CONTENT)) {
@@ -565,17 +566,8 @@ class XWikiFS extends FuseStubFS
                 Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
                 Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
-                    /*
-                    String attachmentName = attachmentMatcher.group(1);
-
-                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
-                     */
                     String attachmentName = attachmentMatcher.group(1);
                     return document.getAttachment(attachmentName);
-                    /*
-                    String attachmentURL = this.command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(path);
-                    return Utils.httpGetBytes(this.command, attachmentURL).body();
-                     */
                 }
             } catch (DocException | IOException e) {
                 if (command.isDebug()) {
@@ -640,17 +632,8 @@ class XWikiFS extends FuseStubFS
                 Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
                 Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
-                    /*
-                    String attachmentName = attachmentMatcher.group(1);
-
-                    return document.getAttachment(attachmentName).getBytes(StandardCharsets.UTF_8);
-                     */
                     String attachmentName = attachmentMatcher.group(1);
                     document.setAttachment(attachmentName, value);
-                    /*
-                    String attachmentURL = this.command.url + URL_PART_REST + FSDirUtils.escapeURLWithSlashes(path);
-                    Utils.httpPut(this.command, attachmentURL, value, "application/octet-stream");
-                    */
                     return value.length;
                 }
             } catch (DocException | IOException e) {

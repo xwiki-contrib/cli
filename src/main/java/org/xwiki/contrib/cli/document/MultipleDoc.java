@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
 
 import org.xwiki.contrib.cli.CancelledOperationDocException;
@@ -188,14 +189,14 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return attachment;
     }
 
-    public String getValue(String objectClass, String objectNumber, String property) throws DocException
+    public Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException
     {
-        String value = null;
+        Optional<String> value = Optional.empty();
         for (var inputDoc : inputDocs) {
             var newValue = inputDoc.getValue(objectClass, objectNumber, property);
-            if (value == null) {
+            if (value.isEmpty()) {
                 value = newValue;
-            } else if (newValue != null && !value.equals(newValue)) {
+            } else if (newValue.isPresent() && !value.equals(newValue)) {
                 return pickInputFile("the value").getValue(objectClass, objectNumber, property);
             }
         }

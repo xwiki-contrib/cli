@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli.document;
 
 import java.util.Collection;
+import java.util.Optional;
 
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
@@ -64,7 +65,7 @@ interface InputDoc
      * @param property the property name, or empty if not specified.
      * @return the first value of the property matching the given filters.
      */
-    String getValue(String objectClass, String objectNumber, String property) throws DocException;
+    Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException;
 
     /**
      * @return a friendly string like "the XML file SomeDoc.xml"

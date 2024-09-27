@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -39,6 +40,7 @@ import static java.lang.System.err;
 
 abstract class AbstractXMLDoc
 {
+
     protected static final String NODE_NAME_CLASS_NAME = "className";
 
     protected static final String NODE_NAME_NUMBER = "number";
@@ -53,30 +55,25 @@ abstract class AbstractXMLDoc
 
     protected static final String NODE_NAME = "name";
 
-    protected static final String NODE_NAME_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
-
     protected static final String NODE_NAME_PROPERTY = "property";
 
     protected static final String NODE_NAME_ATTACHMENT = "attachment";
 
-    protected static final String NODE_NAME_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
-
     protected static final String LINE = "\n-----\n";
 
-    protected static final String NODE_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
+    protected static final String XPATH_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
 
-    protected static final String NODE_PROPERTY = "property/%s";
+    protected static final String XPATH_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
+
+    protected static final String XPATH_REST_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
+
+    protected static final String XPATH_XML_PROPERTY = "property/%s";
 
     protected final Command cmd;
 
     protected String xml;
 
     protected Document dom;
-
-    protected boolean isFromRest()
-    {
-        return fromRest;
-    }
 
     private boolean fromRest;
 
@@ -139,25 +136,25 @@ abstract class AbstractXMLDoc
         xml = null;
     }
 
-    private ObjectInfo getObjectSpec(Element object)
+    private Optional<ObjectInfo> getObjectSpec(Element object)
     {
         var classNameElement = getElement(object, NODE_NAME_CLASS_NAME);
         if (classNameElement == null) {
-            return null;
+            return Optional.empty();
         }
 
         var className = classNameElement.getText();
         if (Utils.isEmpty(className)) {
-            return null;
+            return Optional.empty();
         }
         var numberElement = getElement(object, NODE_NAME_NUMBER);
         if (numberElement == null) {
-            return null;
+            return Optional.empty();
         }
 
         var number = numberElement.getText();
         if (Utils.isEmpty(number)) {
-            return null;
+            return Optional.empty();
         }
 
         var propertiesElements = getElements(object, NODE_NAME_PROPERTY);
@@ -178,14 +175,15 @@ abstract class AbstractXMLDoc
                 properties.put(propertyName, propertyElement.getText());
             }
         }
-        return new ObjectInfo(className, Integer.parseInt(number),
+        return Optional.of(new ObjectInfo(className, Integer.parseInt(number),
             properties.entrySet().stream()
                 .map(i -> new Property(i.getKey(), i.getValue(),
                     Utils.getScriptLangFromObjectInfo(properties, className, i.getKey())))
-                .toList());
+                .toList()));
     }
 
-    public ObjectInfo getObjectSpec(String objectClass, String objectNumber, String property) throws DocException
+    public Optional<ObjectInfo> getObjectSpec(String objectClass, String objectNumber, String property)
+        throws DocException
     {
         var domdoc = getDom();
 
@@ -198,14 +196,15 @@ abstract class AbstractXMLDoc
         }
 
         var root = domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        var objects = root.selectNodes(fromRest ? XPATH_REST_OBJECT : NODE_NAME_OBJECT);
         for (var object : objects) {
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
                 continue;
             }
 
             var propertyElement = object.selectSingleNode(
-                fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
+                fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property) :
+                    String.format(XPATH_XML_PROPERTY, property));
             if (propertyElement == null) {
                 continue;
             }
@@ -227,7 +226,7 @@ abstract class AbstractXMLDoc
         }
 
         var root = domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        var objects = root.selectNodes(fromRest ? XPATH_REST_OBJECT : NODE_NAME_OBJECT);
         var objs = new ArrayList<ObjectInfo>();
         for (var object : objects) {
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
@@ -235,12 +234,13 @@ abstract class AbstractXMLDoc
             }
             if (property != null) {
                 var propertyElement = object.selectSingleNode(
-                    fromRest ? String.format(NODE_PROPERTY_NAME, property) : String.format(NODE_PROPERTY, property));
+                    fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property) :
+                        String.format(XPATH_XML_PROPERTY, property));
                 if (propertyElement == null) {
                     continue;
                 }
             }
-            objs.add(getObjectSpec((Element) object));
+            getObjectSpec((Element) object).ifPresent(objs::add);
         }
 
         return objs;
@@ -255,11 +255,10 @@ abstract class AbstractXMLDoc
         }
 
         var root = domdoc.getRootElement();
-        var attachments = root.selectNodes(fromRest ? NODE_NAME_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
+        var attachments = root.selectNodes(fromRest ? XPATH_REST_ATTACHMENT : NODE_NAME_ATTACHMENT);
         var res = new ArrayList<AttachmentInfo>(attachments.size());
         for (var attachment : attachments) {
             if (fromRest) {
-                // TODO test if it works well
                 res.add(new AttachmentInfo(getElement((Element) attachment, "name").getText(),
                     Long.parseLong(getElement((Element) attachment, "size").getText())));
             } else {
@@ -270,24 +269,22 @@ abstract class AbstractXMLDoc
         return res;
     }
 
-    public String getValue(String objectClass, String objectNumber, String property) throws DocException
+    public Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException
     {
         var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
-        if (propertyElement == null) {
-            return null;
+        if (propertyElement.isEmpty()) {
+            return Optional.empty();
         }
-
-        return propertyElement.getText();
+        return Optional.of(propertyElement.get().getText());
     }
 
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
-        if (propertyElement == null) {
+        if (propertyElement.isEmpty()) {
             throw new DocException("Couln't find this property");
         }
-
-        propertyElement.setText(value);
+        propertyElement.get().setText(value);
     }
 
     public String getReference() throws DocException
@@ -379,7 +376,8 @@ abstract class AbstractXMLDoc
         return true;
     }
 
-    private Node getPropertyValueElement(String objectClass, String objectNumber, String property) throws DocException
+    private Optional<Node> getPropertyValueElement(String objectClass, String objectNumber, String property)
+        throws DocException
     {
         var domdoc = getDom();
 
@@ -392,7 +390,7 @@ abstract class AbstractXMLDoc
         }
 
         var root = domdoc.getRootElement();
-        var objects = root.selectNodes(fromRest ? NODE_NAME_REST_OBJECT : NODE_NAME_OBJECT);
+        var objects = root.selectNodes(fromRest ? XPATH_REST_OBJECT : NODE_NAME_OBJECT);
         for (var object : objects) {
             if (!objectMatchesFilter(object, objectClass, objectNumber)) {
                 continue;
@@ -405,10 +403,10 @@ abstract class AbstractXMLDoc
                 continue;
             }
 
-            return propertyElement;
+            return Optional.of(propertyElement);
         }
 
-        return null;
+        return Optional.empty();
     }
 
     class DocumentNotFoundException extends DocException
