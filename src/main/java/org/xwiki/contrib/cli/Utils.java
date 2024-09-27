@@ -303,7 +303,8 @@ public final class Utils
      * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
-    public static String getDocRestURLFromCommand(Command cmd, String wiki, String page, boolean withObjects)
+    public static String getDocRestURLFromCommand(Command cmd, String wiki, String page, boolean withObjects,
+        boolean withAttchments, boolean withClass)
         throws DocException
     {
         if (wiki == null || wiki.isEmpty()) {
@@ -314,10 +315,19 @@ public final class Utils
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.url()
-            + "/rest/wikis/" + wiki
-            + Utils.fromReferenceToXFFPath(page)
-            + (withObjects ? "?objects=true&attachments=true" : "");
+        var url = new StringBuilder(cmd.url());
+        url.append("/rest/wikis/").append(wiki);
+        url.append(Utils.fromReferenceToXFFPath(page));
+        if (withObjects  || withAttchments || withClass) {
+            var params = new String[] {
+                withObjects ? "objects=true":"",
+                withAttchments ? "attachments=true":"",
+                withClass ? "class=true":"",
+            };
+            url.append("?");
+            url.append(String.join("&", params));
+        }
+        return  url.toString();
     }
 
     public static String getAttachmentRestURLFromCommand(Command cmd, String wiki, String page, String attachmentName)

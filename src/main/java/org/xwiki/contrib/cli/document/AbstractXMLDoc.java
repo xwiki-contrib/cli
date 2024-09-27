@@ -21,10 +21,13 @@
 package org.xwiki.contrib.cli.document;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.dom4j.Document;
 import org.dom4j.Element;
@@ -33,6 +36,7 @@ import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ClassProperty;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.document.element.Property;
 
@@ -41,6 +45,8 @@ import static java.lang.System.err;
 abstract class AbstractXMLDoc
 {
     protected static final String NODE_NAME_CLASS_NAME = "className";
+
+    protected static final String NODE_NAME_CLASS = "class";
 
     protected static final String NODE_NAME_NUMBER = "number";
 
@@ -60,6 +66,23 @@ abstract class AbstractXMLDoc
 
     protected static final String LINE = "\n-----\n";
 
+    protected static final String XPATH_XML_CLASS_PROPERTIES = "class/*[not("
+        + "name()='name' or "
+        + "name()='customClass' or "
+        + "name()='customMapping' or "
+        + "name()='defaultViewSheet' or "
+        + "name()='defaultEditSheet' or "
+        + "name()='defaultWeb' or "
+        + "name()='nameField' or "
+        + "name()='validationScript')]";
+
+    protected static final String XPATH_XML_CLASS_PROPERTY_FIELD = XPATH_XML_CLASS_PROPERTIES + "/%s/%s";
+
+    protected static final String XPATH_REST_CLASS_PROPERTIES = "class/property";
+
+    protected static final String XPATH_REST_CLASS_PROPERTY_FIELD = XPATH_REST_CLASS_PROPERTIES +
+        "[@name = '%s']/attribute[@name = '%s'";
+
     protected static final String XPATH_REST_OBJECT = "xwiki:objects/xwiki:objectSummary";
 
     protected static final String XPATH_REST_ATTACHMENT = "xwiki:attachments/xwiki:attachment";
@@ -67,6 +90,11 @@ abstract class AbstractXMLDoc
     protected static final String XPATH_REST_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
 
     protected static final String XPATH_XML_PROPERTY = "property/%s";
+
+    protected static final String XPATH_ATTRIBUTE_NAME = "attribute[@name = '%s']";
+
+    protected static final String[] CLASS_PROPERTY_FIELDS = new String[] { "prettyName", "hint", "customDisplay",
+        "validationRegExp", "validationMessage" };
 
     protected final Command cmd;
 
@@ -245,6 +273,61 @@ abstract class AbstractXMLDoc
         return getDom().valueOf("//xwikidoc/@reference");
     }
 
+    public Collection<ClassProperty> getClassInfo() throws DocException
+    {
+        var domdoc = getDom();
+        var root = (Element) domdoc.getRootElement();
+        var propertyNodes = root.selectNodes(fromRest ? XPATH_REST_CLASS_PROPERTIES : XPATH_XML_CLASS_PROPERTIES);
+        if (propertyNodes == null) {
+            return Collections.emptyList();
+        }
+        var properties = new ArrayList<ClassProperty>(propertyNodes.size());
+        for (var p : propertyNodes) {
+            if (fromRest) {
+                var element = (Element) p;
+                var classProperty = new ClassProperty(element.attributeValue(NODE_NAME),
+                    Arrays.stream(CLASS_PROPERTY_FIELDS)
+                        .collect(Collectors.toMap(i -> i,
+                            i -> ((Element) element.selectSingleNode(String.format(XPATH_ATTRIBUTE_NAME, i)))
+                                .attributeValue("value"))));
+                properties.add(classProperty);
+            } else {
+                var classProperty = new ClassProperty(p.getName(),
+
+                    Arrays.stream(CLASS_PROPERTY_FIELDS)
+                        .collect(Collectors.toMap(i -> i,
+                            i -> getElement((Element) p, i).getText())));
+                properties.add(classProperty);
+            }
+        }
+        return properties;
+    }
+
+    public Optional<String> getClassPropertyField(String property, String field) throws DocException
+    {
+        var propertyElement = getClassPropertyFieldElement(property, field);
+        return propertyElement.map(i -> {
+            if (fromRest) {
+                return ((Element) i).attributeValue("value");
+            } else {
+                return i.getText();
+            }
+        });
+    }
+
+    public void setClassPropertyField(String property, String field, String value) throws DocException
+    {
+        var propertyElement = getClassPropertyFieldElement(property, field);
+        if (propertyElement.isEmpty()) {
+            throw new DocException("Couln't find this property");
+        }
+        if (fromRest) {
+            propertyElement.get().setText(value);
+        } else {
+            ((Element) propertyElement.get()).addAttribute("value", value);
+        }
+    }
+
     protected void setXML(String str, boolean fromRest)
     {
         this.fromRest = fromRest;
@@ -409,6 +492,21 @@ abstract class AbstractXMLDoc
         }
 
         return Optional.empty();
+    }
+
+    private Optional<Node> getClassPropertyFieldElement(String property, String field) throws DocException
+    {
+        var domdoc = getDom();
+        if (domdoc == null) {
+            throw new DocumentNotFoundException();
+        }
+        if (property == null) {
+            throw new DocException("property is null. getValue expects a property.");
+        }
+        var root = domdoc.getRootElement();
+        var element = root.selectSingleNode(String
+            .format(fromRest ? XPATH_REST_CLASS_PROPERTY_FIELD : XPATH_XML_CLASS_PROPERTY_FIELD, property, field));
+        return Optional.ofNullable(element);
     }
 
     class DocumentNotFoundException extends DocException

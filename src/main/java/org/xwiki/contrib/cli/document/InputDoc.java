@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ClassProperty;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
@@ -71,4 +72,8 @@ interface InputDoc
      * @return a friendly string like "the XML file SomeDoc.xml"
      */
     String getFriendlyName();
+
+    Collection<ClassProperty> getClassInfo() throws DocException;
+
+    Optional<String> getClassPropertyField(String property, String field) throws DocException;
 }
