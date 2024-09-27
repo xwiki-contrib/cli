@@ -110,6 +110,7 @@ final class Main
                     i++;
                 }
                 case "--edit-page" -> cmd.action = Command.Action.EDIT_PAGE;
+                case "--edit-content" -> cmd.action = Command.Action.EDIT_CONTENT;
                 case "--list-properties" -> cmd.action = Command.Action.LIST_PROPERTIES;
                 case "--list-objects" -> cmd.action = Command.Action.LIST_OBJECTS;
                 case "--get-content" -> cmd.action = Command.Action.GET_CONTENT;

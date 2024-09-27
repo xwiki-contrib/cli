@@ -23,6 +23,10 @@ package org.xwiki.contrib.cli;
 import java.util.Map;
 
 import static java.lang.System.out;
+
+import java.io.File;
+import java.nio.file.Files;
+
 import static java.lang.System.err;
 
 class Command
@@ -31,6 +35,26 @@ class Command
 
     enum Action
     {
+        EDIT_CONTENT {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                var doc = new MultipleDoc(cmd);
+                var content = doc.getContent();
+                var dir = Files.createTempDirectory("xwiki-cli");
+                var dirFile = dir.toFile();
+                var tmpFile = File.createTempFile("content-", ".xwiki", dirFile);
+                Editing.editValue(content, dirFile, tmpFile, newValue -> {
+                    try {
+                        doc.setContent(newValue);
+                        doc.save();
+                    } catch (DocException e) {
+                        err.println("Could not save document");
+                        e.printStackTrace();
+                    }
+                });
+            }
+        },
         EDIT_PAGE {
             @Override
             void run(Command cmd) throws Exception
@@ -133,6 +157,7 @@ class Command
                         --edit-page              Edit a complete XWiki document
                         --get-content            Get the content of a XWiki document
                         --set-content CONTENT    Set the content of a XWiki document
+                        --edit-content           Edit the content of a XWiki document with a text editor
                         --get-title              Get the title of a XWiki document
                         --set-title TITLE        Set the title of a XWiki document
                         --list-properties        List the document's properties,
