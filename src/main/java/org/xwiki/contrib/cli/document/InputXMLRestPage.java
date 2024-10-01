@@ -47,7 +47,7 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         var status = response.statusCode();
         if (status == 200) {
             handleResponse(response);
-        } else if (status == 404 && cmd.isAcceptNewDocument()) {
+        } else if (status == 404 && cmd.acceptNewDocument()) {
             // 404 : Document not found, we assume it's a document we would like to create
             response = Utils.httpPut(cmd, url, "", null);
             status = response.statusCode();
@@ -98,7 +98,7 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
             "Unexpected status "
                 + status
                 + ". "
-                + (cmd.isDebug()
+                + (cmd.debug()
                 ? "Body: " + response.body()
                 : " Use --debug to print the body of the HTTP request")
         );

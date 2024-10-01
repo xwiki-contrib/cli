@@ -53,8 +53,8 @@ class XWikiDirSync
     XWikiDirSync(Command cmd)
     {
         command = cmd;
-        XMLFileDirPath = Path.of(cmd.getSyncDataSource(), "src", "main", "resources");
-        syncPath = Path.of(cmd.getSyncPath());
+        XMLFileDirPath = Path.of(cmd.syncDataSource(), "src", "main", "resources");
+        syncPath = Path.of(cmd.syncPath());
     }
 
     public void monitor() throws IOException
@@ -201,7 +201,7 @@ class XWikiDirSync
             String page = pageMatcher.group(2).replace(FSDirUtils.DOT, FSDirUtils.ESCAPED_DOT);
 
             try {
-                MultipleDoc document = new MultipleDoc(command, command.getWiki(), space + '.' + page);
+                MultipleDoc document = new MultipleDoc(command, command.wiki(), space + '.' + page);
 
                 String remainingPath = path.substring(pageMatcher.end());
 
@@ -235,7 +235,7 @@ class XWikiDirSync
                     document.save();
                 }
             } catch (DocException | IOException e) {
-                if (command.isDebug()) {
+                if (command.debug()) {
                     e.printStackTrace();
                 }
             }

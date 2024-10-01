@@ -50,27 +50,27 @@ public class MultipleDoc implements InputDoc, OutputDoc
 
         inputDocs.add(new CommandDoc(cmd));
 
-        if (Utils.present(cmd.getInputFile())) {
-            inputDocs.add(new XMLFileDoc(cmd, cmd.getInputFile()));
+        if (Utils.present(cmd.inputFile())) {
+            inputDocs.add(new XMLFileDoc(cmd, cmd.inputFile()));
         }
 
-        if (Utils.present(cmd.getOutputFile())) {
-            outputDocs.add(new XMLFileDoc(cmd, cmd.getOutputFile()));
+        if (Utils.present(cmd.outputFile())) {
+            outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile()));
         }
 
-        if (Utils.present(cmd.getXmlReadDir())) {
-            inputDocs.add(new MvnRepoFileDoc(cmd, cmd.getXmlReadDir(), wiki, page));
+        if (Utils.present(cmd.xmlReadDir())) {
+            inputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlReadDir(), wiki, page));
         }
 
-        if (Utils.present(cmd.getXmlWriteDir())) {
-            outputDocs.add(new MvnRepoFileDoc(cmd, cmd.getXmlWriteDir(), wiki, page));
+        if (Utils.present(cmd.xmlWriteDir())) {
+            outputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlWriteDir(), wiki, page));
         }
 
-        if (Utils.present(cmd.getUrl())) {
-            if (!cmd.isWikiWriteonly()) {
+        if (Utils.present(cmd.url())) {
+            if (!cmd.wikiWriteonly()) {
                 inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
             }
-            if (!cmd.isWikiReadonly()) {
+            if (!cmd.wikiReadonly()) {
                 outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
             }
         }

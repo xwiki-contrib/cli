@@ -28,7 +28,35 @@ import org.xwiki.contrib.cli.document.MultipleDoc;
 import static java.lang.System.err;
 import static java.lang.System.out;
 
-public class Command
+public record Command(
+    Action action,
+    String wiki,
+    String page,
+    String objectClass,
+    String objectNumber,
+    String property,
+    String value,
+    String editor,
+    boolean wikiReadonly,
+    boolean wikiWriteonly,
+    String outputFile,
+    String inputFile,
+    String xmlReadDir,
+    String xmlWriteDir,
+    Map<String, String> headers,
+    String url,
+    String user,
+    String pass,
+    String content,
+    String title,
+    String mountPath,
+    String syncPath,
+    String syncDataSource,
+    boolean printXML,
+    String fileExtension,
+    boolean debug,
+    boolean pom,
+    boolean acceptNewDocument)
 {
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
 
@@ -98,62 +126,6 @@ public class Command
             --pass PASS
                 The XWiki user’s password.
         """.trim();
-
-    private final Action action;
-
-    private final String wiki;
-
-    private final String page;
-
-    private final String objectClass;
-
-    private final String objectNumber;
-
-    private final String property;
-
-    private final String value;
-
-    private final String editor;
-
-    private final boolean wikiReadonly;
-
-    private final boolean wikiWriteonly;
-
-    private final String outputFile;
-
-    private final String inputFile;
-
-    private final String xmlReadDir;
-
-    private final String xmlWriteDir;
-
-    private final Map<String, String> headers;
-
-    private final String url;
-
-    private final String user;
-
-    private final String pass;
-
-    private final String content;
-
-    private final String title;
-
-    private final String mountPath;
-
-    private final String syncPath;
-
-    private final String syncDataSource;
-
-    private final boolean printXML;
-
-    private final String fileExtension;
-
-    private final boolean debug;
-
-    private final boolean pom;
-
-    private final boolean acceptNewDocument;
 
     enum Action
     {
@@ -366,182 +338,6 @@ public class Command
         }
     }
 
-    public Command(Action action, String wiki, String page, String objectClass, String objectNumber,
-        String property, String value, String editor, boolean wikiReadonly, boolean wikiWriteonly, String outputFile,
-        String inputFile, String xmlReadDir, String xmlWriteDir, Map<String, String> headers, String url, String user,
-        String pass, String content, String title, String mountPath, String syncPath, String syncDataSource,
-        boolean printXML, String fileExtension, boolean debug, boolean pom, boolean acceptNewDocument)
-    {
-        this.action = action;
-        this.wiki = wiki;
-        this.page = page;
-        this.objectClass = objectClass;
-        this.objectNumber = objectNumber;
-        this.property = property;
-        this.value = value;
-        this.editor = editor;
-        this.wikiReadonly = wikiReadonly;
-        this.wikiWriteonly = wikiWriteonly;
-        this.outputFile = outputFile;
-        this.inputFile = inputFile;
-        this.xmlReadDir = xmlReadDir;
-        this.xmlWriteDir = xmlWriteDir;
-        this.headers = headers;
-        this.url = url;
-        this.user = user;
-        this.pass = pass;
-        this.content = content;
-        this.title = title;
-        this.mountPath = mountPath;
-        this.syncPath = syncPath;
-        this.syncDataSource = syncDataSource;
-        this.printXML = printXML;
-        this.fileExtension = fileExtension;
-        this.debug = debug;
-        this.pom = pom;
-        this.acceptNewDocument = acceptNewDocument;
-    }
-
-    public Action getAction()
-    {
-        return action;
-    }
-
-    public String getWiki()
-    {
-        return wiki;
-    }
-
-    public String getPage()
-    {
-        return page;
-    }
-
-    public String getObjectClass()
-    {
-        return objectClass;
-    }
-
-    public String getObjectNumber()
-    {
-        return objectNumber;
-    }
-
-    public String getProperty()
-    {
-        return property;
-    }
-
-    public String getValue()
-    {
-        return value;
-    }
-
-    public String getEditor()
-    {
-        return editor;
-    }
-
-    public boolean isWikiReadonly()
-    {
-        return wikiReadonly;
-    }
-
-    public boolean isWikiWriteonly()
-    {
-        return wikiWriteonly;
-    }
-
-    public String getOutputFile()
-    {
-        return outputFile;
-    }
-
-    public String getInputFile()
-    {
-        return inputFile;
-    }
-
-    public String getXmlReadDir()
-    {
-        return xmlReadDir;
-    }
-
-    public String getXmlWriteDir()
-    {
-        return xmlWriteDir;
-    }
-
-    public Map<String, String> getHeaders()
-    {
-        return headers;
-    }
-
-    public String getUrl()
-    {
-        return url;
-    }
-
-    public String getUser()
-    {
-        return user;
-    }
-
-    public String getPass()
-    {
-        return pass;
-    }
-
-    public String getContent()
-    {
-        return content;
-    }
-
-    public String getTitle()
-    {
-        return title;
-    }
-
-    public String getMountPath()
-    {
-        return mountPath;
-    }
-
-    public String getSyncPath()
-    {
-        return syncPath;
-    }
-
-    public String getSyncDataSource()
-    {
-        return syncDataSource;
-    }
-
-    public boolean isPrintXML()
-    {
-        return printXML;
-    }
-
-    public boolean isDebug()
-    {
-        return debug;
-    }
-
-    public boolean isPom()
-    {
-        return pom;
-    }
-
-    public boolean isAcceptNewDocument()
-    {
-        return acceptNewDocument;
-    }
-
-    public String getFileExtension()
-    {
-        return fileExtension;
-    }
-
     void print()
     {
         out.println(""
@@ -573,7 +369,7 @@ public class Command
     private static String value(Command cmd, String value)
     {
         if (value == null) {
-            return cmd.debug ? "(null)" : "";
+            return cmd.debug() ? "(null)" : "";
         }
         return value;
     }

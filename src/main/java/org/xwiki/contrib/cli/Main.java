@@ -46,13 +46,13 @@ final class Main
             return;
         }
 
-        if (cmd.isDebug()) {
+        if (cmd.debug()) {
             cmd.print();
             out.println();
         }
 
         try {
-            cmd.getAction().run(cmd);
+            cmd.action().run(cmd);
         } catch (CancelledOperationDocException e) {
             out.println("Operation cancelled by the user.");
         } catch (MessageForUserDocException e) {
@@ -196,7 +196,7 @@ final class Main
             wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
             mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
 
-        if (cmd.getAction() == null) {
+        if (cmd.action() == null) {
             throw new CommandException("Please specify an action. Try --help for help.");
         }
 

@@ -79,7 +79,7 @@ final class Editing
         throws IOException, InterruptedException
     {
         var dir = Files.createTempDirectory("xwiki-cli");
-        if (cmd.isPom()) {
+        if (cmd.pom()) {
             Path pomFilePath = null;
             try {
                 // Get the path of the executing JAR, to get the path to the pom file
@@ -100,8 +100,8 @@ final class Editing
     public static String getEditor(Command cmd)
     {
         var editor = "";
-        if (!Utils.isEmpty(cmd.getEditor())) {
-            editor = cmd.getEditor();
+        if (!Utils.isEmpty(cmd.editor())) {
+            editor = cmd.editor();
         } else {
             try {
                 editor = System.getenv("EDITOR");

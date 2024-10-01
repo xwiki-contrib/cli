@@ -268,7 +268,7 @@ abstract class AbstractXMLDoc
             try {
                 this.dom = Utils.parseXML(this.xml);
             } catch (DocException e) {
-                if (cmd.isDebug()) {
+                if (cmd.debug()) {
                     err.println(
                         "A parse error occured. Here is the content we attempted to parse." + LINE + xml + LINE);
                 }
@@ -276,7 +276,7 @@ abstract class AbstractXMLDoc
                 throw e;
             }
 
-            if (cmd.isPrintXML()) {
+            if (cmd.printXML()) {
                 err.println(LINE + xml + LINE);
             }
         }

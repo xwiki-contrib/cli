@@ -314,7 +314,7 @@ public final class Utils
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.getUrl()
+        return cmd.url()
             + "/rest/wikis/" + wiki
             + Utils.fromReferenceToXFFPath(page)
             + (withObjects ? "?objects=true&attachments=true" : "");
@@ -331,7 +331,7 @@ public final class Utils
             throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
         }
 
-        return cmd.getUrl()
+        return cmd.url()
             + "/rest/wikis/" + wiki
             + Utils.fromReferenceToXFFPath(page)
             + "/attachments/" + attachmentName;
@@ -418,13 +418,13 @@ public final class Utils
 
     private static HttpRequest.Builder setHeadersFromCommand(Command cmd, HttpRequest.Builder builder)
     {
-        for (var header : cmd.getHeaders().entrySet()) {
+        for (var header : cmd.headers().entrySet()) {
             builder.header(header.getKey(), header.getValue());
         }
 
-        if (present(cmd.getUser()) && present(cmd.getPass())) {
+        if (present(cmd.user()) && present(cmd.pass())) {
             builder.header("Authorization",
-                "Basic " + Base64.getEncoder().encodeToString((cmd.getUser() + ":" + cmd.getPass()).getBytes())
+                "Basic " + Base64.getEncoder().encodeToString((cmd.user() + ":" + cmd.pass()).getBytes())
             );
         }
         return builder;

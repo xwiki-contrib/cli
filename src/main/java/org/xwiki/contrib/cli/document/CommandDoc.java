@@ -40,12 +40,12 @@ public class CommandDoc implements InputDoc
 
     public String getContent()
     {
-        return cmd.getContent();
+        return cmd.content();
     }
 
     public String getTitle()
     {
-        return cmd.getTitle();
+        return cmd.title();
     }
 
     public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
@@ -71,7 +71,7 @@ public class CommandDoc implements InputDoc
 
     public Optional<String> getValue(String objectClass, String objectNumber, String property)
     {
-        return Optional.ofNullable(cmd.getValue());
+        return Optional.ofNullable(cmd.value());
     }
 
     public String getFriendlyName()
