@@ -20,8 +20,16 @@
 
 package org.xwiki.contrib.cli;
 
+/**
+ * Exception when a user cancel an operation.
+ *
+ * @version $Id$
+ */
 public class CancelledOperationDocException extends DocException
 {
+    /**
+     * Create a new CancelledOperationDocException.
+     */
     public CancelledOperationDocException()
     {
         super("The user cancelled the operation");

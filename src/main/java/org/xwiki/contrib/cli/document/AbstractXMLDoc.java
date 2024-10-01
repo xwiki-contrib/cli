@@ -156,8 +156,8 @@ abstract class AbstractXMLDoc
             }
 
             var propertyElement = object.selectSingleNode(
-                fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property) :
-                    String.format(XPATH_XML_PROPERTY, property));
+                fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property)
+                    : String.format(XPATH_XML_PROPERTY, property));
             if (propertyElement == null) {
                 continue;
             }
@@ -187,8 +187,8 @@ abstract class AbstractXMLDoc
             }
             if (property != null) {
                 var propertyElement = object.selectSingleNode(
-                    fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property) :
-                        String.format(XPATH_XML_PROPERTY, property));
+                    fromRest ? String.format(XPATH_REST_PROPERTY_NAME, property)
+                        : String.format(XPATH_XML_PROPERTY, property));
                 if (propertyElement == null) {
                     continue;
                 }
@@ -212,7 +212,7 @@ abstract class AbstractXMLDoc
         var res = new ArrayList<AttachmentInfo>(attachments.size());
         for (var attachment : attachments) {
             if (fromRest) {
-                res.add(new AttachmentInfo(getElement((Element) attachment, "name").getText(),
+                res.add(new AttachmentInfo(getElement((Element) attachment, NODE_NAME).getText(),
                     Long.parseLong(getElement((Element) attachment, "size").getText())));
             } else {
                 res.add(new AttachmentInfo(getElement((Element) attachment, "filename").getText(),

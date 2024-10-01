@@ -27,6 +27,11 @@ package org.xwiki.contrib.cli;
  */
 public class MessageForUserDocException extends DocException
 {
+    /**
+     * Create a new MessageForUserDocException.
+     *
+     * @param message the message for the user.
+     */
     public MessageForUserDocException(String message)
     {
         super(message);

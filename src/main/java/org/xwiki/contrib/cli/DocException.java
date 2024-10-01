@@ -27,11 +27,21 @@ package org.xwiki.contrib.cli;
  */
 public class DocException extends Exception
 {
+    /**
+     * Create a new DocException.
+     *
+     * @param e the inner exception.
+     */
     public DocException(Exception e)
     {
         super(e);
     }
 
+    /**
+     * Create a new DocException.
+     *
+     * @param reason why this exception happen.
+     */
     public DocException(String reason)
     {
         super(reason);

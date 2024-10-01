@@ -40,6 +40,10 @@ import org.xwiki.contrib.cli.DocException;
  */
 public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
 {
+    private static final String NODE_FILENAME = "filename";
+
+    private static final String NODE_CONTENT = "content";
+
     private String filename;
 
     XMLFileDoc(Command cmd)
@@ -47,6 +51,14 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         super(cmd);
     }
 
+    /**
+     * Create a new XML file doc.
+     *
+     * @param cmd the command.
+     * @param filename the filename to read/edit.
+     * @throws DocException
+     * @throws IOException
+     */
     public XMLFileDoc(Command cmd, String filename) throws DocException, IOException
     {
         super(cmd);
@@ -89,8 +101,8 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         var root = (Element) domdoc.getRootElement();
         var attachments = root.selectNodes(NODE_NAME_ATTACHMENT);
         for (var attachment : attachments) {
-            if (attachmentName.equals(getElement((Element) attachment, "filename").getText())) {
-                getElement((Element) attachment, "content").setText(Base64.getEncoder().encodeToString(content));
+            if (attachmentName.equals(getElement((Element) attachment, NODE_FILENAME).getText())) {
+                getElement((Element) attachment, NODE_CONTENT).setText(Base64.getEncoder().encodeToString(content));
             }
         }
     }
@@ -105,8 +117,8 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         var root = domdoc.getRootElement();
         var attachments = root.selectNodes(NODE_NAME_ATTACHMENT);
         for (var attachment : attachments) {
-            if (attachmentName.equals(getElement((Element) attachment, "filename").getText())) {
-                return Base64.getDecoder().decode(getElement((Element) attachment, "content").getText());
+            if (attachmentName.equals(getElement((Element) attachment, NODE_FILENAME).getText())) {
+                return Base64.getDecoder().decode(getElement((Element) attachment, NODE_CONTENT).getText());
             }
         }
         throw new DocException(String.format("Can't find attachment with name '%s'", attachmentName));

@@ -58,6 +58,13 @@ public interface OutputDoc
      */
     void save() throws DocException;
 
+    /**
+     * Set the attachment content.
+     *
+     * @param attachmentName name of the attachment.
+     * @param content the bytes value to set.
+     * @throws DocException
+     */
     void setAttachment(String attachmentName, byte[] content) throws DocException;
 
     /**

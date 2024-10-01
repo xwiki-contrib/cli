@@ -21,7 +21,6 @@
 package org.xwiki.contrib.cli.document;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.Optional;
 
 import org.xwiki.contrib.cli.Command;
@@ -29,35 +28,42 @@ import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
+/**
+ * @version $Id$
+ */
 public class CommandDoc implements InputDoc
 {
     private final Command cmd;
 
+    /**
+     * Create a new command document.
+     *
+     * @param cmd the command.
+     */
     public CommandDoc(Command cmd)
     {
         this.cmd = cmd;
     }
 
+    @Override
     public String getContent()
     {
         return cmd.content();
     }
 
+    @Override
     public String getTitle()
     {
         return cmd.title();
     }
 
-    public Map<String, String> getProperties(String objectClass, String objectNumber, String property, boolean fullPath)
-    {
-        return null;
-    }
-
+    @Override
     public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
     {
         return null;
     }
 
+    @Override
     public Collection<AttachmentInfo> getAttachments()
     {
         return null;
@@ -69,11 +75,13 @@ public class CommandDoc implements InputDoc
         throw new UnsupportedOperationException("Not Implemented");
     }
 
+    @Override
     public Optional<String> getValue(String objectClass, String objectNumber, String property)
     {
         return Optional.ofNullable(cmd.value());
     }
 
+    @Override
     public String getFriendlyName()
     {
         return "the command";

@@ -42,7 +42,7 @@ class XWikiDirSync
 
     private static final Pattern ATTACHMENTS_PATTERN_MATCHER = Pattern.compile(ATTACHMENTS_PATTERN);
 
-    private final Path XMLFileDirPath;
+    private final Path xmlFileDirPath;
 
     private final Command command;
 
@@ -53,7 +53,7 @@ class XWikiDirSync
     XWikiDirSync(Command cmd)
     {
         command = cmd;
-        XMLFileDirPath = Path.of(cmd.syncDataSource(), "src", "main", "resources");
+        xmlFileDirPath = Path.of(cmd.syncDataSource(), "src", "main", "resources");
         syncPath = Path.of(cmd.syncPath());
     }
 
@@ -116,7 +116,7 @@ class XWikiDirSync
 
     void sync() throws DocException, IOException
     {
-        syncDir(XMLFileDirPath);
+        syncDir(xmlFileDirPath);
     }
 
     private void syncDir(Path dir) throws IOException, DocException

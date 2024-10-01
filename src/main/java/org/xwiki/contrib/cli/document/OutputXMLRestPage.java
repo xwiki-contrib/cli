@@ -180,8 +180,8 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         }
 
         throw new MessageForUserDocException(
-            "Unexpected status " + status + ". " + (cmd.debug() ? "Body: " + response.body() :
-                " Use --debug to print the body of the HTTP request"));
+            "Unexpected status " + status + ". " + (cmd.debug() ? "Body: " + response.body()
+                : " Use --debug to print the body of the HTTP request"));
     }
 
     private record ObjectValueSetter(String property, String value)

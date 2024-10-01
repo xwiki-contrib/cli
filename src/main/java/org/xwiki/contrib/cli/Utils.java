@@ -51,6 +51,7 @@ import org.xml.sax.SAXException;
  */
 public final class Utils
 {
+
     private static final String CONTENT_TYPE = "Content-Type";
 
     private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain; charset=utf8";
@@ -59,12 +60,36 @@ public final class Utils
 
     private static final String XWIKI = "xwiki";
 
+    private static final String REST_URL_PREFIX = "/rest/wikis/";
+
+    private static final String PATH_SPACES = "/spaces/";
+
+    private static final String PATH_PAGES = "/pages/";
+
+    private static final String LANG_VELOCITY = "velocity";
+
+    private static final String LANG_VELOCITY_EXTENSION = "vm";
+
+    private static final String LANG_GROOVY = "groovy";
+
+    private static final String LANG_PYTHON = "python";
+
+    private static final String LANG_PYTHON_EXTENSION = "py";
+
+    private static final String LANG_PHP = "php";
+
+    private static final String EXCEPTION_MSG_SPECIFY_PAGE = "Please specify a page, e.g. -p Main.WebHome";
+
+    private static final String PROPERTY_NAME_CODE = "code";
+
     private Utils()
     {
         // Intentionally left blank.
     }
 
     /**
+     * Convert a page reference to a path in the mvn repos path format.
+     *
      * @param reference the page, in dotted notation.
      * @return the maven repos path to reach the given page. Example: Main.WebHome -> Main/WebHome
      */
@@ -74,10 +99,16 @@ public final class Utils
         return fromReferenceToMvnReposPath(deserialize(reference));
     }
 
+    /**
+     * Convert a page reference to a path in the mvn repos path format.
+     *
+     * @param reference a page reference.
+     * @return the maven repos path to reach the given page. Example: Main/WebHome.
+     */
     public static String fromReferenceToMvnReposPath(PageReference reference)
     {
         // TODO unit test
-        return String.join("/", reference.spaces()) + "/" + reference.page();
+        return String.join("/", reference.spaces()) + '/' + reference.page();
     }
 
     /**
@@ -85,7 +116,7 @@ public final class Utils
      * synced dir path.
      *
      * @param reference the page, in dotted notation.
-     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome
+     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
      */
     public static String fromReferenceToXFFPath(String reference)
     {
@@ -93,12 +124,25 @@ public final class Utils
         return fromReferenceToXFFPath(deserialize(reference));
     }
 
+    /**
+     * Convert a page reference to a path in the XFF format. Note we use this format for the REST API and also for the
+     * synced dir path.
+     *
+     * @param reference a page reference.
+     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
+     */
     public static String fromReferenceToXFFPath(PageReference reference)
     {
         // TODO unit test
-        return "/spaces/" + String.join("/spaces/", reference.spaces()) + "/pages/" + reference.page();
+        return PATH_SPACES + String.join(PATH_SPACES, reference.spaces()) + PATH_PAGES + reference.page();
     }
 
+    /**
+     * Deserialize the page reference to a PageReference object.
+     *
+     * @param reference the serialized page reference.
+     * @return the PageReference object.
+     */
     public static PageReference deserialize(String reference)
     {
         var spaces = new ArrayList<String>();
@@ -300,39 +344,45 @@ public final class Utils
 
     /**
      * @param cmd the Command to use.
+     * @param wikiParam the wiki ID.
+     * @param page the serialized page reference.
      * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
-    public static String getDocRestURLFromCommand(Command cmd, String wiki, String page, boolean withObjects)
+    public static String getDocRestURLFromCommand(Command cmd, String wikiParam, String page, boolean withObjects)
         throws DocException
     {
-        if (wiki == null || wiki.isEmpty()) {
-            wiki = XWIKI;
-        }
-
+        var wiki = (wikiParam == null || wikiParam.isEmpty()) ? XWIKI : wikiParam;
         if (page == null) {
-            throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
+            throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
 
         return cmd.url()
-            + "/rest/wikis/" + wiki
+            + REST_URL_PREFIX + wiki
             + Utils.fromReferenceToXFFPath(page)
             + (withObjects ? "?objects=true&attachments=true" : "");
     }
 
-    public static String getAttachmentRestURLFromCommand(Command cmd, String wiki, String page, String attachmentName)
+    /**
+     * @param cmd the Command to use.
+     * @param wikiParam the wiki ID.
+     * @param page the serialized page reference.
+     * @param attachmentName the name of the attachment.
+     * @return the REST URL to the specified attachment.
+     * @throws MessageForUserDocException
+     */
+    public static String getAttachmentRestURLFromCommand(Command cmd, String wikiParam, String page,
+        String attachmentName)
         throws MessageForUserDocException
     {
-        if (wiki == null || wiki.isEmpty()) {
-            wiki = XWIKI;
-        }
+        var wiki = (wikiParam == null || wikiParam.isEmpty()) ? XWIKI : wikiParam;
 
         if (page == null) {
-            throw new MessageForUserDocException("Please specify a page, e.g. -p Main.WebHome");
+            throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
 
         return cmd.url()
-            + "/rest/wikis/" + wiki
+            + REST_URL_PREFIX + wiki
             + Utils.fromReferenceToXFFPath(page)
             + "/attachments/" + attachmentName;
     }
@@ -362,15 +412,22 @@ public final class Utils
             .replace(">", "&gt;");
     }
 
+    /**
+     * Return the macro language which are in the content.
+     *
+     * @param content content to search for macro.
+     * @return list of macro languages that are used in the content.
+     * @throws DocException
+     */
     public static List<String> getContentScriptingLanguage(String content) throws DocException
     {
         // For now we only support velocity, groovy, python, php macro
         // We can at any time extends this list
         final Map<String, String> macroRegex = Map.ofEntries(
-            Map.entry("velocity", "vm"),
-            Map.entry("groovy", "groovy"),
-            Map.entry("python", "py"),
-            Map.entry("php", "php")
+            Map.entry(LANG_VELOCITY, LANG_VELOCITY_EXTENSION),
+            Map.entry(LANG_GROOVY, LANG_GROOVY),
+            Map.entry(LANG_PYTHON, LANG_PYTHON_EXTENSION),
+            Map.entry(LANG_PHP, LANG_PHP)
         );
         var res = new ArrayList<String>(macroRegex.size());
         for (var macro : macroRegex.entrySet()) {
@@ -392,18 +449,18 @@ public final class Utils
     public static Optional<String> getScriptLangFromObjectInfo(HashMap<String, String> properties, String objectClass,
         String property)
     {
-        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals("code")) {
+        if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(PROPERTY_NAME_CODE)) {
             return Optional.of("less");
-        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals("code")) {
+        } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(PROPERTY_NAME_CODE)) {
             return Optional.of("js");
         } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
-            return Optional.of("vm");
+            return Optional.of(LANG_VELOCITY_EXTENSION);
         } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
             var scriptLanguage = properties.get("script_language");
             switch (scriptLanguage) {
                 case "ruby" -> Optional.of("rb");
-                case "velocity" -> Optional.of("vm");
-                case "python" -> Optional.of("py");
+                case LANG_VELOCITY -> Optional.of(LANG_VELOCITY_EXTENSION);
+                case LANG_PYTHON -> Optional.of(LANG_PYTHON_EXTENSION);
                 // php, groovy
                 default -> Optional.of(scriptLanguage);
             }

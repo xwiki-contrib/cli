@@ -37,12 +37,28 @@ import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import static java.lang.System.err;
 import static java.lang.System.out;
 
+/**
+ * Represent a document with multiple input or/and output.
+ *
+ *  @version $Id$
+ */
 public class MultipleDoc implements InputDoc, OutputDoc
 {
+    private static final String TEXT_ATTACHMENT_LIST = "the attachment list";
+
     private final List<InputDoc> inputDocs;
 
     private final List<OutputDoc> outputDocs;
 
+    /**
+     * Create a new multiple document.
+     *
+     * @param cmd the command.
+     * @param wiki the wiki ID.
+     * @param page the page reference.
+     * @throws DocException
+     * @throws IOException
+     */
     public MultipleDoc(Command cmd, String wiki, String page) throws DocException, IOException
     {
         inputDocs = new ArrayList<>();
@@ -82,6 +98,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         this.outputDocs = outputDocs;
     }
 
+    @Override
     public String getContent() throws DocException
     {
         String content = null;
@@ -97,6 +114,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return content;
     }
 
+    @Override
     public void setContent(String str) throws DocException
     {
         for (var outputDoc : outputDocs) {
@@ -104,6 +122,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
     }
 
+    @Override
     public String getTitle() throws DocException
     {
         String title = null;
@@ -119,6 +138,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return title;
     }
 
+    @Override
     public void setTitle(String str) throws DocException
     {
         for (var outputDoc : outputDocs) {
@@ -126,6 +146,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
     }
 
+    @Override
     public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
         throws DocException
     {
@@ -142,6 +163,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return objects;
     }
 
+    @Override
     public Collection<AttachmentInfo> getAttachments() throws DocException
     {
         Collection<AttachmentInfo> attachmentInfos = null;
@@ -150,7 +172,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
             if (attachmentInfos == null) {
                 attachmentInfos = newAttachments;
             } else if (newAttachments != null && !attachmentInfos.equals(newAttachments)) {
-                return pickInputFile("the attachment list").getAttachments();
+                return pickInputFile(TEXT_ATTACHMENT_LIST).getAttachments();
             }
         }
         return attachmentInfos;
@@ -165,12 +187,13 @@ public class MultipleDoc implements InputDoc, OutputDoc
             if (attachment == null) {
                 attachment = newAttachment;
             } else if (newAttachment != null && !attachment.equals(newAttachment)) {
-                return pickInputFile("the attachment list").getAttachment(attachmentName);
+                return pickInputFile(TEXT_ATTACHMENT_LIST).getAttachment(attachmentName);
             }
         }
         return attachment;
     }
 
+    @Override
     public Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException
     {
         Optional<String> value = Optional.empty();
@@ -186,6 +209,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         return value;
     }
 
+    @Override
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         for (var outputDoc : outputDocs) {
@@ -193,6 +217,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
     }
 
+    @Override
     public void save() throws DocException
     {
         for (var outputDoc : outputDocs) {
@@ -208,6 +233,7 @@ public class MultipleDoc implements InputDoc, OutputDoc
         }
     }
 
+    @Override
     public String getFriendlyName()
     {
         return "the merged document";

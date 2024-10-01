@@ -20,6 +20,14 @@
 
 package org.xwiki.contrib.cli.document.element;
 
+/**
+ * Information related to an attachment.
+ *
+ * @param name name of the attachment.
+ * @param size size of the attachment.
+ *
+ * @version $Id$
+ */
 public record AttachmentInfo(String name, long size)
 {
 }

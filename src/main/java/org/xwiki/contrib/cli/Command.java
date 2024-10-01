@@ -28,6 +28,40 @@ import org.xwiki.contrib.cli.document.MultipleDoc;
 import static java.lang.System.err;
 import static java.lang.System.out;
 
+/**
+ * Represent a command run by a user with all parameter which can be passed.
+ *
+ * @param action main action of the program.
+ * @param wiki the wiki ID.
+ * @param page the page to edit/read.
+ * @param objectClass the class of the object to edit/read.
+ * @param objectNumber the object number to edit/read.
+ * @param property the property of the object to edit/read.
+ * @param value the new value to set.
+ * @param editor the editor to use.
+ * @param wikiReadonly only read on the wiki, all change won't take effect on the wiki.
+ * @param wikiWriteonly only write on the wiki, so the source should come from somewhere else.
+ * @param outputFile the XML file to write.
+ * @param inputFile the XML file to read.
+ * @param xmlReadDir Same as outputFile but for a full wiki directory.
+ * @param xmlWriteDir Same as inputFile but for a full wiki directory.
+ * @param headers custom http HEADER to pass on the wiki requests.
+ * @param url the full url of the wiki.
+ * @param user user to authenticate to the wiki.
+ * @param pass password to authenticate to the wiki.
+ * @param content content to set/get.
+ * @param title title to set/get.
+ * @param mountPath mount point for the FUSE filesystem.
+ * @param syncPath target directory to sync all files.
+ * @param syncDataSource source directory to ready all data for sync.
+ * @param printXML mostly used for debug, show the full XML when we parse the XML file.
+ * @param fileExtension add a specific extension to the temporary file.
+ * @param debug enable debug.
+ * @param pom add automatically a pom file to make easier the edition with an IDE.
+ * @param acceptNewDocument give the possibility to add new document.
+ *
+ * @version $Id$
+ */
 public record Command(
     Action action,
     String wiki,
@@ -155,7 +189,7 @@ public record Command(
                 String res = "title=" + doc.getTitle() + "\n\n";
                 for (var o : objects) {
                     for (var p : o.properties()) {
-                        res += o.objectClass() + "/" + o.number() + "." + p.name() + "=" + protectValue(p.value());
+                        res += o.objectClass() + '/' + o.number() + '.' + p.name() + '=' + protectValue(p.value());
                     }
                 }
                 res += "\n\ncontent=" + protectValue(doc.getContent());
@@ -179,16 +213,16 @@ public record Command(
                 if (val.isEmpty()) {
                     throw new MessageForUserDocException("This property does not exist");
                 }
-                var objectClass = cmd.objectClass;
-                if (Utils.isEmpty(objectClass)) {
-                    objectClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
+                var oClass = cmd.objectClass;
+                if (Utils.isEmpty(oClass)) {
+                    oClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
                         .stream().findFirst().get()
                         .objectClass();
                 }
 
                 String ext = Utils.present(cmd.fileExtension)
                     ? '.' + cmd.fileExtension
-                    : cmd.getFileExtension(objectClass, cmd.property);
+                    : cmd.getFileExtension(oClass, cmd.property);
 
                 Editing.editValue(cmd, val.get(), "property-", ext, newValue -> {
                     try {
@@ -262,7 +296,7 @@ public record Command(
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
                 for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
-                    out.println(object.objectClass() + "/" + object.number());
+                    out.println(object.objectClass() + '/' + object.number());
                 }
             }
         },
