@@ -33,6 +33,8 @@ import org.xwiki.contrib.cli.document.element.ObjectInfo;
  */
 public class CommandDoc implements InputDoc
 {
+    private static final String NOT_IMPLEMENTED = "Not Implemented";
+
     private final Command cmd;
 
     /**
@@ -72,7 +74,7 @@ public class CommandDoc implements InputDoc
     @Override
     public byte[] getAttachment(String attachmentName) throws DocException
     {
-        throw new UnsupportedOperationException("Not Implemented");
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
     }
 
     @Override

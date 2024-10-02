@@ -26,6 +26,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 class XWikiDirSync
 {
+
     private static final String URL_PART_CONTENT = "/content";
 
     private static final String URL_PART_REST = "/rest";
@@ -41,6 +42,10 @@ class XWikiDirSync
     private static final String ATTACHMENTS_PATTERN = "^/attachments/([^/]+)$";
 
     private static final Pattern ATTACHMENTS_PATTERN_MATCHER = Pattern.compile(ATTACHMENTS_PATTERN);
+
+    private static final String DOT = ".";
+
+    private static final String CONTENT = "content";
 
     private final Path xmlFileDirPath;
 
@@ -61,7 +66,7 @@ class XWikiDirSync
     {
         WatchService watcher = FileSystems.getDefault().newWatchService();
         WatchKey key;
-        HashMap<WatchKey, Path> keyMaps = new HashMap<>();
+        Map<WatchKey, Path> keyMaps = new HashMap<>();
         try {
             watchDir(keyMaps, syncPath, watcher);
         } catch (IOException e) {

@@ -32,7 +32,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,7 +50,6 @@ import org.xml.sax.SAXException;
  */
 public final class Utils
 {
-
     private static final String CONTENT_TYPE = "Content-Type";
 
     private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain; charset=utf8";
@@ -446,7 +444,7 @@ public final class Utils
      * @param property properties for which we need to return the extension.
      * @return the extension if it's a scripting file.
      */
-    public static Optional<String> getScriptLangFromObjectInfo(HashMap<String, String> properties, String objectClass,
+    public static Optional<String> getScriptLangFromObjectInfo(Map<String, String> properties, String objectClass,
         String property)
     {
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(PROPERTY_NAME_CODE)) {

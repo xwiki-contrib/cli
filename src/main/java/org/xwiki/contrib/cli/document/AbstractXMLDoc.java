@@ -48,6 +48,8 @@ abstract class AbstractXMLDoc
 
     protected static final String NODE_NAME_TITLE = "title";
 
+    protected static final String NODE_NAME_SYNTAX_ID = "syntaxId";
+
     protected static final String NODE_NAME_OBJECT = "object";
 
     protected static final String NODE_XWIKI_SPACE = "xwiki:";
