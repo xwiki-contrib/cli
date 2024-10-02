@@ -110,8 +110,9 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the REST API and also for the
-     * synced dir path.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the
+     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
+     * instead.
      *
      * @param reference the page, in dotted notation.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -123,8 +124,9 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the REST API and also for the
-     * synced dir path.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the
+     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
+     * instead.
      *
      * @param reference a page reference.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -133,6 +135,32 @@ public final class Utils
     {
         // TODO unit test
         return PATH_SPACES + String.join(PATH_SPACES, reference.spaces()) + PATH_PAGES + reference.page();
+    }
+
+    /**
+     * Convert a page reference to the path in the REST API.
+     *
+     * @param reference the page, in dotted notation.
+     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
+     */
+    public static String fromReferenceToRestPath(String reference)
+    {
+        // TODO unit test
+        return fromReferenceToRestPath(deserialize(reference));
+    }
+
+    /**
+     * Convert a page reference to the path in the REST API.
+     *
+     * @param reference a page reference.
+     * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
+     */
+    public static String fromReferenceToRestPath(PageReference reference)
+    {
+        // TODO unit test
+        return PATH_SPACES
+            + String.join(PATH_SPACES, reference.spaces().stream().map(Utils::encodeURLPart).toList())
+            + PATH_PAGES + encodeURLPart(reference.page());
     }
 
     /**
@@ -357,7 +385,7 @@ public final class Utils
 
         return cmd.url()
             + REST_URL_PREFIX + wiki
-            + Utils.fromReferenceToXFFPath(page)
+            + fromReferenceToRestPath(page)
             + (withObjects ? "?objects=true&attachments=true" : "");
     }
 
@@ -381,7 +409,7 @@ public final class Utils
 
         return cmd.url()
             + REST_URL_PREFIX + wiki
-            + Utils.fromReferenceToXFFPath(page)
+            + fromReferenceToRestPath(page)
             + "/attachments/" + attachmentName;
     }
 

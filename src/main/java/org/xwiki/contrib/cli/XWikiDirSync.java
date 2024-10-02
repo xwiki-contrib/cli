@@ -171,9 +171,9 @@ class XWikiDirSync
                 Files.writeString(propertyValueFileName, property.value());
                 managedFiles.add(propertyValueFileName);
                 if (property.scriptingExtension().isPresent()) {
-                    var linkPath = Path.of(propertyValueFileName + "." + property.scriptingExtension().get());
-                    if (!Files.exists(linkPath)) {
-                        Files.createSymbolicLink(linkPath, propertyValueFileName);
+                    var linkPropertyPath = Path.of(propertyValueFileName + DOT + property.scriptingExtension().get());
+                    if (!Files.exists(linkPropertyPath)) {
+                        Files.createSymbolicLink(linkPropertyPath, Path.of(property.name()));
                     }
                 }
             }
