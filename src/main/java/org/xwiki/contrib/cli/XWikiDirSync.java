@@ -47,6 +47,8 @@ class XWikiDirSync
 
     private static final String CONTENT = "content";
 
+    private static final String TITLE = "title";
+
     private final Path xmlFileDirPath;
 
     private final Command command;
@@ -142,16 +144,25 @@ class XWikiDirSync
         var xmlFile = new XMLFileDoc(command, srcFile.toString());
         var dstFile = syncPath.toString() + Utils.fromReferenceToXFFPath(xmlFile.getReference());
         var content = xmlFile.getContent();
-        var contentFilePath = Path.of(dstFile, "content");
+        var contentExtension = Utils.getExtensionFromSyntaxId(xmlFile.getSyntaxId());
+        var contentFilePath = Path.of(dstFile, CONTENT);
         Files.createDirectories(contentFilePath.getParent());
         Files.writeString(contentFilePath, content);
         managedFiles.add(contentFilePath);
+        var linkPath = Path.of(contentFilePath + DOT + contentExtension);
+        if (!Files.exists(linkPath)) {
+            Files.createSymbolicLink(linkPath, Path.of(CONTENT));
+        }
 
         var title = xmlFile.getTitle();
-        var titleFilePath = Path.of(dstFile, "title");
+        var titleFilePath = Path.of(dstFile, TITLE);
         Files.createDirectories(titleFilePath.getParent());
         Files.writeString(titleFilePath, title);
         managedFiles.add(titleFilePath);
+        linkPath = Path.of(titleFilePath + DOT + "vm");
+        if (!Files.exists(linkPath)) {
+            Files.createSymbolicLink(linkPath, Path.of(TITLE));
+        }
 
         for (var attachment : xmlFile.getAttachments()) {
             var attachmentContent = xmlFile.getAttachment(attachment.name());
@@ -182,9 +193,9 @@ class XWikiDirSync
 
     private void syncFileFromSyncedDir(Path file, WatchEvent.Kind<?> kind) throws IOException
     {
-        out.println("Sync file at path: " + file);
-        // var relativePath = syncPath.relativize(file);
-
+        if (command.debug()) {
+            out.println("Sync file at path: " + file);
+        }
         // TODO improve it !!
         // We should not in all case rewrite the value
         write(file);

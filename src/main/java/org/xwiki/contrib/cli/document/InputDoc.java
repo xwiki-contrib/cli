@@ -40,6 +40,12 @@ interface InputDoc
     String getContent() throws DocException;
 
     /**
+     * @return the syntax of the document.
+     * @throws DocException
+     */
+    String getSyntaxId() throws DocException;
+
+    /**
      * @return the title of the document.
      */
     String getTitle() throws DocException;

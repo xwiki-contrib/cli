@@ -60,6 +60,12 @@ public class CommandDoc implements InputDoc
     }
 
     @Override
+    public String getSyntaxId()
+    {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+    }
+
+    @Override
     public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
     {
         return null;

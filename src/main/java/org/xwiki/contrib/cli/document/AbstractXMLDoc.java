@@ -137,6 +137,17 @@ abstract class AbstractXMLDoc
         xml = null;
     }
 
+    public String getSyntaxId() throws DocException
+    {
+        var domdoc = getDom();
+        var root = (Element) domdoc.getRootElement();
+        var syntaxId = (Element) getElement(root, NODE_NAME_SYNTAX_ID);
+        if (syntaxId == null) {
+            return null;
+        }
+        return syntaxId.getText();
+    }
+
     public Optional<ObjectInfo> getObjectSpec(String objectClass, String objectNumber, String property)
         throws DocException
     {

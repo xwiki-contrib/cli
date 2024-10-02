@@ -494,6 +494,31 @@ public final class Utils
         return Optional.empty();
     }
 
+    /**
+     * @param syntax the syntax ID.
+     * @return the file extension.
+     */
+    public static String getExtensionFromSyntaxId(String syntax)
+    {
+        switch (syntax) {
+            case "plain/1.0" -> {
+                return "txt";
+            }
+            case "html/5.0" -> {
+                return "html";
+            }
+            case "xhtml/5", "xhtml/1" -> {
+                return "xhtml";
+            }
+            case "markdown/1.2" -> {
+                return "md";
+            }
+            default -> {
+                return XWIKI;
+            }
+        }
+    }
+
     private static HttpClient getHTTPClient(Command cmd)
     {
         return HttpClient.newBuilder().build();

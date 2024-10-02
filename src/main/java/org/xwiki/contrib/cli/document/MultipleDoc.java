@@ -147,6 +147,21 @@ public class MultipleDoc implements InputDoc, OutputDoc
     }
 
     @Override
+    public String getSyntaxId() throws DocException
+    {
+        String syntax = null;
+        for (var inputDoc : inputDocs) {
+            var newContent = inputDoc.getSyntaxId();
+            if (syntax == null) {
+                syntax = newContent;
+            } else if (newContent != null && !syntax.equals(newContent)) {
+                return pickInputFile("the syntax").getSyntaxId();
+            }
+        }
+        return syntax;
+    }
+
+    @Override
     public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
         throws DocException
     {
