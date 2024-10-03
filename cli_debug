@@ -1,0 +1,2 @@
+#!/bin/bash
+java -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=1044  -cp target/cli-1.0-SNAPSHOT.jar org.xwiki.contrib.cli.Main --debug "$@"
