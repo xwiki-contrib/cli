@@ -110,9 +110,8 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the
-     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
-     * instead.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the synced dir path. For REST
+     * API we need some escape char, so you need to use fromReferenceToRestPath method instead.
      *
      * @param reference the page, in dotted notation.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -124,9 +123,8 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the
-     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
-     * instead.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the synced dir path. For REST
+     * API we need some escape char, so you need to use fromReferenceToRestPath method instead.
      *
      * @param reference a page reference.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -375,7 +373,8 @@ public final class Utils
      * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
-    public static String getDocRestURLFromCommand(Command cmd, String wikiParam, String page, boolean withObjects)
+    public static String getDocRestURLFromCommand(Command cmd, String wikiParam, String page, boolean withObjects,
+        boolean withAttchments, boolean withClass)
         throws DocException
     {
         var wiki = (wikiParam == null || wikiParam.isEmpty()) ? XWIKI : wikiParam;
@@ -383,10 +382,19 @@ public final class Utils
             throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
 
-        return cmd.url()
-            + REST_URL_PREFIX + wiki
-            + fromReferenceToRestPath(page)
-            + (withObjects ? "?objects=true&attachments=true" : "");
+        var url = new StringBuilder(cmd.url());
+        url.append(REST_URL_PREFIX).append(wiki);
+        url.append(Utils.fromReferenceToRestPath(page));
+        if (withObjects || withAttchments || withClass) {
+            var params = new String[] {
+                withObjects ? "objects=true" : "",
+                withAttchments ? "attachments=true" : "",
+                withClass ? "class=true" : "",
+            };
+            url.append("?");
+            url.append(String.join("&", params));
+        }
+        return url.toString();
     }
 
     /**

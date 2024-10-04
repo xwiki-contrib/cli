@@ -393,7 +393,7 @@ public record Command(
             + "\nMount Path:      " + mountPath
             + "\nSync Path:       " + syncPath
             + "\nSync data source:" + syncDataSource
-            + "\nUsed Doc URL:  " + getDocURL()
+            + "\nUsed Doc URL:  " + getDocURL(false, false, false)
             + "\nDebug:         " + debug
             + "\n + printXML:   " + printXML);
     }
@@ -429,10 +429,10 @@ public record Command(
         return pos != -1 && value.indexOf('\n', pos) != -1;
     }
 
-    private String getDocURL()
+    private String getDocURL(boolean withObjects, boolean withAttachments, boolean withClass)
     {
         try {
-            return Utils.getDocRestURLFromCommand(this, wiki, page, false);
+            return Utils.getDocRestURLFromCommand(this, wiki, page, withObjects, withAttachments, withClass);
         } catch (DocException e) {
             return "(N/A)";
         }
