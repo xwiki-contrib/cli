@@ -106,7 +106,7 @@ public record Command(
         xwiki-cli JAVA
 
         Actions:
-            --help                   Show the help
+            -h, --help               Show the help
             --edit-page              Edit a complete XWiki document
             --get-content            Get the content of a XWiki document
             --set-content CONTENT    Set the content of a XWiki document
@@ -128,7 +128,6 @@ public record Command(
         Parameters:
             --debug                  Enable debug mode (for now, more verbose logs)
             --print-xml              Print received XML code (for debugging)
-            -b HOST[:PORT][/PATH]    Use this host and port to connect to XWiki.
             --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
             --pom                    Autocreate or reuse a XWiki maven project for autocompletion
             -p PAGE                  Specify the page (dotted notation)
@@ -147,7 +146,6 @@ public record Command(
             --sync-data-source DIR   Path to the maven repository
             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
             -n, --new                Allow creation of a document using --edit-content (and no input file given)
-            -H 'Header-Name: Val'  Add a custom HTTP header (repeat to have several ones)
             --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
             --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
             --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
