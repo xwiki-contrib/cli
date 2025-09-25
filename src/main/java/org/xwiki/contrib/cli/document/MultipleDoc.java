@@ -42,7 +42,7 @@ import static java.lang.System.out;
  *
  *  @version $Id$
  */
-public class MultipleDoc implements InputDoc, OutputDoc
+public class MultipleDoc implements InputOutputDoc
 {
     private static final String TEXT_ATTACHMENT_LIST = "the attachment list";
 
