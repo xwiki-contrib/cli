@@ -73,6 +73,7 @@ final class Main
         Command.Action action = null;
         String wiki = null;
         String page = null;
+        String macro = null;
         String objectClass = null;
         String objectNumber = null;
         String property = null;
@@ -140,6 +141,10 @@ final class Main
                 case "-u", "--url" -> url = getNextParameter(args, i++);
                 case "--edit-page" -> action = Command.Action.EDIT_PAGE;
                 case "--edit-content" -> action = Command.Action.EDIT_CONTENT;
+                case "--edit-macro" -> {
+                    macro = getNextParameter(args, i++);
+                    action = Command.Action.EDIT_MACRO;
+                }
                 case "--list-properties" -> action = Command.Action.LIST_PROPERTIES;
                 case "--list-objects" -> action = Command.Action.LIST_OBJECTS;
                 case "--list-attachments" -> action = Command.Action.LIST_ATTACHMENTS;
@@ -165,6 +170,7 @@ final class Main
                     property = getNextParameter(args, i++);
                     action = Command.Action.EDIT_PROPERTY;
                 }
+                case "--property" -> property = getNextParameter(args, i++);
                 case "--mount" -> {
                     mountPath = getNextParameter(args, i++);
                     action = Command.Action.MOUNT;
@@ -192,7 +198,7 @@ final class Main
         }
 
         var cmd = new Command(
-            action, wiki, page, objectClass, objectNumber, property, value, editor, wikiReadonly,
+            action, wiki, page, macro, objectClass, objectNumber, property, value, editor, wikiReadonly,
             wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
             mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
 

@@ -32,6 +32,7 @@ public record Command(
     Action action,
     String wiki,
     String page,
+    String macro,
     String objectClass,
     String objectNumber,
     String property,
@@ -77,6 +78,9 @@ public record Command(
             --get-content            Get the content of a XWiki document
             --set-content CONTENT    Set the content of a XWiki document
             --edit-content           Edit the content of a XWiki document with a text editor
+            --edit-macro NAME[/NUMBER] Edit a macro in the content of a XWiki document or a property value
+                                     with a text editor, where NUMBER is the nth macro with this name (0-indexed).
+                                     If NUMBER is not given, 0 (the first macro) is assumed.
             --get-title              Get the title of a XWiki document
             --set-title TITLE        Set the title of a XWiki document
             --list-properties        List the document's properties,
@@ -106,6 +110,7 @@ public record Command(
                                      generally the XML dir.
             -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
             -v VALUE                 The value to use
+            -property PROPERTY       Define the property to work on
             --read-from-xml FILE     Read the document from the given file
             --write-to-xml FILE      Write the document to the given file
             --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
@@ -146,6 +151,33 @@ public record Command(
                 });
             }
         },
+
+        EDIT_MACRO {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                if (cmd.macro == null) {
+                    throw new Exception("Please provide --macro");
+                }
+                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                String macroContent = Editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
+                    cmd.macro);
+                String filePrefix = cmd.macro.replace('/', '-');
+                String fileExtension = Editing.getFileExtensionForMacroSpec(cmd.macro);
+                Editing.editValue(cmd, macroContent, filePrefix, fileExtension, newValue -> {
+                    try {
+                        Editing.setMacro(doc, cmd.objectClass, cmd.objectNumber, cmd.property, cmd.macro,
+                            newValue);
+                        doc.save();
+                    } catch (Exception e) {
+                        // FIXME we can't really print stuff here, it will mess up any terminal editor.
+                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
+                        e.printStackTrace();
+                    }
+                });
+            }
+        },
+
         EDIT_PAGE {
             @Override
             void run(Command cmd) throws Exception

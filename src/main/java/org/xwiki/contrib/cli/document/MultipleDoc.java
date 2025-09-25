@@ -38,7 +38,7 @@ import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import static java.lang.System.err;
 import static java.lang.System.out;
 
-public class MultipleDoc implements InputDoc, OutputDoc
+public class MultipleDoc implements InputOutputDoc
 {
     private final List<InputDoc> inputDocs;
 

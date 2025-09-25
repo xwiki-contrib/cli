@@ -33,7 +33,7 @@ import org.xwiki.contrib.cli.document.element.ObjectInfo;
  *
  * @version $Id$
  */
-interface InputDoc
+public interface InputDoc
 {
     /**
      * @return the content of the document.

@@ -30,12 +30,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
 
+import org.xwiki.contrib.cli.document.InputDoc;
+import org.xwiki.contrib.cli.document.InputOutputDoc;
 import org.xwiki.contrib.cli.document.OutputDoc;
 
 import static java.lang.System.out;
 
 final class Editing
 {
+    private static final String MACRO_TAG_END = "}}";
+
     private Editing()
     {
         // ignore
@@ -181,6 +185,135 @@ final class Editing
             }
         }
         doc.save();
+    }
+
+    public static String getMacroContent(InputDoc doc, String objectClass, String objectNumber, String property,
+        String macroSpec) throws Exception
+    {
+        String content = getContentOrValue(doc, objectClass, objectNumber, property);
+        return getMacroContent(content, macroSpec);
+    }
+
+    private static String getMacroContent(String content, String macroSpec) throws Exception
+    {
+        int[] macroContentPos = getMacroContentPos(macroSpec, content);
+        return content.substring(macroContentPos[0], macroContentPos[1]);
+    }
+
+    public static void setMacro(InputOutputDoc doc, String objectClass, String objectNumber,
+        String property, String macroSpec, String macroContent) throws Exception
+    {
+        String content = getContentOrValue(doc, objectClass, objectNumber, property);
+        String newContent = updateMacro(content, macroSpec, macroContent);
+        setContentOrValue(doc, objectClass, objectNumber, property, newContent);
+    }
+
+    private static String updateMacro(String content, String macroSpec, String macroContent) throws Exception
+    {
+        int[] macroContentPos = getMacroContentPos(macroSpec, content);
+        int startIndex = macroContentPos[0];
+        int endIndex = macroContentPos[1];
+        String start = startIndex == 0 ? "" : content.substring(0, startIndex);
+        String end = endIndex < content.length() ? content.substring(endIndex) : "";
+        return start + macroContent + end;
+    }
+
+    private static void setContentOrValue(InputOutputDoc doc, String objectClass, String objectNumber, String property, String newContent)
+        throws DocException
+    {
+        if (property == null) {
+            doc.setContent(newContent);
+            return;
+        }
+        doc.setValue(objectClass, objectNumber, property, newContent);
+    }
+
+    private static String getContentOrValue(InputDoc doc, String objectClass, String objectNumber,
+        String property) throws Exception
+    {
+        if (property == null) {
+            return doc.getContent();
+        }
+
+        return doc.getValue(objectClass, objectNumber, property).orElseThrow(
+            () -> new Exception("This property was not found"));
+    }
+
+    private static int[] getMacroContentPos(String macroSpec, String content) throws Exception
+    {
+        String[] macroSpecArray = macroSpec.split("/");
+        String macroName;
+        int macroNumber;
+        if (macroSpecArray.length == 1) {
+            macroName = macroSpecArray[0];
+            macroNumber = 0;
+        } else {
+            if (macroSpecArray.length != 2) {
+                throw new Exception("Invalid macro specification");
+            }
+            macroName = macroSpecArray[0];
+            macroNumber = Integer.parseInt(macroSpecArray[1]); // throws NumberFormatException
+        }
+        return getMacroContentPos(content, macroName, macroNumber);
+    }
+
+    public static String getFileExtensionForMacroSpec(String macroSpec)
+    {
+        if (macroSpec != null) {
+            String m = macroSpec + "/";
+            if (m.startsWith("groovy/")) {
+                return ".groovy";
+            }
+
+            if (m.startsWith("velocity/")) {
+                return ".vm";
+            }
+
+            if (m.startsWith("python/")) {
+                return ".py";
+            }
+
+            if (m.startsWith("html/")) {
+                return ".html";
+            }
+
+            if (m.startsWith("javascript/")) {
+                return ".js";
+            }
+        }
+
+        return ".txt";
+    }
+
+    private static int[] getMacroContentPos(String content, String macroName, int macroNumber) throws Exception
+    {
+        int n = macroNumber;
+        String macroStart = "{{" + macroName;
+        int macroContentStart = -1;
+        int macroContentEnd = -1;
+        int from = 0;
+        do {
+            int macroPos = content.indexOf(macroStart, from);
+            if (macroPos == -1) {
+                throw new Exception("Macro not found");
+            }
+            macroContentStart = content.indexOf(MACRO_TAG_END, macroPos + macroStart.length());
+            if (macroContentStart == -1) {
+                throw new Exception("Macro start tag isn't finished");
+            }
+            macroContentStart += MACRO_TAG_END.length();
+            if (content.charAt(macroContentStart) == '\n') {
+                macroContentStart++;
+            }
+            String macroEnd = "{{/" + macroName + MACRO_TAG_END;
+            macroContentEnd = content.indexOf(macroEnd, macroContentStart);
+            if (macroContentEnd == -1) {
+                macroContentEnd = content.length();
+            }
+            --n;
+            from = macroContentEnd + macroEnd.length();
+        } while (n >= 0);
+        return new int[]{ macroContentStart, macroContentEnd };
     }
 
     interface EditingCallback
