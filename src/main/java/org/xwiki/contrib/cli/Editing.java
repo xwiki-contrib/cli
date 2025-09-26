@@ -188,27 +188,27 @@ final class Editing
     }
 
     public static String getMacroContent(InputDoc doc, String objectClass, String objectNumber, String property,
-        String macroSpec) throws Exception
+        String macroSpec) throws DocException
     {
         String content = getContentOrValue(doc, objectClass, objectNumber, property);
         return getMacroContent(content, macroSpec);
     }
 
-    private static String getMacroContent(String content, String macroSpec) throws Exception
+    public static String getMacroContent(String content, String macroSpec) throws DocException
     {
         int[] macroContentPos = getMacroContentPos(macroSpec, content);
         return content.substring(macroContentPos[0], macroContentPos[1]);
     }
 
     public static void setMacro(InputOutputDoc doc, String objectClass, String objectNumber,
-        String property, String macroSpec, String macroContent) throws Exception
+        String property, String macroSpec, String macroContent) throws DocException
     {
         String content = getContentOrValue(doc, objectClass, objectNumber, property);
         String newContent = updateMacro(content, macroSpec, macroContent);
         setContentOrValue(doc, objectClass, objectNumber, property, newContent);
     }
 
-    private static String updateMacro(String content, String macroSpec, String macroContent) throws Exception
+    public static String updateMacro(String content, String macroSpec, String macroContent) throws DocException
     {
         int[] macroContentPos = getMacroContentPos(macroSpec, content);
         int startIndex = macroContentPos[0];
@@ -218,7 +218,19 @@ final class Editing
         return start + macroContent + end;
     }
 
-    private static void setContentOrValue(InputOutputDoc doc, String objectClass, String objectNumber, String property, String newContent)
+    public static int getMacroOccurrences(String content, String macroName) {
+        int startIndex= 0;
+        for (int i = 0; true; i++) {
+            int index =  content.indexOf("{{" + macroName, startIndex);
+            if (index == -1) {
+                return i;
+            }
+            startIndex += index + 2;
+        }
+    }
+
+    private static void setContentOrValue(InputOutputDoc doc, String objectClass, String objectNumber, String property,
+        String newContent)
         throws DocException
     {
         if (property == null) {
@@ -229,17 +241,17 @@ final class Editing
     }
 
     private static String getContentOrValue(InputDoc doc, String objectClass, String objectNumber,
-        String property) throws Exception
+        String property) throws DocException
     {
         if (property == null) {
             return doc.getContent();
         }
 
         return doc.getValue(objectClass, objectNumber, property).orElseThrow(
-            () -> new Exception("This property was not found"));
+            () -> new DocException("This property was not found"));
     }
 
-    private static int[] getMacroContentPos(String macroSpec, String content) throws Exception
+    private static int[] getMacroContentPos(String macroSpec, String content) throws DocException
     {
         String[] macroSpecArray = macroSpec.split("/");
         String macroName;
@@ -249,7 +261,7 @@ final class Editing
             macroNumber = 0;
         } else {
             if (macroSpecArray.length != 2) {
-                throw new Exception("Invalid macro specification");
+                throw new DocException("Invalid macro specification");
             }
             macroName = macroSpecArray[0];
             macroNumber = Integer.parseInt(macroSpecArray[1]); // throws NumberFormatException
@@ -285,7 +297,7 @@ final class Editing
         return ".txt";
     }
 
-    private static int[] getMacroContentPos(String content, String macroName, int macroNumber) throws Exception
+    private static int[] getMacroContentPos(String content, String macroName, int macroNumber) throws DocException
     {
         int n = macroNumber;
         String macroStart = "{{" + macroName;
@@ -295,11 +307,11 @@ final class Editing
         do {
             int macroPos = content.indexOf(macroStart, from);
             if (macroPos == -1) {
-                throw new Exception("Macro not found");
+                throw new DocException("Macro not found");
             }
             macroContentStart = content.indexOf(MACRO_TAG_END, macroPos + macroStart.length());
             if (macroContentStart == -1) {
-                throw new Exception("Macro start tag isn't finished");
+                throw new DocException("Macro start tag isn't finished");
             }
             macroContentStart += MACRO_TAG_END.length();
             if (content.charAt(macroContentStart) == '\n') {
@@ -313,7 +325,7 @@ final class Editing
             --n;
             from = macroContentEnd + macroEnd.length();
         } while (n >= 0);
-        return new int[]{ macroContentStart, macroContentEnd };
+        return new int[] { macroContentStart, macroContentEnd };
     }
 
     interface EditingCallback

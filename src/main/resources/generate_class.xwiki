@@ -1,0 +1,113 @@
+{{groovy}}
+class BindingClass
+{
+    Map<String, String> fields = [:]
+
+    Class baseClass
+
+    String fieldName
+
+    boolean rootOfBinding
+}
+
+static String fromServiceNameToClassName(String name)
+{
+    StringBuilder res = new StringBuilder()
+    boolean isLastCharDot = true
+    for (def c in name.toCharArray()) {
+        if (c == '.') {
+            isLastCharDot = true
+        } else {
+            if (isLastCharDot) {
+                res.append(c.toUpperCase())
+                isLastCharDot = false
+            } else {
+                res.append(c)
+            }
+        }
+    }
+    return res
+}
+
+Map<String, BindingClass> bindingClasses = [:]
+for (def binding in services.scriptdoc.getBindingsFinder().find()) {
+    Class bType = binding.type
+    String bFullName = binding.fullName
+
+    if (binding.kind.toString() != 'velocity' && !binding.legacy && !binding.deprecated && !binding.internal
+        // Optionally hide generic binding
+        && binding.class.typeName != "org.xwiki.scripting.documentation.internal.GenericBinding"
+    )
+    {
+        def className = fromServiceNameToClassName(bFullName)
+        if (!bindingClasses.containsKey(className)) {
+            bindingClasses[className] = new BindingClass()
+        }
+        bindingClasses[className].baseClass = bType
+        bindingClasses[className].fieldName = binding.name
+        bindingClasses[className].rootOfBinding = !bFullName.contains(".")
+        def elements = bFullName.split('\\.')
+        String parentName = elements[0]
+        for (int i = 1; i < elements.length; i++) {
+            def parentClassName = fromServiceNameToClassName(parentName)
+            if (!bindingClasses.containsKey(parentClassName)) {
+                bindingClasses[parentClassName] = new BindingClass()
+                bindingClasses[parentClassName].baseClass = Object.class
+            }
+            parentName = parentName + "." + elements[i]
+            bindingClasses[parentClassName].fields[elements[i]] = fromServiceNameToClassName(parentName)
+        }
+    }
+}
+
+def subClassResult = new StringBuilder()
+for (def c in bindingClasses) {
+    def className = c.value.baseClass.typeName.replace("\$", ".")
+    subClassResult
+        .append("class ${c.key}BindingScriptService extends ${className} {\n")
+    for (def con in c.value.baseClass.getConstructors()) {
+        subClassResult.append("${c.key}BindingScriptService(")
+        char param = 'a'
+        int i = 0
+        for (def p in con.getParameterTypes()) {
+            if (i > 0) {
+                subClassResult.append(",")
+            }
+            i++
+            subClassResult.append("${p.typeName} ${param}")
+            param++
+        }
+        subClassResult.append(") { super(")
+        i = 0
+        param = 'a'
+        for (def p in con.getParameterTypes()) {
+            if (i > 0) {
+                subClassResult.append(",")
+            }
+            i++
+            subClassResult.append("${param}")
+            param++
+        }
+        subClassResult.append(")}\n")
+    }
+    for (def e in c.value.fields) {
+        subClassResult.append("public ${e.value}BindingScriptService ${e.key}\n")
+    }
+    subClassResult.append("}\n")
+}
+
+def result = new StringBuilder()
+result.append("abstract class ScriptContext extends Script {")
+for (def k in bindingClasses) {
+    if (k.value.fieldName == null) {
+        continue
+    }
+    if (k.value.rootOfBinding) {
+        result.append("${k.key}BindingScriptService ${k.value.fieldName} = (${k.key}BindingScriptService)\"\"\n")
+    }
+}
+result.append("}")
+
+println(services.rendering.escape(subClassResult.toString(), doc.syntax))
+println(services.rendering.escape(result.toString(), doc.syntax))
+{{/groovy}}

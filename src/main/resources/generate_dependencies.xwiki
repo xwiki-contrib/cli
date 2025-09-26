@@ -1,0 +1,68 @@
+{{groovy}}
+import com.fasterxml.jackson.databind.ObjectMapper
+  import java.nio.charset.StandardCharsets
+record ExtensionInfos(
+    String groupId,
+    String artefactId,
+    String version)
+{}
+
+def allClassPath = new HashSet()
+def extensionsList = new ArrayList<ExtensionInfos>()
+
+
+for (def binding in services.scriptdoc.getBindingsFinder().find()) {
+    def sourceCode = binding.type.getProtectionDomain().getCodeSource()
+    if (sourceCode != null) {
+        allClassPath.add(URLDecoder.decode(sourceCode.location.path, StandardCharsets.UTF_8))
+    }
+}
+
+services.extension.installed.getInstalledExtensions().forEach { it ->
+    def idSplit = it.id.id.split(":")
+    if (it.type == "jar") {
+        def coreUrl = it.properties.getOrDefault("core.url", null)
+        URL path;
+        if (coreUrl != null) {
+            path = coreUrl
+        }
+        def localFile = it.properties.getOrDefault("local.file", null)
+        if (localFile != null) {
+            path = localFile.toURL()
+        }
+        if (path == null) {
+            println "Can't find path for extension ${it.id}"
+            return
+        }
+        if (allClassPath.contains(path.path)) {
+            extensionsList.add(new ExtensionInfos(idSplit[0], idSplit[1], it.id.version.value))
+        }
+    }
+}
+
+services.extension.coreExtensions.forEach { it ->
+    def idSplit = it.id.id.split(":")
+    if (it.type == "jar") {
+        def coreUrl = it.properties.getOrDefault("core.url", null)
+        URL path;
+        if (coreUrl != null) {
+            path = coreUrl
+        }
+        def localFile = it.properties.getOrDefault("local.file", null)
+        if (localFile != null) {
+            path = localFile.toURL()
+        }
+        if (path == null) {
+            println "Can't find path for extension ${it.id}"
+            return
+        }
+        if (allClassPath.contains(path.path)) {
+           extensionsList.add(new ExtensionInfos(idSplit[0], idSplit[1], it.id.version.value))
+        }
+    }
+}
+
+ObjectMapper mapper = new ObjectMapper();
+String dataJson =mapper.writeValueAsString(extensionsList)
+println(services.rendering.escape(dataJson, doc.syntax))
+{{/groovy}}

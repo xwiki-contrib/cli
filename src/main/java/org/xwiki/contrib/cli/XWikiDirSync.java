@@ -1,22 +1,40 @@
 package org.xwiki.contrib.cli;
 
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.WatchEvent;
 import java.nio.file.WatchKey;
 import java.nio.file.WatchService;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.io.OutputFormat;
+import org.dom4j.io.XMLWriter;
 import org.xwiki.contrib.cli.document.MultipleDoc;
 import org.xwiki.contrib.cli.document.XMLFileDoc;
+import org.xwiki.contrib.cli.document.element.ExtensionInfos;
+import org.xwiki.contrib.cli.document.element.ExtensionInfosList;
+import org.xwiki.contrib.cli.document.element.MacroInstance;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static java.lang.System.out;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -26,7 +44,6 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 
 class XWikiDirSync
 {
-
     private static final String URL_PART_CONTENT = "/content";
 
     private static final String URL_PART_REST = "/rest";
@@ -49,22 +66,36 @@ class XWikiDirSync
 
     private static final String TITLE = "title";
 
+    private static final String GROOVY_HEADER_DELIMITER = "//////// BEGIN CODE ////////";
+
+    private static final String GROOVY_CONTENT_HEADER = """
+        package org.xwiki.cli
+        import groovy.transform.BaseScript
+        import org.xwiki.cli.ScriptContext
+        @BaseScript ScriptContext mainScript
+        """ + GROOVY_HEADER_DELIMITER;
+
     private final Path xmlFileDirPath;
 
     private final Command command;
 
     private final Path syncPath;
 
+    private final Path mavenSyncPath;
+
     private final Set<Path> managedFiles = new HashSet<>();
+
+    private final HashMap<Path, MacroInstance> macroMap = new HashMap<>();
 
     XWikiDirSync(Command cmd)
     {
         command = cmd;
         xmlFileDirPath = Path.of(cmd.syncDataSource(), "src", "main", "resources");
         syncPath = Path.of(cmd.syncPath());
+        mavenSyncPath = Path.of(cmd.syncPath(), "maven");
     }
 
-    public void monitor() throws IOException
+    public void monitor() throws IOException, DocException
     {
         WatchService watcher = FileSystems.getDefault().newWatchService();
         WatchKey key;
@@ -121,9 +152,98 @@ class XWikiDirSync
         out.println("Ending watch loop");
     }
 
-    void sync() throws DocException, IOException
+    void doFirstSync() throws DocException, IOException
     {
+        if (command.pom()) {
+            createMavenProject();
+        }
         syncDir(xmlFileDirPath);
+    }
+
+    private List<ExtensionInfos> getDependencyFromXWiki() throws DocException, JsonProcessingException
+    {
+        var csrf = Utils.getCSRF(command);
+        var content =
+            new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/generate_dependencies.xwiki")))
+                .lines().collect(Collectors.joining("\n"));
+        var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content);
+        var response = Utils.httpPost(this.command,
+            command.url() + "/bin/preview/xwiki-cli/dependency?xpage=plain&outputSyntax=plain", contentToSend,
+            "application/x-www-form-urlencoded");
+        var responseStr = response.body();
+        ObjectMapper mapper = new ObjectMapper();
+        return mapper.readValue(responseStr, ExtensionInfosList.class);
+    }
+
+    private String getScriptServicesFromXWiki() throws DocException
+    {
+        var csrf = Utils.getCSRF(command);
+        var content = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("/generate_class.xwiki")))
+            .lines().collect(Collectors.joining("\n"));
+        var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content);
+        var response = Utils.httpPost(this.command,
+            command.url() + "/bin/preview/xwiki-cli/classbinding?xpage=plain&outputSyntax=plain", contentToSend,
+            "application/x-www-form-urlencoded");
+        return response.body();
+    }
+
+    private void createMavenProject() throws IOException, DocException
+    {
+        Files.createDirectories(mavenSyncPath);
+
+        // Create POM file
+        var sourceProjectPomPath = Path.of(command.syncDataSource(), "pom.xml");
+        var xmlFile = Path.of(mavenSyncPath.toString(), "pom.xml");
+        Files.copy(sourceProjectPomPath, xmlFile, StandardCopyOption.REPLACE_EXISTING);
+
+        var pomXml = Utils.parseXML(Files.readString(xmlFile));;
+        var dependenciesNode = pomXml.getRootElement().selectSingleNode("//*[local-name()='project']/*[local-name()='dependencies']");
+        var dependencyNodes = dependenciesNode.selectNodes("*[local-name()='dependency']");
+        var currentExtensions = new HashMap<String, ExtensionInfos>();
+        for (var n : dependencyNodes) {
+            var groupId = n.selectSingleNode("*[local-name()='groupId']").getStringValue();
+            var artifactId = n.selectSingleNode("*[local-name()='artifactId']").getStringValue();
+            currentExtensions.put(groupId + ":" + artifactId,
+                new ExtensionInfos(
+                    groupId,
+                    artifactId,
+                    n.selectNodes("*[local-name()='version']").stream().findFirst().map(Node::getStringValue).orElse("")
+                ));
+        }
+        for (var n : getDependencyFromXWiki()) {
+            var currentExtensionsKey = n.artefactId() + ":" + n.groupId();
+            if (!currentExtensions.containsKey(currentExtensionsKey)) {
+                Element e = ((Element) dependenciesNode).addElement("dependency");
+                Element groupId = e.addElement("groupId");
+                Element artifactId = e.addElement("artifactId");
+                Element version = e.addElement("version");
+                groupId.setText(n.groupId());
+                artifactId.setText(n.artefactId());
+                version.setText(n.version());
+            }
+        }
+
+        OutputFormat outFormat = OutputFormat.createCompactFormat();
+        outFormat.setTrimText(false);
+        outFormat.setEncoding("utf-8");
+        outFormat.setExpandEmptyElements(false);
+        outFormat.setOmitEncoding(true);
+        outFormat.setSuppressDeclaration(true);
+        try {
+            var out = new FileOutputStream(xmlFile.toFile());
+            out.write("<?xml version=\"1.0\"?>\n".getBytes(Charset.forName("UTF-8")));
+            XMLWriter writer = new XMLWriter(out, outFormat);
+            writer.write(pomXml);
+            writer.flush();
+        } catch (IOException e) {
+            throw new DocException(e);
+        }
+
+        // Create JAVA project structure
+        var scriptServiceSymbolsDeclarationStr = "package org.xwiki.cli\n" + getScriptServicesFromXWiki();
+        var baseJavaPath = Path.of(mavenSyncPath.toString(), "src", "main", "java", "org", "xwiki", "cli");
+        Files.createDirectories(baseJavaPath);
+        Files.writeString(Path.of(baseJavaPath.toString(), "ScriptContext.groovy"), scriptServiceSymbolsDeclarationStr);
     }
 
     private void syncDir(Path dir) throws IOException, DocException
@@ -134,6 +254,9 @@ class XWikiDirSync
                     syncDir(d);
                 } else {
                     syncFileFromMvnRepos(d);
+                    if (command.pom()) {
+                        syncMavenRepos(d);
+                    }
                 }
             }
         }
@@ -191,7 +314,94 @@ class XWikiDirSync
         }
     }
 
-    private void syncFileFromSyncedDir(Path file, WatchEvent.Kind<?> kind) throws IOException
+    private void syncMavenRepos(Path srcFile) throws DocException, IOException
+    {
+        var xmlFile = new XMLFileDoc(command, srcFile.toString());
+        var dstXFFFile = syncPath.toString() + Utils.fromReferenceToXFFPath(xmlFile.getReference());
+        var dstJava = Path.of(mavenSyncPath.toString(), "src", "main", "java",
+            Utils.fromReferenceToJavaNamespace(xmlFile.getReference()));
+        var dstResources = Path.of(mavenSyncPath.toString(), "src", "main", "resources",
+            Utils.fromReferenceToMvnReposPath(xmlFile.getReference()));
+        Files.createDirectories(dstJava);
+        Files.createDirectories(dstResources);
+
+        // Handle title
+        var titleFilePath = Path.of(dstResources.toString(), TITLE + DOT + "vm");
+        if (!Files.exists(titleFilePath)) {
+            Files.createSymbolicLink(titleFilePath, Path.of(dstXFFFile, TITLE));
+        }
+
+        // Handle content
+        if ("xwiki/2.1".equals(xmlFile.getSyntaxId())) {
+            var content = xmlFile.getContent();
+            Path xffContentPath = Path.of(dstXFFFile, CONTENT);
+            for (int i = 0; i < Editing.getMacroOccurrences(content, "groovy"); i++) {
+                var macroContent = Editing.getMacroContent(content, "groovy/" + i);
+                String scriptContent = GROOVY_CONTENT_HEADER + "\n" + macroContent;
+                Path filePath = Path.of(dstJava.toString(), "GroovyMacro_" + i + ".groovy");
+                Files.writeString(filePath, scriptContent);
+                managedFiles.add(filePath);
+                macroMap.put(filePath, new MacroInstance(xffContentPath, "groovy", i));
+            }
+            for (int i = 0; i < Editing.getMacroOccurrences(content, "velocity"); i++) {
+                var macroContent = Editing.getMacroContent(content, "velocity/" + i);
+                Path filePath = Path.of(dstResources.toString(), "VelocityMacro_" + i + ".vm");
+                Files.writeString(filePath, macroContent);
+                managedFiles.add(filePath);
+                macroMap.put(filePath, new MacroInstance(xffContentPath, "velocity", i));
+            }
+        }
+
+        // Handle objects
+        for (var obj : xmlFile.getObjects(null, null, null)) {
+            var objClass = obj.objectClass();
+            var objNumber = Integer.toString(obj.number());
+            for (var property : obj.properties()) {
+                if (property.scriptingExtension().isEmpty()) {
+                    continue;
+                }
+                var propertyValueFileName = Path.of(dstXFFFile, "objects", objClass, objNumber, "properties",
+                    property.name());
+
+                if ("groovy".equals(property.scriptingExtension().orElse(""))
+                    || "vm".equals(property.scriptingExtension().orElse("")))
+                {
+                    Path scriptFileName;
+                    if ("groovy".equals(property.scriptingExtension().orElse(""))) {
+                        scriptFileName =
+                            Path.of(dstJava.toString(), objClass.replace(".", "_") + "_" + objNumber + ".groovy");
+                    } else {
+                        scriptFileName =
+                            Path.of(dstResources.toString(), objClass.replace(".", "_") + "_" + objNumber + ".vm");
+                    }
+                    if (!Files.exists(scriptFileName)) {
+                        Files.createSymbolicLink(scriptFileName, propertyValueFileName);
+                    }
+                } else if ("xwiki".equals(property.scriptingExtension().orElse(""))) {
+                    var content = property.value();
+                    for (int i = 0; i < Editing.getMacroOccurrences(content, "groovy"); i++) {
+                        var macroContent = Editing.getMacroContent(content, "groovy/" + i);
+                        String scriptContent = GROOVY_CONTENT_HEADER + "\n" + macroContent;
+                        Path filePath = Path.of(dstJava.toString(),
+                            objClass.replace(".", "_") + "_" + objNumber + "_GroovyMacro_" + i + ".groovy");
+                        Files.writeString(filePath, scriptContent);
+                        managedFiles.add(filePath);
+                        macroMap.put(filePath, new MacroInstance(propertyValueFileName, "groovy", i));
+                    }
+                    for (int i = 0; i < Editing.getMacroOccurrences(content, "velocity"); i++) {
+                        var macroContent = Editing.getMacroContent(content, "velocity/" + i);
+                        Path filePath = Path.of(dstResources.toString(),
+                            objClass.replace(".", "_") + "_" + objNumber + "VelocityMacro_" + i + ".vm");
+                        Files.writeString(filePath, macroContent);
+                        managedFiles.add(filePath);
+                        macroMap.put(filePath, new MacroInstance(propertyValueFileName, "velocity", i));
+                    }
+                }
+            }
+        }
+    }
+
+    private void syncFileFromSyncedDir(Path file, WatchEvent.Kind<?> kind) throws IOException, DocException
     {
         if (command.debug()) {
             out.println("Sync file at path: " + file);
@@ -201,9 +411,19 @@ class XWikiDirSync
         write(file);
     }
 
-    private void write(Path path) throws IOException
+    private void write(Path path) throws IOException, DocException
     {
-        if (managedFiles.contains(path) && Files.exists(path)) {
+        if (managedFiles.contains(path) && Files.exists(path) && macroMap.containsKey(path)) {
+            var macroInfo = macroMap.get(path);
+            var newMacroContentWithHeader = Files.readString(path);
+            var newMacroContent = newMacroContentWithHeader.substring(
+                newMacroContentWithHeader.indexOf(GROOVY_HEADER_DELIMITER) + GROOVY_HEADER_DELIMITER.length());
+            var newValue = Editing.updateMacro(
+                Files.readString(macroInfo.xffPath()),
+                macroInfo.name() + "/" + macroInfo.number(),
+                newMacroContent);
+            Files.writeString(macroMap.get(path).xffPath(), newValue);
+        } else if (managedFiles.contains(path) && Files.exists(path)) {
             var newContent = Files.readAllBytes(path);
             putValue(syncPath.relativize(path).toString(), newContent);
         }

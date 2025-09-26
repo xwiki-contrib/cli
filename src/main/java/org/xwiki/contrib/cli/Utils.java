@@ -164,6 +164,32 @@ public final class Utils
     }
 
     /**
+     * Convert a XWiki reference to java namespace. For instance Main.WebHome will be converted to main.webhome so it's
+     * a valid java namespace. For example with a special char this will be something like this Hell/.WithChar* will be
+     * converted to hell_.withchar_
+     *
+     * @param reference the XWiki reference
+     * @return a valid Java namespace corresponding to the XWiki reference
+     */
+    public static String fromReferenceToJavaNamespace(String reference)
+    {
+        var builder = new StringBuilder(reference.length() + 5);
+        for (var c : reference.toCharArray()) {
+            if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z') {
+                if (c == '.') {
+                    builder.append(c);
+                } else {
+                    // If it's a special char we replace it by _
+                    builder.append("_");
+                }
+            } else {
+                builder.append(Character.toLowerCase(c));
+            }
+        }
+        return builder.toString();
+    }
+
+    /**
      * Deserialize the page reference to a PageReference object.
      *
      * @param reference the serialized page reference.
@@ -247,6 +273,34 @@ public final class Utils
             .uri(URI.create(url))
             .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
             .PUT(BodyPublishers.ofByteArray(content)), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /**
+     * Perform a POST request.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
+     * @param url the URL to use.
+     * @param content the content to set.
+     * @param mimetype the mimetype of the content to set. null to use the default "text/plain; charset=utf8".
+     * @return the HTTP reponse.
+     */
+    public static HttpResponse<String> httpPost(Command cmd, String url, String content, String mimetype)
+        throws DocException
+    {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
+            .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
+    }
+
+    public static String getCSRF(Command cmd) throws DocException
+    {
+        var response = internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(cmd.url() + "/rest"))
+            .GET(), HttpResponse.BodyHandlers.ofString());
+        return response.headers().firstValue("xwiki-form-token")
+            .orElseThrow(() -> new DocException("Can't get CSRF token from XWiki"));
     }
 
     /**
@@ -484,12 +538,22 @@ public final class Utils
         } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
             var scriptLanguage = properties.get("script_language");
             switch (scriptLanguage) {
-                case "ruby" -> Optional.of("rb");
-                case LANG_VELOCITY -> Optional.of(LANG_VELOCITY_EXTENSION);
-                case LANG_PYTHON -> Optional.of(LANG_PYTHON_EXTENSION);
+                case "ruby":
+                    return Optional.of("rb");
+                case LANG_VELOCITY:
+                    return Optional.of(LANG_VELOCITY_EXTENSION);
+                case LANG_PYTHON:
+                    return Optional.of(LANG_PYTHON_EXTENSION);
                 // php, groovy
-                default -> Optional.of(scriptLanguage);
+                default:
+                    return Optional.of(scriptLanguage);
             }
+        } else if ("XWiki.WikiMacroClass".equals(objectClass) && property.equals(PROPERTY_NAME_CODE)) {
+            return Optional.of("xwiki");
+        } else if ("XWiki.SchedulerJobClass".equals(objectClass) && property.equals("script")) {
+            return Optional.of("groovy");
+        } else if ("XWiki.UIExtensionClass".equals(objectClass) && property.equals("content")) {
+            return Optional.of("xwiki");
         }
         return Optional.empty();
     }

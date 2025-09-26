@@ -368,7 +368,7 @@ public record Command(
             {
                 XWikiDirSync ds = new XWikiDirSync(cmd);
                 try {
-                    ds.sync();
+                    ds.doFirstSync();
                     ds.monitor();
                 } catch (Exception e) {
                     err.println(e);
