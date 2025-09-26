@@ -20,7 +20,9 @@
 
 package org.xwiki.contrib.cli;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -56,8 +58,6 @@ public final class Utils
 
     private static final String SINGLE_QUOTE = "'";
 
-    private static final String XWIKI = "xwiki";
-
     private static final String REST_URL_PREFIX = "/rest/wikis/";
 
     private static final String PATH_SPACES = "/spaces/";
@@ -79,6 +79,10 @@ public final class Utils
     private static final String EXCEPTION_MSG_SPECIFY_PAGE = "Please specify a page, e.g. -p Main.WebHome";
 
     private static final String PROPERTY_NAME_CODE = "code";
+
+    private static final String XWIKI = "xwiki";
+
+    private static final String CONTENT = "content";
 
     private Utils()
     {
@@ -110,9 +114,8 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the
-     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
-     * instead.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the synced dir path. For REST
+     * API we need some escape char, so you need to use fromReferenceToRestPath method instead.
      *
      * @param reference the page, in dotted notation.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -124,9 +127,8 @@ public final class Utils
     }
 
     /**
-     * Convert a page reference to a path in the XFF format. Note we use this format for the
-     * synced dir path. For REST API we need some escape char, so you need to use fromReferenceToRestPath method
-     * instead.
+     * Convert a page reference to a path in the XFF format. Note we use this format for the synced dir path. For REST
+     * API we need some escape char, so you need to use fromReferenceToRestPath method instead.
      *
      * @param reference a page reference.
      * @return the page path in the XFF format. Example: Main.WebHome -> /spaces/Main/pages/WebHome.
@@ -294,6 +296,13 @@ public final class Utils
             .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
     }
 
+    /**
+     * Get CSRF token from XWiki.
+     *
+     * @param cmd the command line to get the XWiki URL.
+     * @return the token.
+     * @throws DocException if an error happen.
+     */
     public static String getCSRF(Command cmd) throws DocException
     {
         var response = internalHttpRequest(cmd, HttpRequest.newBuilder()
@@ -301,6 +310,27 @@ public final class Utils
             .GET(), HttpResponse.BodyHandlers.ofString());
         return response.headers().firstValue("xwiki-form-token")
             .orElseThrow(() -> new DocException("Can't get CSRF token from XWiki"));
+    }
+
+    /**
+     * Execute script on XWiki.
+     *
+     * @param scriptResourceName the resource name for the script to execute.
+     * @param command the command line to get the XWiki URL.
+     * @return the result of the script.
+     * @throws DocException if something wrong happen.
+     */
+    public static String executeScriptOnXWiki(String scriptResourceName, Command command) throws DocException
+    {
+        var csrf = Utils.getCSRF(command);
+        var content =
+            new BufferedReader(new InputStreamReader(Utils.class.getResourceAsStream(scriptResourceName)))
+                .lines().collect(Collectors.joining("\n"));
+        var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content);
+        var response = Utils.httpPost(command,
+            command.url() + "/bin/preview/xwiki-cli/script?xpage=plain&outputSyntax=plain", contentToSend,
+            "application/x-www-form-urlencoded");
+        return response.body();
     }
 
     /**
@@ -533,7 +563,7 @@ public final class Utils
             return Optional.of("less");
         } else if (objectClass.equals("XWiki.JavaScriptExtension") && property.equals(PROPERTY_NAME_CODE)) {
             return Optional.of("js");
-        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals("content")) {
+        } else if (objectClass.equals("XWiki.XWikiSkinFileOverrideClass") && property.equals(CONTENT)) {
             return Optional.of(LANG_VELOCITY_EXTENSION);
         } else if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
             var scriptLanguage = properties.get("script_language");
@@ -549,11 +579,11 @@ public final class Utils
                     return Optional.of(scriptLanguage);
             }
         } else if ("XWiki.WikiMacroClass".equals(objectClass) && property.equals(PROPERTY_NAME_CODE)) {
-            return Optional.of("xwiki");
+            return Optional.of(XWIKI);
         } else if ("XWiki.SchedulerJobClass".equals(objectClass) && property.equals("script")) {
-            return Optional.of("groovy");
-        } else if ("XWiki.UIExtensionClass".equals(objectClass) && property.equals("content")) {
-            return Optional.of("xwiki");
+            return Optional.of(LANG_GROOVY);
+        } else if ("XWiki.UIExtensionClass".equals(objectClass) && property.equals(CONTENT)) {
+            return Optional.of(XWIKI);
         }
         return Optional.empty();
     }

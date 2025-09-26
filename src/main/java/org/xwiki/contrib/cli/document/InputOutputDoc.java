@@ -19,6 +19,11 @@
  */
 package org.xwiki.contrib.cli.document;
 
+/**
+ * Interface which extends input and output documents.
+ *
+ * @version $Id$
+ */
 public interface InputOutputDoc extends InputDoc, OutputDoc
 {
 }

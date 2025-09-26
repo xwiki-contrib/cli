@@ -195,8 +195,8 @@ public record Command(
                 String macroContent = Editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
                     cmd.macro);
                 String filePrefix = cmd.macro.replace('/', '-');
-                String fileExtension = Editing.getFileExtensionForMacroSpec(cmd.macro);
-                Editing.editValue(cmd, macroContent, filePrefix, fileExtension, newValue -> {
+                String fileEx = Editing.getFileExtensionForMacroSpec(cmd.macro);
+                Editing.editValue(cmd, macroContent, filePrefix, fileEx, newValue -> {
                     try {
                         Editing.setMacro(doc, cmd.objectClass, cmd.objectNumber, cmd.property, cmd.macro,
                             newValue);

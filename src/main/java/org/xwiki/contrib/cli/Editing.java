@@ -40,6 +40,8 @@ final class Editing
 {
     private static final String MACRO_TAG_END = "}}";
 
+    public static final String MACRO_BEGIN = "{{";
+
     private Editing()
     {
         // ignore
@@ -218,10 +220,11 @@ final class Editing
         return start + macroContent + end;
     }
 
-    public static int getMacroOccurrences(String content, String macroName) {
-        int startIndex= 0;
+    public static int getMacroOccurrences(String content, String macroName)
+    {
+        int startIndex = 0;
         for (int i = 0; true; i++) {
-            int index =  content.indexOf("{{" + macroName, startIndex);
+            int index = content.indexOf(MACRO_BEGIN + macroName, startIndex);
             if (index == -1) {
                 return i;
             }
@@ -300,7 +303,7 @@ final class Editing
     private static int[] getMacroContentPos(String content, String macroName, int macroNumber) throws DocException
     {
         int n = macroNumber;
-        String macroStart = "{{" + macroName;
+        String macroStart = MACRO_BEGIN + macroName;
         int macroContentStart = -1;
         int macroContentEnd = -1;
         int from = 0;

@@ -63,6 +63,13 @@ public interface InputDoc
      */
     Collection<AttachmentInfo> getAttachments() throws DocException;
 
+    /**
+     * get an attachment by name.
+     *
+     * @param attachmentName name of the attachments.
+     * @return the bytes for the attachments.
+     * @throws DocException if something wrong happen.
+     */
     byte[] getAttachment(String attachmentName) throws DocException;
 
     /**
