@@ -28,6 +28,8 @@ import org.xwiki.contrib.cli.document.XMLFileDoc;
 import org.xwiki.contrib.cli.document.element.ExtensionInfos;
 import org.xwiki.contrib.cli.document.element.ExtensionInfosList;
 import org.xwiki.contrib.cli.document.element.MacroInstance;
+import org.xwiki.contrib.cli.scriptservicesbinding.BindingClassMap;
+import org.xwiki.contrib.cli.scriptservicesbinding.ScriptContextGenerator;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,6 +39,8 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
+import static org.xwiki.contrib.cli.Utils.LANG_GROOVY;
+import static org.xwiki.contrib.cli.Utils.LANG_VELOCITY_EXTENSION;
 
 class XWikiDirSync
 {
@@ -64,14 +68,19 @@ class XWikiDirSync
 
     private static final String TITLE = "title";
 
-    private static final String GROOVY_HEADER_DELIMITER = "//////// BEGIN CODE ////////";
+    private static final String GROOVY_HEADER_DELIMITER = "//////// BEGIN CODE ////////\n";
 
     private static final String GROOVY_CONTENT_HEADER = """
         package org.xwiki.cli
         import groovy.transform.BaseScript
-        import org.xwiki.cli.ScriptContext
-        @BaseScript ScriptContext mainScript
+        import org.xwiki.cli.GvyScriptContext
+        @BaseScript GvyScriptContext mainScript
         """ + GROOVY_HEADER_DELIMITER;
+
+    private static final String VELOCITY_HEADER_DELIMITER = "####### BEGIN CODE #######\n";
+
+    private static final String VELOCITY_CONTENT_HEADER = """
+        """ + VELOCITY_HEADER_DELIMITER;
 
     private static final String GROOVY = "groovy";
 
@@ -178,6 +187,7 @@ class XWikiDirSync
 
     void doFirstSync() throws DocException, IOException
     {
+        Utils.executeScriptOnXWiki("/ensure_scripting_doc_api_installed.xwiki", this.command);
         if (command.pom()) {
             createMavenProject();
         }
@@ -203,6 +213,9 @@ class XWikiDirSync
         var pomXml = Utils.parseXML(Files.readString(xmlFile));
         var dependenciesNode =
             pomXml.getRootElement().selectSingleNode("//*[local-name()='project']/*[local-name()='dependencies']");
+        if (dependenciesNode == null) {
+            dependenciesNode = pomXml.getRootElement().addElement("dependencies");
+        }
         var dependencyNodes = dependenciesNode.selectNodes("*[local-name()='dependency']");
         var currentExtensions = new HashMap<String, ExtensionInfos>();
         for (var n : dependencyNodes) {
@@ -246,12 +259,25 @@ class XWikiDirSync
         }
 
         // Create JAVA project structure
-        var scriptServiceSymbolsDeclarationStr = "package org.xwiki.cli\n" + Utils.executeScriptOnXWiki(
-            "/generate_class.xwiki", this.command);
-        var baseJavaPath =
-            Path.of(mavenSyncPath.toString(), PATH_SRC, PATH_MAIN, PATH_JAVA, "org", EXTENSION_XWIKI, "cli");
-        Files.createDirectories(baseJavaPath);
-        Files.writeString(Path.of(baseJavaPath.toString(), "ScriptContext.groovy"), scriptServiceSymbolsDeclarationStr);
+        var bindingClasses = Utils.executeScriptOnXWiki("/get_binding.xwiki", this.command);
+        var mapper = new ObjectMapper();
+        var scriptContextGenerator =
+            new ScriptContextGenerator(mapper.readValue(bindingClasses, BindingClassMap.class));
+
+        var baseJavaPath = Path.of(mavenSyncPath.toString(), PATH_SRC, PATH_MAIN, PATH_JAVA);
+        var xwikiCliJavaPath = Path.of(baseJavaPath.toString(), "org", EXTENSION_XWIKI, "cli");
+        Files.createDirectories(xwikiCliJavaPath);
+
+        Files.writeString(Path.of(xwikiCliJavaPath.toString(), "GvyScriptContext.groovy"),
+            scriptContextGenerator.buildGroovyBinding());
+        Files.writeString(Path.of(xwikiCliJavaPath.toString(), "VmScriptContext.groovy"),
+            scriptContextGenerator.buildVelocityBindingClasses());
+        Files.writeString(Path.of(baseJavaPath.toString(), "velocity_implicit.vm"),
+            scriptContextGenerator.buildVelocityBinding());
+
+        // Define default macro lib
+        var macrosVmContent = Utils.executeScriptOnXWiki("/get_macros_vm_content.xwiki", this.command);
+        Files.writeString(Path.of(xwikiCliJavaPath.toString(), "macros.vm"), macrosVmContent);
     }
 
     private void syncDir(Path dir) throws IOException, DocException
@@ -261,6 +287,10 @@ class XWikiDirSync
                 if (Files.isDirectory(d)) {
                     syncDir(d);
                 } else {
+                    if (!d.getFileName().toString().endsWith(".xml")) {
+                        // Avoid to try to sync any non XML file which is expected to be not a XWiki document
+                        continue;
+                    }
                     syncFileFromMvnRepos(d);
                     if (command.pom()) {
                         syncMavenRepos(d);
@@ -328,13 +358,10 @@ class XWikiDirSync
         var dstXFFFile = syncPath.toString() + Utils.fromReferenceToXFFPath(xmlFile.getReference());
         var dstJava = Path.of(mavenSyncPath.toString(), PATH_SRC, PATH_MAIN, PATH_JAVA,
             Utils.fromReferenceToJavaNamespace(xmlFile.getReference()));
-        var dstResources = Path.of(mavenSyncPath.toString(), PATH_SRC, PATH_MAIN, PATH_RESOURCES,
-            Utils.fromReferenceToMvnReposPath(xmlFile.getReference()));
         Files.createDirectories(dstJava);
-        Files.createDirectories(dstResources);
 
         // Handle title
-        var titleFilePath = Path.of(dstResources.toString(), TITLE + DOT + VM);
+        var titleFilePath = Path.of(dstJava.toString(), TITLE + DOT + VM);
         if (!Files.exists(titleFilePath)) {
             Files.createSymbolicLink(titleFilePath, Path.of(dstXFFFile, TITLE));
         }
@@ -345,7 +372,7 @@ class XWikiDirSync
             Path xffContentPath = Path.of(dstXFFFile, CONTENT);
             for (int i = 0; i < Editing.getMacroOccurrences(content, GROOVY); i++) {
                 var macroContent = Editing.getMacroContent(content, GROOVY + '/' + i);
-                String scriptContent = GROOVY_CONTENT_HEADER + LINE_BREAK + macroContent;
+                String scriptContent = GROOVY_CONTENT_HEADER + macroContent;
                 Path filePath = Path.of(dstJava.toString(), "GroovyMacro_" + i + DOT + GROOVY);
                 Files.writeString(filePath, scriptContent);
                 managedFiles.add(filePath);
@@ -353,8 +380,9 @@ class XWikiDirSync
             }
             for (int i = 0; i < Editing.getMacroOccurrences(content, VELOCITY); i++) {
                 var macroContent = Editing.getMacroContent(content, VELOCITY + '/' + i);
-                Path filePath = Path.of(dstResources.toString(), "VelocityMacro_" + i + DOT + VM);
-                Files.writeString(filePath, macroContent);
+                String scriptContent = VELOCITY_CONTENT_HEADER + macroContent;
+                Path filePath = Path.of(dstJava.toString(), "VelocityMacro_" + i + DOT + VM);
+                Files.writeString(filePath, scriptContent);
                 managedFiles.add(filePath);
                 macroMap.put(filePath, new MacroInstance(xffContentPath, VELOCITY, i));
             }
@@ -381,7 +409,7 @@ class XWikiDirSync
                                 objClass.replace(DOT, UNDERSCORE) + UNDERSCORE + objNumber + DOT + GROOVY);
                     } else {
                         scriptFileName =
-                            Path.of(dstResources.toString(),
+                            Path.of(dstJava.toString(),
                                 objClass.replace(DOT, UNDERSCORE) + UNDERSCORE + objNumber + DOT + VM);
                     }
                     if (!Files.exists(scriptFileName)) {
@@ -391,7 +419,7 @@ class XWikiDirSync
                     var content = property.value();
                     for (int i = 0; i < Editing.getMacroOccurrences(content, GROOVY); i++) {
                         var macroContent = Editing.getMacroContent(content, GROOVY + '/' + i);
-                        String scriptContent = GROOVY_CONTENT_HEADER + LINE_BREAK + macroContent;
+                        var scriptContent = GROOVY_CONTENT_HEADER + macroContent;
                         Path filePath = Path.of(dstJava.toString(),
                             objClass.replace(DOT, UNDERSCORE) + UNDERSCORE + objNumber + "_GroovyMacro_" + i + DOT
                                 + GROOVY);
@@ -401,9 +429,10 @@ class XWikiDirSync
                     }
                     for (int i = 0; i < Editing.getMacroOccurrences(content, VELOCITY); i++) {
                         var macroContent = Editing.getMacroContent(content, VELOCITY + '/' + i);
-                        Path filePath = Path.of(dstResources.toString(),
+                        var scriptContent = VELOCITY_CONTENT_HEADER + macroContent;
+                        Path filePath = Path.of(dstJava.toString(),
                             objClass.replace(DOT, UNDERSCORE) + UNDERSCORE + objNumber + "_VelocityMacro_" + i + ".vm");
-                        Files.writeString(filePath, macroContent);
+                        Files.writeString(filePath, scriptContent);
                         managedFiles.add(filePath);
                         macroMap.put(filePath, new MacroInstance(propertyValueFileName, VELOCITY, i));
                     }
@@ -427,8 +456,21 @@ class XWikiDirSync
         if (managedFiles.contains(path) && Files.exists(path) && macroMap.containsKey(path)) {
             var macroInfo = macroMap.get(path);
             var newMacroContentWithHeader = Files.readString(path);
-            var newMacroContent = newMacroContentWithHeader.substring(
-                newMacroContentWithHeader.indexOf(GROOVY_HEADER_DELIMITER) + GROOVY_HEADER_DELIMITER.length());
+            if (newMacroContentWithHeader == null || newMacroContentWithHeader.isEmpty()) {
+                out.println("Ignoring empty file");
+                return;
+            }
+            String newMacroContent;
+            if (path.getFileName().toString().endsWith('.' + LANG_GROOVY)) {
+                newMacroContent = newMacroContentWithHeader.substring(
+                    newMacroContentWithHeader.indexOf(GROOVY_HEADER_DELIMITER) + GROOVY_HEADER_DELIMITER.length());
+            } else if (path.getFileName().toString().endsWith('.' + LANG_VELOCITY_EXTENSION)) {
+                newMacroContent = newMacroContentWithHeader.substring(
+                    newMacroContentWithHeader.indexOf(VELOCITY_CONTENT_HEADER) + VELOCITY_CONTENT_HEADER.length());
+            } else {
+                newMacroContent = newMacroContentWithHeader;
+            }
+
             var newValue = Editing.updateMacro(
                 Files.readString(macroInfo.xffPath()),
                 macroInfo.name() + "/" + macroInfo.number(),

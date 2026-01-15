@@ -1,0 +1,16 @@
+{{groovy}}
+import org.xwiki.template.TemplateManager
+import java.nio.file.Files
+import java.nio.file.Path
+import java.util.regex.Pattern
+
+TemplateManager templateManager = services.component.getInstance(TemplateManager.class)
+def t = templateManager.getTemplate("macros.vm")
+def macroFromFile = Files.readString(Path.of("webapps/xwiki/templates/macros.vm"))
+// we need to replace some part of the velocity code because it seem that some IDE fail to parse this part of code and so it break the auto completion.
+def regex = '"<\\$userTag class=""\\$type"" data-reference=""\\$escapetool\\.xml\\(\\$userReference\\)"">",.*?"</\\$userTag>"'
+def res = Pattern.compile(regex, Pattern.DOTALL).matcher(macroFromFile).replaceAll('"cli-code-placeholder"')
+
+res += t.content.content
+println(services.rendering.escape(res, doc.syntax))
+{{/groovy}}

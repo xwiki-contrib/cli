@@ -66,10 +66,6 @@ public final class Utils
 
     private static final String LANG_VELOCITY = "velocity";
 
-    private static final String LANG_VELOCITY_EXTENSION = "vm";
-
-    private static final String LANG_GROOVY = "groovy";
-
     private static final String LANG_PYTHON = "python";
 
     private static final String LANG_PYTHON_EXTENSION = "py";
@@ -83,6 +79,10 @@ public final class Utils
     private static final String XWIKI = "xwiki";
 
     private static final String CONTENT = "content";
+
+    public static final String LANG_VELOCITY_EXTENSION = "vm";
+
+    public static final String LANG_GROOVY = "groovy";
 
     private Utils()
     {
@@ -176,8 +176,12 @@ public final class Utils
     public static String fromReferenceToJavaNamespace(String reference)
     {
         var builder = new StringBuilder(reference.length() + 5);
-        for (var c : reference.toCharArray()) {
-            if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z') {
+        var refArray = reference.toCharArray();
+        for (int i = 0; i < refArray.length; i++) {
+            char c = refArray[i];
+            if (c >= '0' && c <= '9' && i > 0) {
+                builder.append(Character.toLowerCase(c));
+            } else if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z') {
                 if (c == '.') {
                     builder.append(c);
                 } else {
