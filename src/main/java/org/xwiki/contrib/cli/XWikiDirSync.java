@@ -212,7 +212,8 @@ class XWikiDirSync
                 new ExtensionInfos(
                     groupId,
                     artifactId,
-                    n.selectNodes("*[local-name()='version']").stream().findFirst().map(Node::getStringValue).orElse("")
+                    n.selectNodes("*[local-name()='version']").stream().findFirst().map(Node::getStringValue)
+                        .orElse("")
                 ));
         }
         for (var n : getDependencyFromXWiki()) {
