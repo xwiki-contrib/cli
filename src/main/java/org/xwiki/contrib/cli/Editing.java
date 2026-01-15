@@ -40,7 +40,9 @@ final class Editing
 {
     private static final String MACRO_TAG_END = "}}";
 
-    public static final String MACRO_BEGIN = "{{";
+    private static final String MACRO_BEGIN = "{{";
+
+    private static final String MACRO_TAG_BEGIN_END = "{{/";
 
     private Editing()
     {
@@ -220,15 +222,39 @@ final class Editing
         return start + macroContent + end;
     }
 
-    public static int getMacroOccurrences(String content, String macroName)
+    /**
+     * Return the number of occurrence of the specified not inline macro.
+     *
+     * @param content the content to analyse
+     * @param macroName the macro name
+     * @return the number of occurrence of not inline macros
+     */
+    public static int getMacroOccurrences(String content, String macroName) throws DocException
     {
         int startIndex = 0;
-        for (int i = 0; true; i++) {
-            int index = content.indexOf(MACRO_BEGIN + macroName, startIndex);
-            if (index == -1) {
+        String macroStart = MACRO_BEGIN + macroName;
+        String macroEnd = MACRO_TAG_BEGIN_END + macroName + MACRO_TAG_END;
+        int i=0;
+        while (true) {
+            int macroStartIndex = content.indexOf(macroStart, startIndex);
+            if (macroStartIndex > 0 && content.charAt(macroStartIndex - 1) != '\n') {
+                // ignore inline macro
+                startIndex = macroStartIndex + 2;
+                continue;
+            }
+            if (macroStartIndex == -1) {
                 return i;
             }
-            startIndex += index + 2;
+            i++;
+            int endIndex = content.indexOf(macroEnd + "\n", macroStartIndex);
+            if (endIndex <= 0) {
+                if (content.endsWith(macroEnd)) {
+                    return i;
+                } else {
+                    throw new DocException("Macro not closed");
+                }
+            }
+            startIndex = endIndex + 2;
         }
     }
 
@@ -304,13 +330,19 @@ final class Editing
     {
         int n = macroNumber;
         String macroStart = MACRO_BEGIN + macroName;
+        String macroEnd = MACRO_TAG_BEGIN_END + macroName + MACRO_TAG_END;
         int macroContentStart = -1;
         int macroContentEnd = -1;
         int from = 0;
         do {
             int macroPos = content.indexOf(macroStart, from);
             if (macroPos == -1) {
-                throw new DocException("Macro not found");
+                throw new DocException("Macro not found. Macro name: " + macroName + ", macro number: " + macroNumber);
+            }
+            if (macroPos > 0 && content.charAt(macroPos - 1) != '\n') {
+                // ignore inline macro
+                from =  macroPos + 2;
+                continue;
             }
             macroContentStart = content.indexOf(MACRO_TAG_END, macroPos + macroStart.length());
             if (macroContentStart == -1) {
@@ -320,10 +352,14 @@ final class Editing
             if (content.charAt(macroContentStart) == '\n') {
                 macroContentStart++;
             }
-            String macroEnd = "{{/" + macroName + MACRO_TAG_END;
-            macroContentEnd = content.indexOf(macroEnd, macroContentStart);
+            macroContentEnd = content.indexOf(macroEnd + "\n", macroContentStart);
             if (macroContentEnd == -1) {
-                macroContentEnd = content.length();
+                if (content.endsWith(macroEnd)) {
+                    macroContentEnd = content.length() - macroEnd.length();
+                } else {
+                    throw new DocException(
+                        "Unclosed macro. Macro name: " + macroName + ", macro number: " + macroNumber);
+                }
             }
             --n;
             from = macroContentEnd + macroEnd.length();

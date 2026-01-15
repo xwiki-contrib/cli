@@ -556,7 +556,8 @@ public final class Utils
      * @param property properties for which we need to return the extension.
      * @return the extension if it's a scripting file.
      */
-    public static Optional<String> getScriptLangFromObjectInfo(Map<String, String> properties, String objectClass,
+    public static Optional<String> getScriptLangFromObjectInfo(Map<String, String> properties, String
+            objectClass,
         String property)
     {
         if (objectClass.equals("XWiki.StyleSheetExtension") && property.equals(PROPERTY_NAME_CODE)) {

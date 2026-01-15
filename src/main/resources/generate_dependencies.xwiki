@@ -1,6 +1,7 @@
 {{groovy}}
 import com.fasterxml.jackson.databind.ObjectMapper
-  import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets
+
 record ExtensionInfos(
     String groupId,
     String artefactId,
@@ -9,7 +10,6 @@ record ExtensionInfos(
 
 def allClassPath = new HashSet()
 def extensionsList = new ArrayList<ExtensionInfos>()
-
 
 for (def binding in services.scriptdoc.getBindingsFinder().find()) {
     def sourceCode = binding.type.getProtectionDomain().getCodeSource()
@@ -63,6 +63,6 @@ services.extension.coreExtensions.forEach { it ->
 }
 
 ObjectMapper mapper = new ObjectMapper();
-String dataJson =mapper.writeValueAsString(extensionsList)
+String dataJson = mapper.writeValueAsString(extensionsList)
 println(services.rendering.escape(dataJson, doc.syntax))
 {{/groovy}}
