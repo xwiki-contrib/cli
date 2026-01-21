@@ -234,7 +234,7 @@ final class Editing
         int startIndex = 0;
         String macroStart = MACRO_BEGIN + macroName;
         String macroEnd = MACRO_TAG_BEGIN_END + macroName + MACRO_TAG_END;
-        int i=0;
+        int i = 0;
         while (true) {
             int macroStartIndex = content.indexOf(macroStart, startIndex);
             if (macroStartIndex > 0 && content.charAt(macroStartIndex - 1) != '\n') {
@@ -246,7 +246,7 @@ final class Editing
                 return i;
             }
             i++;
-            int endIndex = content.indexOf(macroEnd + "\n", macroStartIndex);
+            int endIndex = content.indexOf(macroEnd + '\n', macroStartIndex);
             if (endIndex <= 0) {
                 if (content.endsWith(macroEnd)) {
                     return i;
@@ -293,7 +293,8 @@ final class Editing
                 throw new DocException("Invalid macro specification");
             }
             macroName = macroSpecArray[0];
-            macroNumber = Integer.parseInt(macroSpecArray[1]); // throws NumberFormatException
+            // throws NumberFormatException
+            macroNumber = Integer.parseInt(macroSpecArray[1]);
         }
         return getMacroContentPos(content, macroName, macroNumber);
     }
@@ -301,7 +302,7 @@ final class Editing
     public static String getFileExtensionForMacroSpec(String macroSpec)
     {
         if (macroSpec != null) {
-            String m = macroSpec + "/";
+            String m = macroSpec + '/';
             if (m.startsWith("groovy/")) {
                 return ".groovy";
             }
@@ -341,7 +342,7 @@ final class Editing
             }
             if (macroPos > 0 && content.charAt(macroPos - 1) != '\n') {
                 // ignore inline macro
-                from =  macroPos + 2;
+                from = macroPos + 2;
                 continue;
             }
             macroContentStart = content.indexOf(MACRO_TAG_END, macroPos + macroStart.length());
@@ -352,7 +353,7 @@ final class Editing
             if (content.charAt(macroContentStart) == '\n') {
                 macroContentStart++;
             }
-            macroContentEnd = content.indexOf(macroEnd + "\n", macroContentStart);
+            macroContentEnd = content.indexOf(macroEnd + '\n', macroContentStart);
             if (macroContentEnd == -1) {
                 if (content.endsWith(macroEnd)) {
                     macroContentEnd = content.length() - macroEnd.length();

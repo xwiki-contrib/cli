@@ -52,6 +52,16 @@ import org.xml.sax.SAXException;
  */
 public final class Utils
 {
+    /**
+     * Extension of velocity scripts.
+     */
+    public static final String LANG_VELOCITY_EXTENSION = "vm";
+
+    /**
+     * Extension of groovy scripts.
+     */
+    public static final String LANG_GROOVY = "groovy";
+
     private static final String CONTENT_TYPE = "Content-Type";
 
     private static final String TEXT_PLAIN_CHARSET_UTF_8 = "text/plain; charset=utf8";
@@ -79,10 +89,6 @@ public final class Utils
     private static final String XWIKI = "xwiki";
 
     private static final String CONTENT = "content";
-
-    public static final String LANG_VELOCITY_EXTENSION = "vm";
-
-    public static final String LANG_GROOVY = "groovy";
 
     private Utils()
     {
