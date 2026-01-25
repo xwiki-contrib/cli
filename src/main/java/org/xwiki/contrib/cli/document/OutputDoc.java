@@ -71,4 +71,6 @@ public interface OutputDoc
      * @return a friendly string like "the XML file SomeDoc.xml"
      */
     String getFriendlyName();
+
+    void setClassPropertyField(String property, String field, String value) throws DocException;
 }

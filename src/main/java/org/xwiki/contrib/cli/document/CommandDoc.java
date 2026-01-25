@@ -26,6 +26,7 @@ import java.util.Optional;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
+import org.xwiki.contrib.cli.document.element.ClassProperty;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
@@ -93,5 +94,17 @@ public class CommandDoc implements InputDoc
     public String getFriendlyName()
     {
         return "the command";
+    }
+
+    @Override
+    public Collection<ClassProperty> getClassInfo() throws DocException
+    {
+        throw new UnsupportedOperationException("Not Implemented");
+    }
+
+    @Override
+    public Optional<String> getClassPropertyField(String property, String field)
+    {
+        throw new UnsupportedOperationException("Not Implemented");
     }
 }

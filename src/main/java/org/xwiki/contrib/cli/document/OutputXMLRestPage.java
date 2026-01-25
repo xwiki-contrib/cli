@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.MessageForUserDocException;
 import org.xwiki.contrib.cli.Utils;
+import org.xwiki.contrib.cli.document.element.ClassProperty;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.document.element.Property;
 
@@ -48,12 +50,14 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private List<ObjectInfo> objectValues = new LinkedList<>();
 
+    private List<ClassProperty> classProperties = new LinkedList<>();
+
     private InputXMLRestPage inputPage;
 
     OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false, false, false);
         this.wiki = wiki;
         this.page = page;
     }
@@ -124,9 +128,28 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
                     APPLICATION_XML_CHARSET_UTF_8));
             }
         }
+        var updateClass = classProperties != null && !classProperties.isEmpty();
+        if (updateClass) {
+            for (var property : classProperties) {
+                var xml = new StringBuilder(classProperties.size());
+                xml.append("<property>");
+                xml.append(String.format("<property name=\"%s\">", Utils.escapeXML(property.name())));
+                for (var attribute : property.fields().entrySet()) {
+                    xml.append(String.format("<attribute name=\"%s\" value=\"%s\"/>",
+                        Utils.escapeXML(attribute.getKey()), Utils.escapeXML(attribute.getValue())));
+                }
+                xml.append("</property");
+                checkStatus(Utils.httpPut(cmd,
+                    cmd.url() + "/rest/wikis/" + wiki + "/classes/" + page + "/properties/" + property.name(),
+                    xml.toString(),
+                    APPLICATION_XML_CHARSET_UTF_8));
+            }
+        }
 
-        if (content != null || title != null) {
-            int builderSize = (content == null ? 0 : content.length()) + (title == null ? 0 : title.length()) + 500;
+        if (content != null || title != null || updateClass) {
+            int builderSize = (content == null ? 0 : content.length())
+                + (title == null ? 0 : title.length())
+                + 1000;
             var xml = new StringBuilder(builderSize);
             xml.append("<page xmlns='http://www.xwiki.org'>");
 
@@ -161,6 +184,22 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     public String getFriendlyName()
     {
         return "the page at [" + url + "]";
+    }
+
+    @Override
+    public void setClassPropertyField(String property, String field, String value) throws DocException
+    {
+        if (Utils.isEmpty(property) || Utils.isEmpty(field)) {
+            throw new DocException("property or field is null");
+        }
+        var valuesForGivenPropertySpec = classProperties.stream()
+            .filter(o -> property.equals(o.name()))
+            .findFirst().orElseGet(() -> {
+                var classProp = new ClassProperty(property, new HashMap<>());
+                classProperties.add(classProp);
+                return classProp;
+            });
+        valuesForGivenPropertySpec.fields().put(field, value);
     }
 
     private InputXMLRestPage getInputPage() throws DocException
