@@ -2,7 +2,6 @@ package org.xwiki.contrib.cli;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -19,22 +18,27 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Element;
 import org.dom4j.Node;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.cli.document.MultipleDoc;
 import org.xwiki.contrib.cli.document.XMLFileDoc;
 import org.xwiki.contrib.cli.document.element.ExtensionInfos;
 import org.xwiki.contrib.cli.document.element.ExtensionInfosList;
 import org.xwiki.contrib.cli.document.element.MacroInstance;
+import org.xwiki.contrib.cli.document.element.XFFMacroInstance;
 import org.xwiki.contrib.cli.scriptservicesbinding.BindingClassMap;
 import org.xwiki.contrib.cli.scriptservicesbinding.ScriptContextGenerator;
+import org.xwiki.rendering.parser.ParseException;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import static java.lang.System.out;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_DELETE;
 import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
@@ -44,11 +48,9 @@ import static org.xwiki.contrib.cli.Utils.LANG_VELOCITY_EXTENSION;
 
 class XWikiDirSync
 {
-    public static final String SEMI_COLLUMN = ":";
+    public static final String SEMI_COLUMN = ":";
 
     private static final String URL_PART_CONTENT = "/content";
-
-    private static final String URL_PART_REST = "/rest";
 
     private static final String URL_PART_TITLE = "/title";
 
@@ -87,8 +89,6 @@ class XWikiDirSync
     private static final String VELOCITY = "velocity";
 
     private static final String UNDERSCORE = "_";
-
-    private static final String LINE_BREAK = "\n";
 
     private static final String POM_XML = "pom.xml";
 
@@ -225,7 +225,7 @@ class XWikiDirSync
         for (var n : dependencyNodes) {
             var groupId = n.selectSingleNode("*[local-name()='groupId']").getStringValue();
             var artifactId = n.selectSingleNode("*[local-name()='artifactId']").getStringValue();
-            currentExtensions.put(groupId + SEMI_COLLUMN + artifactId,
+            currentExtensions.put(groupId + SEMI_COLUMN + artifactId,
                 new ExtensionInfos(
                     groupId,
                     artifactId,
@@ -234,7 +234,7 @@ class XWikiDirSync
                 ));
         }
         for (var n : getDependencyFromXWiki()) {
-            var currentExtensionsKey = n.artefactId() + SEMI_COLLUMN + n.groupId();
+            var currentExtensionsKey = n.artefactId() + SEMI_COLUMN + n.groupId();
             if (!currentExtensions.containsKey(currentExtensionsKey)) {
                 Element e = ((Element) dependenciesNode).addElement("dependency");
                 Element groupId = e.addElement("groupId");
@@ -252,9 +252,8 @@ class XWikiDirSync
         outFormat.setExpandEmptyElements(false);
         outFormat.setOmitEncoding(true);
         outFormat.setSuppressDeclaration(true);
-        try {
-            var out = new FileOutputStream(xmlFile.toFile());
-            out.write("<?xml version=\"1.0\"?>\n".getBytes(Charset.forName("UTF-8")));
+        try (var out = new FileOutputStream(xmlFile.toFile())) {
+            out.write("<?xml version=\"1.0\"?>\n".getBytes(StandardCharsets.UTF_8));
             XMLWriter writer = new XMLWriter(out, outFormat);
             writer.write(pomXml);
             writer.flush();
@@ -461,13 +460,13 @@ class XWikiDirSync
         write(file);
     }
 
-    private void write(Path path) throws IOException, DocException
+    private void write(Path path) throws IOException, DocException, ComponentLookupException, ParseException
     {
         if (managedFiles.contains(path) && Files.exists(path) && macroMap.containsKey(path)) {
             var macroInfo = macroMap.get(path);
             var newMacroContentWithHeader = Files.readString(path);
-            if (newMacroContentWithHeader == null || newMacroContentWithHeader.isEmpty()) {
-                out.println("Ignoring empty file");
+            if (StringUtils.isEmpty(newMacroContentWithHeader)) {
+                logger.debug("Ignoring empty file");
                 return;
             }
             String newMacroContent;

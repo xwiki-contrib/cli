@@ -22,6 +22,7 @@ package org.xwiki.contrib.cli.document;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -40,7 +41,7 @@ import static java.lang.System.out;
 /**
  * Represent a document with multiple input or/and output.
  *
- *  @version $Id$
+ * @version $Id$
  */
 public class MultipleDoc implements InputOutputDoc
 {
@@ -201,7 +202,7 @@ public class MultipleDoc implements InputOutputDoc
             var newAttachment = inputDoc.getAttachment(attachmentName);
             if (attachment == null) {
                 attachment = newAttachment;
-            } else if (newAttachment != null && !attachment.equals(newAttachment)) {
+            } else if (newAttachment != null && !Arrays.equals(attachment, newAttachment)) {
                 return pickInputFile(TEXT_ATTACHMENT_LIST).getAttachment(attachmentName);
             }
         }

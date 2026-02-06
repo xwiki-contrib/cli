@@ -37,6 +37,7 @@ import static java.lang.System.out;
  * @param action main action of the program.
  * @param wiki the wiki ID.
  * @param page the page to edit/read.
+ * @param macro the macro to edit/read.
  * @param objectClass the class of the object to edit/read.
  * @param objectNumber the object number to edit/read.
  * @param property the property of the object to edit/read.

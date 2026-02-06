@@ -14,11 +14,6 @@ import org.xwiki.contrib.cli.Utils;
  */
 public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
 {
-    MvnRepoFileDoc(Command cmd)
-    {
-        super(cmd);
-    }
-
     MvnRepoFileDoc(Command cmd, String baseDir, String wiki, String page) throws DocException, IOException
     {
         super(cmd, Path.of(baseDir, "src", "main", "resources",

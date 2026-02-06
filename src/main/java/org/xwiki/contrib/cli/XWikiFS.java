@@ -527,8 +527,7 @@ class XWikiFS extends FuseStubFS
 
     private byte[] getValue(String path)
     {
-        Pattern pagePattern = PAGES_PATTERN_MATCHER;
-        Matcher pageMatcher = pagePattern.matcher(path);
+        Matcher pageMatcher = PAGES_PATTERN_MATCHER.matcher(path);
         if (pageMatcher.find()) {
             String space = FSDirUtils.getSpaceFromPathPart(pageMatcher.group(2));
             String page = pageMatcher.group(3).replace(DOT, ESCAPED_DOT);
@@ -538,8 +537,7 @@ class XWikiFS extends FuseStubFS
 
                 String remainingPath = path.substring(pageMatcher.end());
 
-                Pattern propertyPattern = OBJECTS_PROPERTIES_PATTERN_MATCHER;
-                Matcher propertyMatcher = propertyPattern.matcher(remainingPath);
+                Matcher propertyMatcher = OBJECTS_PROPERTIES_PATTERN_MATCHER.matcher(remainingPath);
                 if (propertyMatcher.matches()) {
                     String className = propertyMatcher.group(1);
                     String objectNumber = propertyMatcher.group(2);
@@ -568,8 +566,7 @@ class XWikiFS extends FuseStubFS
                 }
                 */
 
-                Pattern attachmentPattern = ATTACHMENTS_PATTERN_MATCHER;
-                Matcher attachmentMatcher = attachmentPattern.matcher(remainingPath);
+                Matcher attachmentMatcher = ATTACHMENTS_PATTERN_MATCHER.matcher(remainingPath);
                 if (attachmentMatcher.matches()) {
                     String attachmentName = attachmentMatcher.group(1);
                     return document.getAttachment(attachmentName);

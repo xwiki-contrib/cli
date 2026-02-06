@@ -22,7 +22,7 @@ package org.xwiki.contrib.cli.document;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
@@ -56,10 +56,9 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
      *
      * @param cmd the command.
      * @param filename the filename to read/edit.
-     * @throws DocException
      * @throws IOException
      */
-    public XMLFileDoc(Command cmd, String filename) throws DocException, IOException
+    public XMLFileDoc(Command cmd, String filename) throws IOException
     {
         super(cmd);
         setXML(Files.readString(Path.of(filename)), false);
@@ -69,20 +68,18 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
     @Override
     public void save() throws DocException
     {
-        if (xml == null) {
-            if (dom == null) {
-                throw new DocException("Nothing to save");
-            }
+        if (xml == null && dom == null) {
+            throw new DocException("Nothing to save");
         }
+
         OutputFormat outFormat = OutputFormat.createCompactFormat();
         outFormat.setTrimText(false);
         outFormat.setEncoding("utf-8");
         outFormat.setExpandEmptyElements(false);
         outFormat.setOmitEncoding(true);
         outFormat.setSuppressDeclaration(true);
-        try {
-            var out = new FileOutputStream(filename);
-            out.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n\n".getBytes(Charset.forName("UTF-8")));
+        try (var out = new FileOutputStream(filename)) {
+            out.write("<?xml version=\"1.1\" encoding=\"UTF-8\"?>\n\n".getBytes(StandardCharsets.UTF_8));
             XMLWriter writer = new XMLWriter(out, outFormat);
             writer.write(dom);
             writer.flush();
@@ -98,7 +95,7 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         if (domdoc == null) {
             throw new DocumentNotFoundException();
         }
-        var root = (Element) domdoc.getRootElement();
+        var root = domdoc.getRootElement();
         var attachments = root.selectNodes(NODE_NAME_ATTACHMENT);
         for (var attachment : attachments) {
             if (attachmentName.equals(getElement((Element) attachment, NODE_FILENAME).getText())) {

@@ -46,7 +46,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private String title;
 
-    private List<ObjectInfo> objectValues = new LinkedList<>();
+    private final List<ObjectInfo> objectValues = new LinkedList<>();
 
     private InputXMLRestPage inputPage;
 
@@ -98,31 +98,25 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void save() throws DocException
     {
-        if (content == null && title == null && objectValues == null) {
-            return;
-        }
+        for (var objectSpec : objectValues) {
+            var objectClassName = objectSpec.objectClass();
+            var objectNumber = objectSpec.number();
 
-        if (objectValues != null) {
-            for (var objectSpec : objectValues) {
-                var objectClassName = objectSpec.objectClass();
-                var objectNumber = objectSpec.number();
+            int builderSize =
+                500 + objectSpec.properties().stream().map(i -> i.value().length() + 100).reduce(0, Integer::sum);
+            StringBuilder xml = new StringBuilder(builderSize);
+            xml.append("<object xmlns='http://www.xwiki.org'>");
+            xml.append("<className>").append(objectClassName).append("</className>");
+            xml.append("<number>").append(objectNumber).append("</number>");
 
-                int builderSize =
-                    500 + objectSpec.properties().stream().map(i -> i.value().length() + 100).reduce(0, Integer::sum);
-                StringBuilder xml = new StringBuilder(builderSize);
-                xml.append("<object xmlns='http://www.xwiki.org'>");
-                xml.append("<className>").append(objectClassName).append("</className>");
-                xml.append("<number>").append(objectNumber).append("</number>");
-
-                for (var propWithValue : objectSpec.properties()) {
-                    xml.append("<property name='").append(Utils.escapeXML(propWithValue.name())).append("'>")
-                        .append("<value>").append(Utils.escapeXML(propWithValue.value())).append("</value>")
-                        .append("</property>");
-                }
-                xml.append("</object>");
-                checkStatus(Utils.httpPut(cmd, url + "/objects/" + objectClassName + '/' + objectNumber, xml.toString(),
-                    APPLICATION_XML_CHARSET_UTF_8));
+            for (var propWithValue : objectSpec.properties()) {
+                xml.append("<property name='").append(Utils.escapeXML(propWithValue.name())).append("'>")
+                    .append("<value>").append(Utils.escapeXML(propWithValue.value())).append("</value>")
+                    .append("</property>");
             }
+            xml.append("</object>");
+            checkStatus(Utils.httpPut(cmd, url + "/objects/" + objectClassName + '/' + objectNumber, xml.toString(),
+                APPLICATION_XML_CHARSET_UTF_8));
         }
 
         if (content != null || title != null) {
@@ -140,9 +134,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
             xml.append("</page>");
 
-            if (objectValues != null) {
-                objectValues.clear();
-            }
+            objectValues.clear();
             content = null;
             title = null;
             checkStatus(Utils.httpPut(cmd, url, xml.toString(), APPLICATION_XML_CHARSET_UTF_8));

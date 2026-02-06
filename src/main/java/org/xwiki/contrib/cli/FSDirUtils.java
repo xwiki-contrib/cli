@@ -19,12 +19,12 @@ final class FSDirUtils
     public static String getSpaceFromPathPart(String part)
     {
         StringBuilder expectedSpace = new StringBuilder();
-        if (part.length() != 0) {
+        if (!part.isEmpty()) {
             boolean keepElement = false;
             String[] splitParts = part.split(SLASH);
             for (String space : splitParts) {
                 if (keepElement) {
-                    if (expectedSpace.length() != 0) {
+                    if (!expectedSpace.isEmpty()) {
                         expectedSpace.append('.');
                     }
                     expectedSpace.append(space.replace(DOT, ESCAPED_DOT));

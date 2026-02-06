@@ -90,8 +90,8 @@ abstract class AbstractXMLDoc
     public String getContent() throws DocException
     {
         var domdoc = getDom();
-        var root = (Element) domdoc.getRootElement();
-        var content = (Element) getElement(root, NODE_NAME_CONTENT);
+        var root = domdoc.getRootElement();
+        var content = getElement(root, NODE_NAME_CONTENT);
         if (content == null) {
             return null;
         }
@@ -104,8 +104,8 @@ abstract class AbstractXMLDoc
         if (domdoc == null) {
             throw new DocumentNotFoundException();
         }
-        var root = (Element) domdoc.getRootElement();
-        var content = (Element) getElement(root, NODE_NAME_CONTENT);
+        var root = domdoc.getRootElement();
+        var content = getElement(root, NODE_NAME_CONTENT);
         if (content == null) {
             throw new DocException("Content not found");
         }
@@ -117,8 +117,8 @@ abstract class AbstractXMLDoc
     public String getTitle() throws DocException
     {
         var domdoc = getDom();
-        var root = (Element) domdoc.getRootElement();
-        var title = (Element) getElement(root, NODE_NAME_TITLE);
+        var root = domdoc.getRootElement();
+        var title = getElement(root, NODE_NAME_TITLE);
         if (title == null) {
             return null;
         }
@@ -132,7 +132,7 @@ abstract class AbstractXMLDoc
             throw new DocumentNotFoundException();
         }
         var root = domdoc.getRootElement();
-        var title = (Element) getElement(root, NODE_NAME_TITLE);
+        var title = getElement(root, NODE_NAME_TITLE);
         if (title == null) {
             throw new DocException("Title not found");
         }
@@ -144,8 +144,8 @@ abstract class AbstractXMLDoc
     public String getSyntaxId() throws DocException
     {
         var domdoc = getDom();
-        var root = (Element) domdoc.getRootElement();
-        var syntaxId = (Element) getElement(root, NODE_NAME_SYNTAX_ID);
+        var root = domdoc.getRootElement();
+        var syntaxId = getElement(root, NODE_NAME_SYNTAX_ID);
         if (syntaxId == null) {
             return null;
         }
@@ -242,10 +242,7 @@ abstract class AbstractXMLDoc
     public Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException
     {
         var propertyElement = getPropertyValueElement(objectClass, objectNumber, property);
-        if (propertyElement.isEmpty()) {
-            return Optional.empty();
-        }
-        return Optional.of(propertyElement.get().getText());
+        return propertyElement.map(Node::getText);
     }
 
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
@@ -425,19 +422,11 @@ abstract class AbstractXMLDoc
         return Optional.empty();
     }
 
-    class DocumentNotFoundException extends DocException
+    static class DocumentNotFoundException extends DocException
     {
         DocumentNotFoundException()
         {
             super("Document not found");
-        }
-    }
-
-    class MissingNodeException extends DocException
-    {
-        MissingNodeException(String what)
-        {
-            super("Could not find " + what);
         }
     }
 }
