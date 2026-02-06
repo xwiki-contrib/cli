@@ -55,10 +55,10 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
                 // 201 : New Document Created
                 handleResponse(response);
             } else {
-                handleUnexpectedStatus(status, cmd, response);
+                handleUnexpectedStatus(status, response);
             }
         } else {
-            handleUnexpectedStatus(status, cmd, response);
+            handleUnexpectedStatus(status, response);
         }
     }
 
@@ -92,15 +92,15 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         setXML(body, true);
     }
 
-    private void handleUnexpectedStatus(int status, Command cmd, HttpResponse<String> response) throws DocException
+    private void handleUnexpectedStatus(int status, HttpResponse<String> response) throws DocException
     {
         throw new MessageForUserDocException(
             "Unexpected status "
                 + status
                 + ". "
-                + (cmd.debug()
+                + (logger.isDebugEnabled()
                 ? "Body: " + response.body()
-                : " Use --debug to print the body of the HTTP request")
+                : " Use --loglevel debug to print the body of the HTTP request")
         );
     }
 }

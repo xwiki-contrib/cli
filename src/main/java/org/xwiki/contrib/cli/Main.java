@@ -24,6 +24,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
+
 import static java.lang.System.err;
 import static java.lang.System.out;
 
@@ -46,10 +51,7 @@ final class Main
             return;
         }
 
-        if (cmd.debug()) {
-            cmd.print();
-            out.println();
-        }
+        cmd.print();
 
         try {
             cmd.action().run(cmd);
@@ -96,7 +98,7 @@ final class Main
         String syncDataSource = null;
         boolean printXML = false;
         String fileExtension = null;
-        boolean debug = false;
+        String logLevel = null;
         boolean pom = false;
         boolean acceptNewDocument = false;
 
@@ -180,7 +182,7 @@ final class Main
                     action = Command.Action.SYNC;
                 }
                 case "--ext" -> fileExtension = getNextParameter(args, i++);
-                case "--debug" -> debug = true;
+                case "--loglevel" -> logLevel = getNextParameter(args, i++);
                 case "--print-xml" -> printXML = true;
                 case "--help", "-help", "-h", "help" -> action = Command.Action.HELP;
                 case "-n", "--new" -> acceptNewDocument = true;
@@ -197,10 +199,17 @@ final class Main
             action = Command.Action.HELP;
         }
 
+        var ctx = (ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory();
+        if (logLevel != null) {
+            ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.valueOf(logLevel));
+        } else {
+            ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.WARN);
+        }
+
         var cmd = new Command(
             action, wiki, page, macro, objectClass, objectNumber, property, value, editor, wikiReadonly,
             wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
-            mountPath, syncPath, syncDataSource, printXML, fileExtension, debug, pom, acceptNewDocument);
+            mountPath, syncPath, syncDataSource, printXML, fileExtension, pom, acceptNewDocument);
 
         if (cmd.action() == null) {
             throw new CommandException("Please specify an action. Try --help for help.");

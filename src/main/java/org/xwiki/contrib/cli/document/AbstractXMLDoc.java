@@ -29,6 +29,8 @@ import java.util.Optional;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.Utils;
@@ -69,6 +71,8 @@ abstract class AbstractXMLDoc
     protected static final String XPATH_REST_PROPERTY_NAME = "xwiki:property[@name = '%s']/xwiki:value";
 
     protected static final String XPATH_XML_PROPERTY = "property/%s";
+
+    protected final Logger logger = LoggerFactory.getLogger(AbstractXMLDoc.class);
 
     protected final Command cmd;
 
@@ -281,11 +285,8 @@ abstract class AbstractXMLDoc
             try {
                 this.dom = Utils.parseXML(this.xml);
             } catch (DocException e) {
-                if (cmd.debug()) {
-                    err.println(
-                        "A parse error occured. Here is the content we attempted to parse." + LINE + xml + LINE);
-                }
-
+                logger.info("A parse error occured. Here is the content we attempted to parse. {} {} {}",
+                    LINE, xml, LINE);
                 throw e;
             }
 

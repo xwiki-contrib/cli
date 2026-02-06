@@ -23,7 +23,10 @@ package org.xwiki.contrib.cli;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.document.MultipleDoc;
+import org.xwiki.contrib.cli.document.element.MacroInstance;
 
 import static java.lang.System.err;
 import static java.lang.System.out;
@@ -56,10 +59,8 @@ import static java.lang.System.out;
  * @param syncDataSource source directory to ready all data for sync.
  * @param printXML mostly used for debug, show the full XML when we parse the XML file.
  * @param fileExtension add a specific extension to the temporary file.
- * @param debug enable debug.
  * @param pom add automatically a pom file to make easier the edition with an IDE.
  * @param acceptNewDocument give the possibility to add new document.
- *
  * @version $Id$
  */
 public record Command(
@@ -89,7 +90,6 @@ public record Command(
     String syncDataSource,
     boolean printXML,
     String fileExtension,
-    boolean debug,
     boolean pom,
     boolean acceptNewDocument)
 {
@@ -102,6 +102,8 @@ public record Command(
     private static final String XWIKI_FILE_EXTENSION = ".xwiki";
 
     private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(Command.class);
 
     private static final String HELP_TEXT = """
         xwiki-cli JAVA
@@ -130,7 +132,7 @@ public record Command(
             --sync PATH              Sync data to PATH with content from maven repository.
 
         Parameters:
-            --debug                  Enable debug mode (for now, more verbose logs)
+            --loglevel               Define the log level. Default warn.
             --print-xml              Print received XML code (for debugging)
             --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
             --pom                    Autocreate or reuse a XWiki maven project for autocompletion
@@ -274,7 +276,7 @@ public record Command(
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(cmd, doc.getContent()));
+                out.println(value(doc.getContent()));
             }
         },
         SET_CONTENT {
@@ -291,7 +293,7 @@ public record Command(
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(cmd, doc.getTitle()));
+                out.println(value(doc.getTitle()));
             }
         },
         SET_TITLE {
@@ -308,7 +310,7 @@ public record Command(
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(cmd, doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property).orElse("empty")));
+                out.println(value(doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property).orElse("empty")));
             }
         },
         SET_PROPERTY_VALUE {
@@ -359,7 +361,7 @@ public record Command(
             {
                 XWikiFS fs = new XWikiFS(cmd);
                 try {
-                    fs.mount(Path.of(cmd.mountPath), true, cmd.debug);
+                    fs.mount(Path.of(cmd.mountPath), true);
                 } finally {
                     fs.umount();
                 }
@@ -374,8 +376,7 @@ public record Command(
                     ds.doFirstSync();
                     ds.monitor();
                 } catch (Exception e) {
-                    err.println(e);
-                    e.printStackTrace();
+                    LOGGER.error("Sync crashed", e);
                 } finally {
                     // TODO
                 }
@@ -407,36 +408,37 @@ public record Command(
 
     void print()
     {
-        out.println(""
-            + "\nAction:        " + action
-            + "\nWiki:          " + wiki
-            + "\nPage:          " + page
-            + "\nObject Class:  " + objectClass
-            + "\nObject Number: " + objectNumber
-            + "\nProperty:      " + property
-            + "\nWiki readonly: " + wikiReadonly
-            + "\nWiki writeonly:" + wikiWriteonly
-            + "\nInput file:    " + inputFile
-            + "\nOutput file:   " + outputFile
-            + "\nXML write dir: " + xmlWriteDir
-            + "\nURL:           " + url
-            + "\nUser:          " + user
-            + "\nPass:          " + given(pass)
-            + "\nContent:       " + given(content)
-            + "\nTitle:         " + title
-            + "\nAccept New:    " + acceptNewDocument
-            + "\nMount Path:      " + mountPath
-            + "\nSync Path:       " + syncPath
-            + "\nSync data source:" + syncDataSource
-            + "\nUsed Doc URL:  " + getDocURL()
-            + "\nDebug:         " + debug
-            + "\n + printXML:   " + printXML);
+        LOGGER.info("Action:        {}", action);
+        LOGGER.info("Wiki:          {}", wiki);
+        LOGGER.info("Page:          {}", page);
+        LOGGER.info("Object Class:  {}", objectClass);
+        LOGGER.info("Object Number: {}", objectNumber);
+        LOGGER.info("Property:      {}", property);
+        LOGGER.info("Wiki readonly: {}", wikiReadonly);
+        LOGGER.info("Wiki writeonly:{}", wikiWriteonly);
+        LOGGER.info("Input file:    {}", inputFile);
+        LOGGER.info("Output file:   {}", outputFile);
+        LOGGER.info("XML write dir: {}", xmlWriteDir);
+        LOGGER.info("URL:           {}", url);
+        LOGGER.info("User:          {}", user);
+        LOGGER.info("Pass:          {}", given(pass));
+        LOGGER.info("Content:       {}", given(content));
+        LOGGER.info("Title:         {}", title);
+        LOGGER.info("Accept New:    {}", acceptNewDocument);
+        LOGGER.info("Mount Path:      {}", mountPath);
+        LOGGER.info("Sync Path:       {}", syncPath);
+        LOGGER.info("Sync data source:{}", syncDataSource);
+        LOGGER.info("Used Doc URL:  {}", getDocURL());
+        LOGGER.info("Log level:         {}",
+            ((ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory())
+                .getLogger(Logger.ROOT_LOGGER_NAME).getLevel());
+        LOGGER.info("printXML:   {}", printXML);
     }
 
-    private static String value(Command cmd, String value)
+    private static String value(String value)
     {
         if (value == null) {
-            return cmd.debug() ? "(null)" : "";
+            return LOGGER.isDebugEnabled() ? "(null)" : "";
         }
         return value;
     }

@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.document.MultipleDoc;
 
 import jnr.ffi.Pointer;
@@ -117,6 +119,8 @@ class XWikiFS extends FuseStubFS
 
     private static final Pattern OBJECTS_PROPERTIES_PATTERN_MATCHER =
         Pattern.compile("^/objects/([^/]+)/([^/]+)/properties/([^/]+)$");
+
+    private final Logger logger = LoggerFactory.getLogger(XWikiFS.class);
 
     private final Command command;
 
@@ -571,9 +575,7 @@ class XWikiFS extends FuseStubFS
                     return document.getAttachment(attachmentName);
                 }
             } catch (DocException | IOException e) {
-                if (command.debug()) {
-                    e.printStackTrace();
-                }
+                logger.debug("Can't get value", e);
             }
         }
 
@@ -624,9 +626,7 @@ class XWikiFS extends FuseStubFS
                     return value.length;
                 }
             } catch (DocException | IOException e) {
-                if (command.debug()) {
-                    e.printStackTrace();
-                }
+                logger.debug("Can't put value", e);
             }
         }
 

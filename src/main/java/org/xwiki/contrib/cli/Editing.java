@@ -57,7 +57,7 @@ final class Editing
 {
     private static final List<String> KNOWN_MACRO_WITH_WIKI_SYNTAX = List.of("job");
 
-    private static final String MACRO_BEGIN = "{{";
+    private final Logger logger = LoggerFactory.getLogger(Editing.class);
 
     private final EmbeddableComponentManager componentManager;
 
@@ -78,7 +78,7 @@ final class Editing
         var editor = getEditor(cmd);
 
         if (Utils.isEmpty(editor)) {
-            out.println("Please select an editor with --editor or set an EDITOR environment variable");
+            logger.error("Please select an editor with --editor or set an EDITOR environment variable");
             return;
         }
 

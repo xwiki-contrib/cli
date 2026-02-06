@@ -108,6 +108,8 @@ class XWikiDirSync
 
     private static final String EXTENSION_XWIKI = "xwiki";
 
+    private final Logger logger = LoggerFactory.getLogger(XWikiDirSync.class);
+
     private final Path xmlFileDirPath;
 
     private final Command command;
@@ -138,7 +140,7 @@ class XWikiDirSync
         try {
             watchDir(keyMaps, syncPath, watcher);
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("Can't watch dir", e);
             return;
         }
 
@@ -184,7 +186,7 @@ class XWikiDirSync
                 break;
             }
         }
-        out.println("Ending watch loop");
+        logger.debug("Ending watch loop");
     }
 
     void doFirstSync() throws DocException, IOException, ComponentLookupException, ParseException
@@ -452,9 +454,8 @@ class XWikiDirSync
     private void syncFileFromSyncedDir(Path file, WatchEvent.Kind<?> kind)
         throws IOException, DocException, ComponentLookupException, ParseException
     {
-        if (command.debug()) {
-            out.println("Sync file at path: " + file);
-        }
+        logger.debug("Sync file at path: {}", file);
+
         // TODO improve it !!
         // We should not in all case rewrite the value
         write(file);
@@ -534,9 +535,7 @@ class XWikiDirSync
                     document.save();
                 }
             } catch (DocException | IOException e) {
-                if (command.debug()) {
-                    e.printStackTrace();
-                }
+                logger.debug("Can't get value", e);
             }
         }
     }
