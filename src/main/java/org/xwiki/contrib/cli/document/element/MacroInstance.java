@@ -1,16 +1,23 @@
 package org.xwiki.contrib.cli.document.element;
 
-import java.nio.file.Path;
-
 /**
- * Represent a macro instance.
+ * Define a macro into a document.
  *
- * @param xffPath the XFF path of the file containing the macro.
- * @param name the name of the macro. For instance groovy, velocity...
- * @param number the position number of the macro in the content.
- *
+ * @param name the name of the macro.
+ * @param position the position into the content.
  * @version $Id$
  */
-public record MacroInstance(Path xffPath, String name, int number)
+public record MacroInstance(String name, int position)
 {
+    /**
+     * Parse the macro spec form and create a new {@link MacroInstance} object.
+     *
+     * @param spec the macro spec in the format <macro name>/<macro number>.
+     * @return the new {@link MacroInstance) object.
+     */
+    public static MacroInstance fromString(String spec)
+    {
+        var specSplit = spec.split("/");
+        return new MacroInstance(specSplit[0], Integer.parseInt(specSplit[1]));
+    }
 }

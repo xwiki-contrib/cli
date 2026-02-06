@@ -24,32 +24,50 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.StringReader;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardWatchEventKinds;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.xwiki.component.embed.EmbeddableComponentManager;
+import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.cli.document.InputDoc;
 import org.xwiki.contrib.cli.document.InputOutputDoc;
 import org.xwiki.contrib.cli.document.OutputDoc;
-
-import static java.lang.System.out;
+import org.xwiki.contrib.cli.document.element.MacroInstance;
+import org.xwiki.rendering.block.Block;
+import org.xwiki.rendering.block.MacroBlock;
+import org.xwiki.rendering.block.XDOM;
+import org.xwiki.rendering.block.match.ClassBlockMatcher;
+import org.xwiki.rendering.parser.ParseException;
+import org.xwiki.rendering.parser.Parser;
+import org.xwiki.rendering.renderer.BlockRenderer;
+import org.xwiki.rendering.renderer.printer.DefaultWikiPrinter;
+import org.xwiki.rendering.renderer.printer.WikiPrinter;
+import org.xwiki.rendering.syntax.Syntax;
 
 final class Editing
 {
-    private static final String MACRO_TAG_END = "}}";
+    private static final List<String> KNOWN_MACRO_WITH_WIKI_SYNTAX = List.of("job");
 
     private static final String MACRO_BEGIN = "{{";
 
-    private static final String MACRO_TAG_BEGIN_END = "{{/";
+    private final EmbeddableComponentManager componentManager;
 
-    private Editing()
+    Editing()
     {
-        // ignore
+        componentManager = new EmbeddableComponentManager();
+        componentManager.initialize(this.getClass().getClassLoader());
     }
 
-    public static void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
+    public void editValue(Command cmd, String oldValue, File folder, File file, EditingCallback callback)
         throws IOException, InterruptedException
     {
         try (var writer = new BufferedWriter(new FileWriter(file))) {
@@ -83,7 +101,7 @@ final class Editing
         }
     }
 
-    public static void editValue(Command cmd, String oldValue, String prefix, String suffix, EditingCallback callback)
+    public void editValue(Command cmd, String oldValue, String prefix, String suffix, EditingCallback callback)
         throws IOException, InterruptedException
     {
         var dir = Files.createTempDirectory("xwiki-cli");
@@ -102,7 +120,7 @@ final class Editing
         }
         var dirFile = dir.toFile();
         var tmpFile = File.createTempFile(prefix, suffix, dirFile);
-        Editing.editValue(cmd, oldValue, dirFile, tmpFile, callback);
+        editValue(cmd, oldValue, dirFile, tmpFile, callback);
     }
 
     public static String getEditor(Command cmd)
@@ -191,35 +209,87 @@ final class Editing
         doc.save();
     }
 
-    public static String getMacroContent(InputDoc doc, String objectClass, String objectNumber, String property,
-        String macroSpec) throws DocException
+    public String getMacroContent(InputDoc doc, String objectClass, String objectNumber, String property,
+        MacroInstance macroSpec) throws DocException, ComponentLookupException, ParseException
     {
         String content = getContentOrValue(doc, objectClass, objectNumber, property);
-        return getMacroContent(content, macroSpec);
+        return getMacroContent(content, doc.getSyntaxId(), macroSpec);
     }
 
-    public static String getMacroContent(String content, String macroSpec) throws DocException
+    public String getMacroContent(String content, String syntax, MacroInstance macroSpec)
+        throws DocException, ComponentLookupException, ParseException
     {
-        int[] macroContentPos = getMacroContentPos(macroSpec, content);
-        return content.substring(macroContentPos[0], macroContentPos[1]);
+        var xdom = parseContent(syntax, content);
+        var blocks = getMacroBlocks(xdom, syntax, macroSpec.name());
+        if (macroSpec.position() >= blocks.size()) {
+            throw new DocException("Can't find macro with spec: " + macroSpec);
+        }
+        MacroBlock block = (MacroBlock) blocks.get(macroSpec.position());
+        return block.getContent();
     }
 
-    public static void setMacro(InputOutputDoc doc, String objectClass, String objectNumber,
-        String property, String macroSpec, String macroContent) throws DocException
+    public void setMacro(InputOutputDoc doc, String objectClass, String objectNumber, String property,
+        MacroInstance macroSpec, String macroContent)
+        throws DocException, ComponentLookupException, ParseException
     {
         String content = getContentOrValue(doc, objectClass, objectNumber, property);
-        String newContent = updateMacro(content, macroSpec, macroContent);
+        String newContent = updateMacro(content, doc.getSyntaxId(), macroSpec, macroContent);
         setContentOrValue(doc, objectClass, objectNumber, property, newContent);
     }
 
-    public static String updateMacro(String content, String macroSpec, String macroContent) throws DocException
+    public String updateMacro(String content, String syntax, MacroInstance macroSpec, String macroContent)
+        throws DocException, ComponentLookupException, ParseException
     {
-        int[] macroContentPos = getMacroContentPos(macroSpec, content);
-        int startIndex = macroContentPos[0];
-        int endIndex = macroContentPos[1];
-        String start = startIndex == 0 ? "" : content.substring(0, startIndex);
-        String end = endIndex < content.length() ? content.substring(endIndex) : "";
-        return start + macroContent + end;
+        var res = updateMacro(content, syntax, macroSpec, macroContent, new MacroCount());
+        if (res.isPresent()) {
+            return res.get();
+        } else {
+            logger.error("Can't find macro with spec [{}]", macroSpec);
+            return content;
+        }
+    }
+
+    static class MacroCount
+    {
+        int count;
+    }
+
+    private Optional<String> updateMacro(String content, String syntax, MacroInstance macroSpec, String macroContent,
+        MacroCount macroCount)
+        throws DocException, ComponentLookupException, ParseException
+    {
+        var xdom = parseContent(syntax, content);
+        var rawBlock = xdom.getBlocks(new ClassBlockMatcher(MacroBlock.class), Block.Axes.DESCENDANT);
+        boolean updated = false;
+
+        for (Block block : rawBlock) {
+            if (updated) {
+                break;
+            }
+            var macroBlock = (MacroBlock) block;
+            if (macroBlock.getId().equals(macroSpec.name())) {
+                if (macroCount.count == macroSpec.position()) {
+                    MacroBlock newBlock =
+                        new MacroBlock(macroBlock.getId(), block.getParameters(), macroContent, macroBlock.isInline());
+                    macroBlock.getParent().replaceChild(newBlock, block);
+                    updated = true;
+                }
+                macroCount.count++;
+            } else if (KNOWN_MACRO_WITH_WIKI_SYNTAX.contains(macroBlock.getId())) {
+                var res = updateMacro(macroBlock.getContent(), syntax, macroSpec, macroContent, macroCount);
+                if (res.isPresent()) {
+                    MacroBlock newBlock =
+                        new MacroBlock(macroBlock.getId(), block.getParameters(), res.get(), macroBlock.isInline());
+                    macroBlock.getParent().replaceChild(newBlock, block);
+                    updated = true;
+                }
+            }
+        }
+        if (updated) {
+            return Optional.of(renderXDOM(syntax, xdom));
+        } else {
+            return Optional.empty();
+        }
     }
 
     /**
@@ -229,33 +299,49 @@ final class Editing
      * @param macroName the macro name
      * @return the number of occurrence of not inline macros
      */
-    public static int getMacroOccurrences(String content, String macroName) throws DocException
+    public int getMacroOccurrences(String content, String syntax, String macroName)
+        throws DocException, ComponentLookupException, ParseException
     {
-        int startIndex = 0;
-        String macroStart = MACRO_BEGIN + macroName;
-        String macroEnd = MACRO_TAG_BEGIN_END + macroName + MACRO_TAG_END;
-        int i = 0;
-        while (true) {
-            int macroStartIndex = content.indexOf(macroStart, startIndex);
-            if (macroStartIndex > 0 && content.charAt(macroStartIndex - 1) != '\n') {
-                // ignore inline macro
-                startIndex = macroStartIndex + 2;
-                continue;
-            }
-            if (macroStartIndex == -1) {
-                return i;
-            }
-            i++;
-            int endIndex = content.indexOf(macroEnd + '\n', macroStartIndex);
-            if (endIndex <= 0) {
-                if (content.endsWith(macroEnd)) {
-                    return i;
-                } else {
-                    throw new DocException("Macro not closed");
-                }
-            }
-            startIndex = endIndex + 2;
+        var xdom = parseContent(syntax, content);
+        return getMacroBlocks(xdom, syntax, macroName).size();
+    }
+
+    private XDOM parseContent(String syntax, String content)
+        throws DocException, ComponentLookupException, ParseException
+    {
+        if (!Syntax.XWIKI_2_1.toIdString().equals(syntax) && !Syntax.XWIKI_2_0.toIdString().equals(syntax)) {
+            throw new DocException("Syntax " + syntax + " not supported");
         }
+        Parser parser = componentManager.getInstance(Parser.class, syntax);
+        return parser.parse(new StringReader(content));
+    }
+
+    private String renderXDOM(String syntax, XDOM xdom) throws ComponentLookupException, DocException
+    {
+        if (!Syntax.XWIKI_2_1.toIdString().equals(syntax) && !Syntax.XWIKI_2_0.toIdString().equals(syntax)) {
+            throw new DocException("Syntax " + syntax + " not supported");
+        }
+        WikiPrinter printer = new DefaultWikiPrinter();
+        BlockRenderer renderer = componentManager.getInstance(BlockRenderer.class, syntax);
+        renderer.render(xdom, printer);
+        return printer.toString();
+    }
+
+    private List<Block> getMacroBlocks(XDOM xdom, String syntax, String macroSpec)
+        throws DocException, ComponentLookupException, ParseException
+    {
+        var rawBlock = xdom.getBlocks(new ClassBlockMatcher(MacroBlock.class), Block.Axes.DESCENDANT);
+        var result = new ArrayList<Block>();
+        for (Block block : rawBlock) {
+            var macroBlock = (MacroBlock) block;
+            if (macroBlock.getId().equals(macroSpec)) {
+                result.add(block);
+            } else if (KNOWN_MACRO_WITH_WIKI_SYNTAX.contains(macroBlock.getId())) {
+                var content = parseContent(syntax, macroBlock.getContent());
+                result.addAll(getMacroBlocks(content, syntax, macroSpec));
+            }
+        }
+        return result;
     }
 
     private static void setContentOrValue(InputOutputDoc doc, String objectClass, String objectNumber, String property,
@@ -280,92 +366,32 @@ final class Editing
             () -> new DocException("This property was not found"));
     }
 
-    private static int[] getMacroContentPos(String macroSpec, String content) throws DocException
-    {
-        String[] macroSpecArray = macroSpec.split("/");
-        String macroName;
-        int macroNumber;
-        if (macroSpecArray.length == 1) {
-            macroName = macroSpecArray[0];
-            macroNumber = 0;
-        } else {
-            if (macroSpecArray.length != 2) {
-                throw new DocException("Invalid macro specification");
-            }
-            macroName = macroSpecArray[0];
-            // throws NumberFormatException
-            macroNumber = Integer.parseInt(macroSpecArray[1]);
-        }
-        return getMacroContentPos(content, macroName, macroNumber);
-    }
-
-    public static String getFileExtensionForMacroSpec(String macroSpec)
+    public static String getFileExtensionForMacroSpec(MacroInstance macroSpec)
     {
         if (macroSpec != null) {
-            String m = macroSpec + '/';
-            if (m.startsWith("groovy/")) {
-                return ".groovy";
-            }
-
-            if (m.startsWith("velocity/")) {
-                return ".vm";
-            }
-
-            if (m.startsWith("python/")) {
-                return ".py";
-            }
-
-            if (m.startsWith("html/")) {
-                return ".html";
-            }
-
-            if (m.startsWith("javascript/")) {
-                return ".js";
-            }
-        }
-
-        return ".txt";
-    }
-
-    private static int[] getMacroContentPos(String content, String macroName, int macroNumber) throws DocException
-    {
-        int n = macroNumber;
-        String macroStart = MACRO_BEGIN + macroName;
-        String macroEnd = MACRO_TAG_BEGIN_END + macroName + MACRO_TAG_END;
-        int macroContentStart = -1;
-        int macroContentEnd = -1;
-        int from = 0;
-        do {
-            int macroPos = content.indexOf(macroStart, from);
-            if (macroPos == -1) {
-                throw new DocException("Macro not found. Macro name: " + macroName + ", macro number: " + macroNumber);
-            }
-            if (macroPos > 0 && content.charAt(macroPos - 1) != '\n') {
-                // ignore inline macro
-                from = macroPos + 2;
-                continue;
-            }
-            macroContentStart = content.indexOf(MACRO_TAG_END, macroPos + macroStart.length());
-            if (macroContentStart == -1) {
-                throw new DocException("Macro start tag isn't finished");
-            }
-            macroContentStart += MACRO_TAG_END.length();
-            if (content.charAt(macroContentStart) == '\n') {
-                macroContentStart++;
-            }
-            macroContentEnd = content.indexOf(macroEnd + '\n', macroContentStart);
-            if (macroContentEnd == -1) {
-                if (content.endsWith(macroEnd)) {
-                    macroContentEnd = content.length() - macroEnd.length();
-                } else {
-                    throw new DocException(
-                        "Unclosed macro. Macro name: " + macroName + ", macro number: " + macroNumber);
+            String m = macroSpec.name();
+            switch (m) {
+                case "groovy" -> {
+                    return ".groovy";
+                }
+                case "velocity" -> {
+                    return ".vm";
+                }
+                case "python" -> {
+                    return ".py";
+                }
+                case "html" -> {
+                    return ".html";
+                }
+                case "javascript" -> {
+                    return ".js";
+                }
+                default -> {
+                    return ".txt";
                 }
             }
-            --n;
-            from = macroContentEnd + macroEnd.length();
-        } while (n >= 0);
-        return new int[] { macroContentStart, macroContentEnd };
+        }
+        return ".txt";
     }
 
     interface EditingCallback

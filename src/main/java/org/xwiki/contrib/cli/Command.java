@@ -170,8 +170,9 @@ public record Command(
             @Override
             void run(Command cmd) throws Exception
             {
+                var editing = new Editing();
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                Editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newValue -> {
+                editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
@@ -191,15 +192,16 @@ public record Command(
                 if (cmd.macro == null) {
                     throw new Exception("Please provide --macro");
                 }
+                var editing = new Editing();
                 var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                String macroContent = Editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
-                    cmd.macro);
+                String macroContent = editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
+                    MacroInstance.fromString(cmd.macro));
                 String filePrefix = cmd.macro.replace('/', '-');
-                String fileEx = Editing.getFileExtensionForMacroSpec(cmd.macro);
-                Editing.editValue(cmd, macroContent, filePrefix, fileEx, newValue -> {
+                String fileEx = Editing.getFileExtensionForMacroSpec(MacroInstance.fromString(cmd.macro));
+                editing.editValue(cmd, macroContent, filePrefix, fileEx, newValue -> {
                     try {
-                        Editing.setMacro(doc, cmd.objectClass, cmd.objectNumber, cmd.property, cmd.macro,
-                            newValue);
+                        editing.setMacro(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
+                            MacroInstance.fromString(cmd.macro), newValue);
                         doc.save();
                     } catch (Exception e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
@@ -222,8 +224,9 @@ public record Command(
                         res += o.objectClass() + '/' + o.number() + '.' + p.name() + '=' + protectValue(p.value());
                     }
                 }
+                var editing = new Editing();
                 res += "\n\ncontent=" + protectValue(doc.getContent());
-                Editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newRes -> {
+                editing.editValue(cmd, res, EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newRes -> {
                     try {
                         Editing.updateDocFromTextPage(doc, newRes);
                     } catch (DocException e) {
@@ -253,8 +256,8 @@ public record Command(
                 String ext = Utils.present(cmd.fileExtension)
                     ? '.' + cmd.fileExtension
                     : cmd.getFileExtension(oClass, cmd.property);
-
-                Editing.editValue(cmd, val.get(), "property-", ext, newValue -> {
+                var editing = new Editing();
+                editing.editValue(cmd, val.get(), "property-", ext, newValue -> {
                     try {
                         doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
                         doc.save();

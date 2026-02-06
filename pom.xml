@@ -15,6 +15,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <imageName>xwiki-cli</imageName>
     <mainClass>org.xwiki.contrib.cli.Main</mainClass>
+    <xwiki.version>17.10.2</xwiki.version>
   </properties>
   <dependencies>
     <dependency>
@@ -36,6 +37,42 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>2.19.2</version>
+    </dependency>
+    <!--
+    Dependencies for XWiki rendering
+    -->
+    <dependency>
+      <groupId>org.xwiki.rendering</groupId>
+      <artifactId>xwiki-rendering-syntax-xwiki21</artifactId>
+      <version>${xwiki.version}</version>
+    </dependency>
+    <!-- handle also syntax 2.0 because it's used in different projects -->
+    <dependency>
+      <groupId>org.xwiki.rendering</groupId>
+      <artifactId>xwiki-rendering-syntax-xwiki20</artifactId>
+      <version>${xwiki.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.rendering</groupId>
+      <artifactId>xwiki-rendering-api</artifactId>
+      <version>${xwiki.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.xwiki.commons</groupId>
+      <artifactId>xwiki-commons-component-default</artifactId>
+      <version>${xwiki.version}</version>
+    </dependency>
+    <!-- Logging with Logback -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.5.26</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>jcl-over-slf4j</artifactId>
+      <version>2.0.17</version>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
   <build>
@@ -76,6 +113,11 @@
               </excludes>
             </filter>
           </filters>
+          <transformers>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
+              <resource>META-INF/components.txt</resource>
+            </transformer>
+          </transformers>
         </configuration>
         <executions>
           <execution>

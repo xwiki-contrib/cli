@@ -49,6 +49,11 @@
               </excludes>
             </filter>
           </filters>
+          <transformers>
+            <transformer>
+              <resource>META-INF/components.txt</resource>
+            </transformer>
+          </transformers>
         </configuration>
       </plugin>
       <plugin>
@@ -112,6 +117,7 @@
     <imageName>xwiki-cli</imageName>
     <mainClass>org.xwiki.contrib.cli.Main</mainClass>
     <maven.compiler.source>17</maven.compiler.source>
+    <xwiki.version>17.10.2</xwiki.version>
     <native.maven.plugin.version>0.9.12</native.maven.plugin.version>
     <maven.compiler.target>17</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
