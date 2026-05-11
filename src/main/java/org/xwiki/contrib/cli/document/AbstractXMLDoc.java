@@ -232,8 +232,12 @@ abstract class AbstractXMLDoc
                 res.add(new AttachmentInfo(getElement((Element) attachment, NODE_NAME).getText(),
                     Long.parseLong(getElement((Element) attachment, "size").getText())));
             } else {
-                res.add(new AttachmentInfo(getElement((Element) attachment, "filename").getText(),
-                    Long.parseLong(getElement((Element) attachment, "filesize").getText())));
+                try {
+                    res.add(new AttachmentInfo(getElement((Element) attachment, "filename").getText(),
+                        Long.parseLong(getElement((Element) attachment, "filesize").getText())));
+                } catch (NumberFormatException e) {
+                    logger.warn("Can't parse attachment size for attachment", e);
+                }
             }
         }
         return res;
