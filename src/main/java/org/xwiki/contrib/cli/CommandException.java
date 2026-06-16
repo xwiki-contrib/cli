@@ -16,4 +16,16 @@ class CommandException extends Exception
     {
         super(message);
     }
+
+    /**
+     * Create a new CommandException.
+     *
+     * @param message the reason why the command is invalid.
+     * @param e the cause
+     */
+    CommandException(String message, Throwable e)
+    {
+        super(message, e);
+    }
+
 }

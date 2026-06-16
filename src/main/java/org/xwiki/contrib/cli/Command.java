@@ -34,74 +34,14 @@ import static java.lang.System.out;
 /**
  * Represent a command run by a user with all parameter which can be passed.
  *
- * @param action main action of the program.
- * @param wiki the wiki ID.
- * @param page the page to edit/read.
- * @param macro the macro to edit/read.
- * @param objectClass the class of the object to edit/read.
- * @param objectNumber the object number to edit/read.
- * @param property the property of the object to edit/read.
- * @param value the new value to set.
- * @param editor the editor to use.
- * @param wikiReadonly only read on the wiki, all change won't take effect on the wiki.
- * @param wikiWriteonly only write on the wiki, so the source should come from somewhere else.
- * @param outputFile the XML file to write.
- * @param inputFile the XML file to read.
- * @param xmlReadDir Same as outputFile but for a full wiki directory.
- * @param xmlWriteDir Same as inputFile but for a full wiki directory.
- * @param headers custom http HEADER to pass on the wiki requests.
- * @param url the full url of the wiki.
- * @param user user to authenticate to the wiki.
- * @param pass password to authenticate to the wiki.
- * @param content content to set/get.
- * @param title title to set/get.
- * @param mountPath mount point for the FUSE filesystem.
- * @param syncPath target directory to sync all files.
- * @param syncDataSource source directory to ready all data for sync.
- * @param printXML mostly used for debug, show the full XML when we parse the XML file.
- * @param fileExtension add a specific extension to the temporary file.
- * @param pom add automatically a pom file to make easier the edition with an IDE.
- * @param acceptNewDocument give the possibility to add new document.
  * @version $Id$
  */
-public record Command(
-    Action action,
-    String wiki,
-    String page,
-    String macro,
-    String objectClass,
-    String objectNumber,
-    String property,
-    String value,
-    String editor,
-    boolean wikiReadonly,
-    boolean wikiWriteonly,
-    String outputFile,
-    String inputFile,
-    String xmlReadDir,
-    String xmlWriteDir,
-    Map<String, String> headers,
-    String url,
-    String user,
-    String pass,
-    String content,
-    String title,
-    String mountPath,
-    String syncPath,
-    String syncDataSource,
-    boolean printXML,
-    String fileExtension,
-    boolean pom,
-    boolean acceptNewDocument)
+public class Command
 {
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
-
     private static final String EDIT_PREFIX_CONTENT = "content-";
-
     private static final String OBJECT_PROPERTY_NAME_CODE = "code";
-
     private static final String XWIKI_FILE_EXTENSION = ".xwiki";
-
     private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Command.class);
@@ -111,6 +51,9 @@ public record Command(
 
         Actions:
             -h, --help               Show the help
+            -c, --configuration PATH  Read this configuration file. One --parameter value pair or item per line.
+                                      This overwrites previously passed parameters and is overwritten by following
+                                      parameters
             --edit-page              Edit a complete XWiki document
             --get-content            Get the content of a XWiki document
             --set-content CONTENT    Set the content of a XWiki document
@@ -405,6 +348,502 @@ public record Command(
         {
             err.println("No action was specified");
         }
+    }
+
+    private Action action;
+    private String wiki;
+    private String page;
+    private String macro;
+    private String objectClass;
+    private String objectNumber;
+    private String property;
+    private String value;
+    private String editor;
+    private boolean wikiReadonly;
+    private boolean wikiWriteonly;
+    private String outputFile;
+    private String inputFile;
+    private String xmlReadDir;
+    private String xmlWriteDir;
+    private Map<String, String> headers;
+    private String url;
+    private String user;
+    private String pass;
+    private String content;
+    private String title;
+    private String mountPath;
+    private String syncPath;
+    private String syncDataSource;
+    private boolean printXML;
+    private String fileExtension;
+    private boolean debug;
+    private boolean pom;
+    private boolean acceptNewDocument;
+
+    /**
+     * {@return the log level}
+     */
+    public String logLevel()
+    {
+        return logLevel;
+    }
+
+    /**
+     * @param logLevel the log level
+     */
+    public void setLogLevel(String logLevel)
+    {
+        this.logLevel = logLevel;
+    }
+
+    private String logLevel;
+
+    /**
+     * {@return the wiki ID}
+     */
+    public String wiki()
+    {
+        return wiki;
+    }
+
+    /**
+     * @param wiki the wiki ID.
+     */
+    public void setWiki(String wiki)
+    {
+        this.wiki = wiki;
+    }
+
+    /**
+     * {@return main action of the program}
+     */
+    public Action action()
+    {
+        return action;
+    }
+
+    /**
+     * @param action main action of the program.
+     */
+    public void setAction(Action action)
+    {
+        this.action = action;
+    }
+
+    /**
+     * {@return the page to edit/read.}
+     */
+    public String page()
+    {
+        return page;
+    }
+
+    /**
+     * @param page the page to edit/read.
+     */
+    public void setPage(String page)
+    {
+        this.page = page;
+    }
+
+    /**
+     * {@return the name of the targeted macro}
+     */
+    public String macro()
+    {
+        return macro;
+    }
+
+    /**
+     * @param macro the name of the targetted macro
+     */
+    public void setMacro(String macro)
+    {
+        this.macro = macro;
+    }
+
+    /**
+     * {@return the class of the object to edit/read.}
+     */
+    public String objectClass()
+    {
+        return objectClass;
+    }
+
+    /**
+     * @param objectClass the class of the object to edit/read.
+     */
+    public void setObjectClass(String objectClass)
+    {
+        this.objectClass = objectClass;
+    }
+
+    /**
+     * {@return the object number to edit/read.}
+     */
+    public String objectNumber()
+    {
+        return objectNumber;
+    }
+
+    /**
+     * @param objectNumber the object number to edit/read.
+     */
+    public void setObjectNumber(String objectNumber)
+    {
+        this.objectNumber = objectNumber;
+    }
+
+    /**
+     * {@return the property of the object to edit/read.}
+     */
+    public String property()
+    {
+        return property;
+    }
+
+    /**
+     * @param property the property of the object to edit/read.
+     */
+    public void setProperty(String property)
+    {
+        this.property = property;
+    }
+
+    /**
+     * @return the new value to set.
+     */
+    public String value()
+    {
+        return value;
+    }
+
+    /**
+     * @param value the new value to set.
+     */
+    public void setValue(String value)
+    {
+        this.value = value;
+    }
+
+    /**
+     * {@return the editor to use.}
+     */
+    public String editor()
+    {
+        return editor;
+    }
+
+    /**
+     * @param editor the editor to use.
+     */
+    public void setEditor(String editor)
+    {
+        this.editor = editor;
+    }
+
+    /**
+     * {@return only read on the wiki, all change won't take effect on the wiki.}
+     */
+    public boolean wikiReadonly()
+    {
+        return wikiReadonly;
+    }
+
+    /**
+     * @param wikiReadonly only read on the wiki, all change won't take effect on the wiki.
+     */
+    public void setWikiReadonly(boolean wikiReadonly)
+    {
+        this.wikiReadonly = wikiReadonly;
+    }
+
+    /**
+     * {@return only write on the wiki, so the source should come from somewhere else}.
+     */
+    public boolean wikiWriteonly()
+    {
+        return wikiWriteonly;
+    }
+
+    /**
+     * @param wikiWriteonly only write on the wiki, so the source should come from somewhere else.
+     */
+    public void setWikiWriteonly(boolean wikiWriteonly)
+    {
+        this.wikiWriteonly = wikiWriteonly;
+    }
+
+    /**
+     * {@return outputFile the XML file to write.}
+     */
+    public String outputFile()
+    {
+        return outputFile;
+    }
+
+    /**
+     * @param outputFile the XML file to write.
+     */
+    public void setOutputFile(String outputFile)
+    {
+        this.outputFile = outputFile;
+    }
+
+    /**
+     * {@return inputFile the XML file to read.}
+     */
+    public String inputFile()
+    {
+        return inputFile;
+    }
+
+    /**
+     * @param inputFile the XML file to read.
+     */
+    public void setInputFile(String inputFile)
+    {
+        this.inputFile = inputFile;
+    }
+
+    /**
+     * {@return Same as outputFile but for a full wiki directory.}
+     */
+    public String xmlReadDir()
+    {
+        return xmlReadDir;
+    }
+
+    /**
+     * @param xmlReadDir Same as outputFile but for a full wiki directory.
+     */
+    public void setXmlReadDir(String xmlReadDir)
+    {
+        this.xmlReadDir = xmlReadDir;
+    }
+
+    /**
+     * {@return Same as inputFile but for a full wiki directory.}
+     */
+    public String xmlWriteDir()
+    {
+        return xmlWriteDir;
+    }
+
+    /**
+     * @param xmlWriteDir Same as inputFile but for a full wiki directory.
+     */
+    public void setXmlWriteDir(String xmlWriteDir)
+    {
+        this.xmlWriteDir = xmlWriteDir;
+    }
+
+    /**
+     * {@return custom http HEADER to pass on the wiki requests.}
+     */
+    public Map<String, String> headers()
+    {
+        return headers;
+    }
+
+    /**
+     * @param headers custom http HEADER to pass on the wiki requests.
+     */
+    public void setHeaders(Map<String, String> headers)
+    {
+        this.headers = headers;
+    }
+
+    /**
+     * {@return the full url of the wiki.}
+     */
+    public String url()
+    {
+        return url;
+    }
+
+    /**
+     * @param url the full url of the wiki.
+     */
+    public void setUrl(String url)
+    {
+        this.url = url;
+    }
+
+    /**
+     * {@return user to authenticate to the wiki.}
+     */
+    public String user()
+    {
+        return user;
+    }
+
+    /**
+     * @param user user to authenticate to the wiki.
+     */
+    public void setUser(String user)
+    {
+        this.user = user;
+    }
+
+    /**
+     * {@return password to authenticate to the wiki.}
+     */
+    public String pass()
+    {
+        return pass;
+    }
+
+    /**
+     * @param pass password to authenticate to the wiki.
+     */
+    public void setPass(String pass)
+    {
+        this.pass = pass;
+    }
+
+    /**
+     * {@return content to set/get.}
+     */
+    public String content()
+    {
+        return content;
+    }
+
+    /**
+     * @param content content to set/get.
+     */
+    public void setContent(String content)
+    {
+        this.content = content;
+    }
+
+    /**
+     * {@return title to set/get.}
+     */
+    public String title()
+    {
+        return title;
+    }
+
+    /**
+     * @param title title to set/get.
+     */
+    public void setTitle(String title)
+    {
+        this.title = title;
+    }
+
+    /**
+     * {@return mountPath mount point for the FUSE filesystem.}
+     */
+    public String mountPath()
+    {
+        return mountPath;
+    }
+
+    /**
+     * @param mountPath mount point for the FUSE filesystem.
+     */
+    public void setMountPath(String mountPath)
+    {
+        this.mountPath = mountPath;
+    }
+
+    /**
+     * {@return syncPath target directory to sync all files.}
+     */
+    public String syncPath()
+    {
+        return syncPath;
+    }
+
+    /**
+     * @param syncPath target directory to sync all files.
+     */
+    public void setSyncPath(String syncPath)
+    {
+        this.syncPath = syncPath;
+    }
+
+    /**
+     * {@return source directory to ready all data for sync.}
+     */
+    public String syncDataSource()
+    {
+        return syncDataSource;
+    }
+
+    /**
+     * @param syncDataSource source directory to ready all data for sync.
+     */
+    public void setSyncDataSource(String syncDataSource)
+    {
+        this.syncDataSource = syncDataSource;
+    }
+
+    /**
+     * {@return mostly used for debug, show the full XML when we parse the XML file.}
+     */
+    public boolean printXML()
+    {
+        return printXML;
+    }
+
+    /**
+     * @param printXML mostly used for debug, show the full XML when we parse the XML file.
+     */
+    public void setPrintXML(boolean printXML)
+    {
+        this.printXML = printXML;
+    }
+
+    /**
+     * {@return add a specific extension to the temporary file.}
+     */
+    public String fileExtension()
+    {
+        return fileExtension;
+    }
+
+    /**
+     * @param fileExtension add a specific extension to the temporary file.
+     */
+    public void setFileExtension(String fileExtension)
+    {
+        this.fileExtension = fileExtension;
+    }
+
+    /**
+     * {@return add automatically a pom file to make easier the edition with an IDE.}
+     */
+    public boolean pom()
+    {
+        return pom;
+    }
+
+    /**
+     * @param pom add automatically a pom file to make easier the edition with an IDE.
+     */
+    public void setPom(boolean pom)
+    {
+        this.pom = pom;
+    }
+
+    /**
+     * {@return give the possibility to add new document.}
+     */
+    public boolean acceptNewDocument()
+    {
+        return acceptNewDocument;
+    }
+
+    /**
+     * @param acceptNewDocument give the possibility to add new document.
+     */
+    public void setAcceptNewDocument(boolean acceptNewDocument)
+    {
+        this.acceptNewDocument = acceptNewDocument;
     }
 
     void print()

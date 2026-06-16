@@ -20,6 +20,9 @@
 
 package org.xwiki.contrib.cli;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -43,11 +46,15 @@ final class Main
 
     public static void main(String[] args) throws Exception
     {
-        Command cmd;
+        Command cmd = new Command();
         try {
-            cmd = parseArgs(args);
+            parseArgs(args, cmd);
+            endArgs(args, cmd);
         } catch (CommandException e) {
             err.println(e.getMessage());
+            if (e.getCause() != null) {
+                err.println(e.getCause().getMessage());
+            }
             return;
         }
 
@@ -70,47 +77,43 @@ final class Main
         return args[i + 1];
     }
 
-    private static Command parseArgs(String[] args) throws CommandException
+    private static void readConfigFile(String path, Command cmd) throws IOException, CommandException
     {
-        Command.Action action = null;
-        String wiki = null;
-        String page = null;
-        String macro = null;
-        String objectClass = null;
-        String objectNumber = null;
-        String property = null;
-        String value = null;
-        String editor = null;
-        boolean wikiReadonly = false;
-        boolean wikiWriteonly = false;
-        String outputFile = null;
-        String inputFile = null;
-        String xmlReadDir = null;
-        String xmlWriteDir = null;
-        Map<String, String> headers = new HashMap<>();
-        String url = null;
-        String user = null;
-        String pass = null;
-        String content = null;
-        String title = null;
-        String mountPath = null;
-        String syncPath = null;
-        String syncDataSource = null;
-        boolean printXML = false;
-        String fileExtension = null;
-        String logLevel = null;
-        boolean pom = false;
-        boolean acceptNewDocument = false;
+        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                // We parse lines that look like:
+                // --parameter value
+                // or
+                // --parameter
+                parseArgs(line.split("\\s+", 2), cmd);
+            }
+        }
+    }
 
+    private static void parseArgs(String[] args, Command cmd) throws IOException, CommandException
+    {
         var i = 0;
+        Map<String, String> headers = cmd.headers();
+        if (headers == null) {
+             headers = new HashMap<>();
+             cmd.setHeaders(headers);
+        }
         while (i < args.length) {
             switch (args[i]) {
-                case "-p" -> page = getNextParameter(args, i++);
+                case "-c", "--configuration" ->  {
+                    try {
+                        readConfigFile(getNextParameter(args, i++), cmd);
+                    } catch (IOException e) {
+                        throw new CommandException("Could not read config file", e);
+                    }
+                }
+                case "-p" -> cmd.setPage(getNextParameter(args, i++));
                 case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
-                    objectClass = objectParts[0];
+                    cmd.setObjectClass(objectParts[0]);
                     if (objectParts.length == 2) {
-                        objectNumber = objectParts[1];
+                        cmd.setObjectNumber(objectParts[1]);
                     } else if (objectParts.length != 1) {
                         throw new CommandException(
                             "Too many slashes in value "
@@ -120,101 +123,97 @@ final class Main
                     }
                     i++;
                 }
-                case "-w" -> wiki = getNextParameter(args, i++);
-                case "-v" -> value = getNextParameter(args, i++);
-                case "--editor" -> editor = getNextParameter(args, i++);
-                case "--pom" -> pom = true;
+                case "-w" -> cmd.setWiki(getNextParameter(args, i++));
+                case "-v" -> cmd.setValue(getNextParameter(args, i++));
+                case "--editor" -> cmd.setEditor(getNextParameter(args, i++));
+                case "--pom" -> cmd.setPom(true);
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
                     headers.put(header[0], header[1]);
                 }
-                case "--user" -> user = getNextParameter(args, i++);
-                case "--pass" -> pass = getNextParameter(args, i++);
-                case "--wiki-readonly" -> wikiReadonly = true;
-                case "--wiki-writeonly" -> wikiWriteonly = true;
-                case "--write-to-xml" -> outputFile = getNextParameter(args, i++);
-                case "--read-from-xml" -> inputFile = getNextParameter(args, i++);
-                case "--write-to-mvn-repository" -> xmlWriteDir = getNextParameter(args, i++);
+                case "--user" -> cmd.setUser(getNextParameter(args, i++));
+                case "--pass" -> cmd.setPass(getNextParameter(args, i++));
+                case "--wiki-readonly" -> cmd.setWikiReadonly(true);
+                case "--wiki-writeonly" -> cmd.setWikiWriteonly(true);
+                case "--write-to-xml" -> cmd.setOutputFile(getNextParameter(args, i++));
+                case "--read-from-xml" -> cmd.setInputFile(getNextParameter(args, i++));
+                case "--write-to-mvn-repository" -> cmd.setXmlWriteDir(getNextParameter(args, i++));
                 case "--xml-file" -> {
-                    inputFile = getNextParameter(args, i++);
-                    outputFile = inputFile;
+                    cmd.setInputFile(getNextParameter(args, i++));
+                    cmd.setOutputFile(cmd.inputFile());
                 }
-                case "--sync-data-source" -> syncDataSource = getNextParameter(args, i++);
-                case "-u", "--url" -> url = getNextParameter(args, i++);
-                case "--edit-page" -> action = Command.Action.EDIT_PAGE;
-                case "--edit-content" -> action = Command.Action.EDIT_CONTENT;
+                case "--sync-data-source" -> cmd.setSyncDataSource(getNextParameter(args, i++));
+                case "-u", "--url" -> cmd.setUrl(getNextParameter(args, i++));
+                case "--edit-page" -> cmd.setAction(Command.Action.EDIT_PAGE);
+                case "--edit-content" -> cmd.setAction(Command.Action.EDIT_CONTENT);
                 case "--edit-macro" -> {
-                    macro = getNextParameter(args, i++);
-                    action = Command.Action.EDIT_MACRO;
+                    cmd.setMacro(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.EDIT_MACRO);
                 }
-                case "--list-properties" -> action = Command.Action.LIST_PROPERTIES;
-                case "--list-objects" -> action = Command.Action.LIST_OBJECTS;
-                case "--list-attachments" -> action = Command.Action.LIST_ATTACHMENTS;
-                case "--get-content" -> action = Command.Action.GET_CONTENT;
-                case "--get-title" -> action = Command.Action.GET_TITLE;
+                case "--list-properties" -> cmd.setAction(Command.Action.LIST_PROPERTIES);
+                case "--list-objects" -> cmd.setAction(Command.Action.LIST_OBJECTS);
+                case "--list-attachments" -> cmd.setAction(Command.Action.LIST_ATTACHMENTS);
+                case "--get-content" -> cmd.setAction(Command.Action.GET_CONTENT);
+                case "--get-title" -> cmd.setAction(Command.Action.GET_TITLE);
                 case "--set-content" -> {
-                    content = getNextParameter(args, i++);
-                    action = Command.Action.SET_CONTENT;
+                    cmd.setContent(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.SET_CONTENT);
                 }
                 case "--set-title" -> {
-                    title = getNextParameter(args, i++);
-                    action = Command.Action.SET_TITLE;
+                    cmd.setTitle(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.SET_TITLE);
                 }
                 case "--get-property" -> {
-                    property = getNextParameter(args, i++);
-                    action = Command.Action.GET_PROPERTY_VALUE;
+                    cmd.setProperty(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.GET_PROPERTY_VALUE);
                 }
                 case "--set-property" -> {
-                    property = getNextParameter(args, i++);
-                    action = Command.Action.SET_PROPERTY_VALUE;
+                    cmd.setProperty(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.SET_PROPERTY_VALUE);
                 }
                 case "--edit-property" -> {
-                    property = getNextParameter(args, i++);
-                    action = Command.Action.EDIT_PROPERTY;
+                    cmd.setProperty(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.EDIT_PROPERTY);
                 }
-                case "--property" -> property = getNextParameter(args, i++);
+                case "--property" -> cmd.setProperty(getNextParameter(args, i++));
                 case "--mount" -> {
-                    mountPath = getNextParameter(args, i++);
-                    action = Command.Action.MOUNT;
+                    cmd.setMountPath(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.MOUNT);
                 }
                 case "--sync" -> {
-                    syncPath = getNextParameter(args, i++);
-                    action = Command.Action.SYNC;
+                    cmd.setSyncPath(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.SYNC);
                 }
-                case "--ext" -> fileExtension = getNextParameter(args, i++);
-                case "--loglevel" -> logLevel = getNextParameter(args, i++);
-                case "--print-xml" -> printXML = true;
-                case "--help", "-help", "-h", "help" -> action = Command.Action.HELP;
-                case "-n", "--new" -> acceptNewDocument = true;
+                case "--ext" -> cmd.setFileExtension(getNextParameter(args, i++));
+                case "--loglevel" -> cmd.setLogLevel(getNextParameter(args, i++));
+                case "--print-xml" -> cmd.setPrintXML(true);
+                case "--help", "-help", "-h", "help" -> cmd.setAction(Command.Action.HELP);
+                case "-n", "--new" -> cmd.setAcceptNewDocument(true);
 
                 default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
             }
             i++;
         }
-        if (action == Command.Action.SYNC) {
-            xmlWriteDir = syncDataSource;
+    }
+
+    private static void endArgs(String[] args, Command cmd) throws CommandException
+    {
+        if (cmd.action() == Command.Action.SYNC) {
+            cmd.setXmlWriteDir(cmd.syncDataSource());
         }
 
         if (args.length == 0) {
-            action = Command.Action.HELP;
+            cmd.setAction(Command.Action.HELP);
         }
-
-        var ctx = (ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory();
-        if (logLevel != null) {
-            ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.valueOf(logLevel));
-        } else {
-            ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.WARN);
-        }
-
-        var cmd = new Command(
-            action, wiki, page, macro, objectClass, objectNumber, property, value, editor, wikiReadonly,
-            wikiWriteonly, outputFile, inputFile, xmlReadDir, xmlWriteDir, headers, url, user, pass, content, title,
-            mountPath, syncPath, syncDataSource, printXML, fileExtension, pom, acceptNewDocument);
 
         if (cmd.action() == null) {
             throw new CommandException("Please specify an action. Try --help for help.");
         }
 
-        return cmd;
+        if (cmd.logLevel() == null) {
+            cmd.setLogLevel(Level.WARN.toString());
+        }
+        var ctx = (ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory();
+        ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.valueOf(cmd.logLevel()));
     }
 }
