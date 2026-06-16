@@ -124,7 +124,7 @@ public record Command(
                                      optionally from the given object
             --list-objects           List the document's objects,
                                      optionally from the given class
-            --edit-content PROPERTY  Edit the content of a given property with a text editor
+            --edit-property PROPERTY Edit the content of a given property with a text editor
             --get-property PROPERTY  Get the value of the given property,
                                      optionally from the given object
             --set-property PROPERTY  Set the value of the given property,
