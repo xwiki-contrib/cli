@@ -31,6 +31,8 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpRequest.BodyPublishers;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
@@ -90,6 +92,12 @@ public final class Utils
     private static final String XWIKI = "xwiki";
 
     private static final String CONTENT = "content";
+
+    private static final String PATH_SRC = "src";
+
+    private static final String PATH_MAIN = "main";
+
+    private static final String PATH_RESOURCES = "resources";
 
     private Utils()
     {
@@ -608,6 +616,36 @@ public final class Utils
                 return XWIKI;
             }
         }
+    }
+
+    public static List<String> listAllPagesMvnRepos(Command cmd) throws IOException
+    {
+        var xmlFileDirPath = Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
+        return listSubDir(xmlFileDirPath);
+    }
+
+    private static List<String> listSubDir(Path dir)
+    {
+        /* TODO...
+        try (var dirList = Files.list(xmlFileDirPath)) {
+            for (var d : dirList.toList()) {
+                if (Files.isDirectory(d)) {
+                    syncDir(d);
+                } else {
+                    if (!d.getFileName().toString().endsWith(".xml")) {
+                        // Avoid to try to sync any non XML file which is expected to be not a XWiki document
+                        continue;
+                    }
+                    syncFileFromMvnRepos(d);
+                    if (command.pom()) {
+                        syncMavenRepos(d);
+                    }
+                }
+            }
+        }
+
+         */
+        return List.of();
     }
 
     private static HttpClient getHTTPClient(Command cmd)
