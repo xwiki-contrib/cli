@@ -364,9 +364,9 @@ public final class Utils
         var content =
             new BufferedReader(new InputStreamReader(Utils.class.getResourceAsStream(scriptResourceName)))
                 .lines().collect(Collectors.joining("\n"));
-        var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content);
+        var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content, StandardCharsets.UTF_8);
         var response = Utils.httpPost(command,
-            getUrlAction(command) + "xwiki-cli/script?xpage=plain&outputSyntax=plain", contentToSend,
+            getUrlAction(command) + "preview/xwiki-cli/script?xpage=plain&outputSyntax=plain", contentToSend,
             "application/x-www-form-urlencoded");
         return response.body();
     }
@@ -677,7 +677,7 @@ public final class Utils
         throws DocException, IOException
     {
         var csrf = Utils.getCSRF(command);
-        var xarPath = Utils.getUrlAction(command) + "export/cli-export?format=xar";
+        var xarPath = Utils.getUrlAction(command) + "export/xwiki-cli/export?format=xar";
         var contentToSend = new StringBuilder("form_token=" + csrf);
         for (var r : references) {
             contentToSend.append("&pages=").append(URLEncoder.encode(r, StandardCharsets.UTF_8));

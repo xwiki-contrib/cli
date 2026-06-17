@@ -42,7 +42,7 @@ public class PageSync
     {
         var extractedPage = Utils.getXarOfPages(List.of(cmd.pullReference()), cmd).entrySet().stream().findFirst();
         if (extractedPage.isEmpty()) {
-            logger.error("Can't extract page " + cmd.pullReference());
+            logger.error("Can't extract page [{}]", cmd.pullReference());
             return;
         }
         var targetFile = Path.of(Utils.getMvnReposRessourcePath(cmd).toString(), extractedPage.get().getKey());

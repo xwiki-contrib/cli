@@ -176,6 +176,10 @@ public class Arguments
             throw new CommandException(
                 "Not implemented yet. The only supported initial source for sync is the maven repos.");
         }
+        if (cmd.action() == Command.Action.SYNC && StringUtils.isEmpty(cmd.url())) {
+            throw new CommandException(
+                "XWiki instance URL is required for sync mode.");
+        }
         if (cmd.action() == Command.Action.SYNC
             || cmd.action() == Command.Action.PUSH_ALL_PAGES
             || cmd.action() == Command.Action.PULL_ALL_PAGES
