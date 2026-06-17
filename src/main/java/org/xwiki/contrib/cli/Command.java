@@ -30,6 +30,8 @@ import org.xwiki.contrib.cli.document.element.MacroInstance;
 
 import static java.lang.System.err;
 import static java.lang.System.out;
+import static org.xwiki.contrib.cli.Arguments.endArgs;
+import static org.xwiki.contrib.cli.Arguments.parseArgs;
 
 /**
  * Represent a command run by a user with all parameter which can be passed.
