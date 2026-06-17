@@ -190,7 +190,7 @@ public final class Utils
                 builder.append(Character.toLowerCase(c));
             } else if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z') {
                 if (c == '.') {
-                    builder.append(c);
+                    builder.append('/');
                 } else {
                     // If it's a special char we replace it by _
                     builder.append("_");
