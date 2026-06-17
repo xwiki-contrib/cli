@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Optional;
 
 import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.PageReference;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 

@@ -33,7 +33,7 @@ import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.document.element.Property;
 
-class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
+public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
     private static final String APPLICATION_XML_CHARSET_UTF_8 = "application/xml; charset=utf-8";
 
@@ -51,7 +51,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private InputXMLRestPage inputPage;
 
-    OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
+    public OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
         url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);

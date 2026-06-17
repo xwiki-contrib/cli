@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.xwiki.contrib.cli.Command;
-import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.Utils;
 
 /**
@@ -14,9 +13,9 @@ import org.xwiki.contrib.cli.Utils;
  */
 public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
 {
-    MvnRepoFileDoc(Command cmd, String baseDir, String wiki, String page) throws DocException, IOException
+    public MvnRepoFileDoc(Command cmd, String reference) throws IOException
     {
-        super(cmd, Path.of(baseDir, "src", "main", "resources",
-            Utils.fromReferenceToMvnReposPath(page)) + ".xml");
+        super(cmd, Path.of(cmd.mvnRepo(), "src", "main", "resources",
+            Utils.fromReferenceToMvnReposPath(reference)) + ".xml");
     }
 }

@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
@@ -36,10 +37,13 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
@@ -47,6 +51,8 @@ import org.dom4j.DocumentException;
 import org.dom4j.Namespace;
 import org.dom4j.io.SAXReader;
 import org.xml.sax.SAXException;
+
+import com.google.common.primitives.Bytes;
 
 /**
  * Utils.
@@ -618,34 +624,59 @@ public final class Utils
         }
     }
 
-    public static List<String> listAllPagesMvnRepos(Command cmd) throws IOException
+    public static List<Path> listAllPagesMvnRepos(Command cmd) throws IOException
     {
         var xmlFileDirPath = Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
         return listSubDir(xmlFileDirPath);
     }
 
-    private static List<String> listSubDir(Path dir)
+    private static List<Path> listSubDir(Path dir) throws IOException
     {
-        /* TODO...
-        try (var dirList = Files.list(xmlFileDirPath)) {
+        var res = new ArrayList<Path>();
+        try (var dirList = Files.list(dir)) {
             for (var d : dirList.toList()) {
                 if (Files.isDirectory(d)) {
-                    syncDir(d);
+                    res.addAll(listSubDir(d));
                 } else {
                     if (!d.getFileName().toString().endsWith(".xml")) {
-                        // Avoid to try to sync any non XML file which is expected to be not a XWiki document
+                        // Ignore non xml files
                         continue;
                     }
-                    syncFileFromMvnRepos(d);
-                    if (command.pom()) {
-                        syncMavenRepos(d);
-                    }
+                    res.add(d);
                 }
             }
         }
+        return res;
+    }
 
-         */
-        return List.of();
+    public static Map<String, String> getXarOfPages(List<String> references, Command command) throws DocException, IOException
+    {
+        var csrf = Utils.getCSRF(command);
+        var xarPath = Utils.getUrlAction(command) + "export/cli-export?format=xar";
+        var contentToSend = new StringBuilder("form_token=" + csrf);
+        for (var r : references) {
+            contentToSend.append("&page=").append(URLEncoder.encode(r, StandardCharsets.UTF_8));
+        }
+        var response = Utils.httpPost(command, xarPath, contentToSend.toString(), "application/x-www-form-urlencoded");
+
+        var zipStream = new ZipInputStream(new ByteArrayInputStream(response.body().getBytes(StandardCharsets.UTF_8)));
+        var result = new HashMap<String, String>();
+        ZipEntry entry;
+        byte[] buffer = new byte[1024];
+        while ((entry = zipStream.getNextEntry()) != null) {
+            if (entry.isDirectory()) {
+                continue;
+            }
+            ArrayList<Byte> bytes = new ArrayList<>(1024);
+            int len = 0;
+            while ((len = zipStream.read(buffer)) > 0) {
+                bytes.addAll(Bytes.asList(buffer).subList(0, len).stream().toList());
+            }
+            var contentStr = new String(Bytes.toArray(bytes));
+            zipStream.closeEntry();
+            result.put(entry.getName(), contentStr);
+        }
+        return result;
     }
 
     private static HttpClient getHTTPClient(Command cmd)

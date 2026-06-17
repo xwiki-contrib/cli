@@ -118,7 +118,7 @@ public class Command
             --no-mvn-repo-read       Don't read from the maven repository
 
             --cli-dir <DIR>          Directory which will have the XFF tree and the auto created maven project
-            --mvn-repo  <DIR>        Path to the maven repository
+            --mvn-repo <DIR>         Path to the maven repository
 
         Authentication:
             --user <USERNAME>        The XWiki username to use.

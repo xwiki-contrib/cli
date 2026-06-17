@@ -195,7 +195,7 @@ class XWikiDirAutoSync
         if (command.pom()) {
             createMavenProject();
         }
-        syncDir(xmlFileDirPath);
+        syncFromMavenRepos();
     }
 
     private List<ExtensionInfos> getDependencyFromXWiki() throws DocException, JsonProcessingException
@@ -283,22 +283,13 @@ class XWikiDirAutoSync
         Files.writeString(Path.of(xwikiCliJavaPath.toString(), "macros.vm"), macrosVmContent);
     }
 
-    private void syncDir(Path dir) throws IOException, DocException, ComponentLookupException, ParseException
+    private void syncFromMavenRepos() throws IOException, DocException, ComponentLookupException, ParseException
     {
-        try (var dirList = Files.list(dir)) {
-            for (var d : dirList.toList()) {
-                if (Files.isDirectory(d)) {
-                    syncDir(d);
-                } else {
-                    if (!d.getFileName().toString().endsWith(".xml")) {
-                        // Avoid to try to sync any non XML file which is expected to be not a XWiki document
-                        continue;
-                    }
-                    syncFileFromMvnRepos(d);
-                    if (command.pom()) {
-                        syncMavenRepos(d);
-                    }
-                }
+        var allPages = Utils.listAllPagesMvnRepos(command);
+        for (var p : allPages) {
+            syncFileFromMvnRepos(p);
+            if (command.pom()) {
+                syncMavenRepos(p);
             }
         }
     }

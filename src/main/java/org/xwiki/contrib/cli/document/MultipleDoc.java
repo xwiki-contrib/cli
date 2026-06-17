@@ -77,10 +77,10 @@ public class MultipleDoc implements InputOutputDoc
 
         if (StringUtils.isNotEmpty(cmd.mvnRepo())) {
             if (!cmd.noMvnRepoRead()) {
-                inputDocs.add(new MvnRepoFileDoc(cmd, cmd.mvnRepo(), wiki, page));
+                inputDocs.add(new MvnRepoFileDoc(cmd, page));
             }
             if (!cmd.noMvnRepoWrite()) {
-                outputDocs.add(new MvnRepoFileDoc(cmd, cmd.mvnRepo(), wiki, page));
+                outputDocs.add(new MvnRepoFileDoc(cmd, page));
             }
         }
 
