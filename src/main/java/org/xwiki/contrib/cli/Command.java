@@ -76,7 +76,11 @@ public class Command
             --set-property PROPERTY  Set the value of the given property,
                                      optionally from the given object (see -v to give a value)
             --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
-            --sync PATH              Sync data to PATH with content from maven repository.
+            --sync-daemon            Sync data to PATH with content from maven repository. // TODO
+            --push-page              Push a page from the maven repository to a XWiki instance
+            --pull-page              Pull a page from a XWiki instance to the maven repository
+            --push-all-pages         Push all page which are into the maven repository to a XWiki instance
+            --pull-all-pages         Pull all pages, which are already into the the maven repository, from a XWiki instance to the maven repository
 
         Parameters:
             --loglevel               Define the log level. Default warn.
@@ -86,26 +90,27 @@ public class Command
             -p PAGE                  Specify the page (dotted notation)
             -u, --url URL            Specify the page's URL
             -w WIKI                  Specify the wiki
-            --wiki-readonly          Don't write on the wiki
-            --wiki-writeonly         Don't read from the wiki.
+            --no-read-wiki           Don't write on the wiki // TODO
+            --no-write-wiki          Don't read from the wiki // TODO
                                      Note that in this case you need to use an other source,
                                      generally the XML dir.
+            --no-mvn-repo-write      // TODO flag if we write ????
+            --no-mvn-repo-read       // TODO flag ?? -> we would raise NotImplementedException
             -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
             -v VALUE                 The value to use
             -property PROPERTY       Define the property to work on
             --read-from-xml FILE     Read the document from the given file
             --write-to-xml FILE      Write the document to the given file
             --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
-            --write-to-mvn-repository DIR   Same as --write-to-xml but for a maven repository
-            --sync-data-source DIR   Path to the maven repository
-            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
-            -n, --new                Allow creation of a document using --edit-content (and no input file given)
+            --cli-dir DIR            // TODO
+            --mvn-repo  DIR          Same as --write-to-xml but for a maven repository // TODO
             --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
             --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
             --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
+            -n, --new                Allow creation of a document using --edit-content (and no input file given)
             --ext EXT                Use this as a file extension when editing a file
-
+        
         Authentication:
             --user USENAME
                 The XWiki username to use.
@@ -869,7 +874,7 @@ public class Command
         LOGGER.info("Title:         {}", title);
         LOGGER.info("Accept New:    {}", acceptNewDocument);
         LOGGER.info("Mount Path:      {}", mountPath);
-        LOGGER.info("Sync Path:       {}", syncPath);
+        LOGGER.info("Sync Path:       {}", cliDir);
         LOGGER.info("Sync data source:{}", syncDataSource);
         LOGGER.info("Used Doc URL:  {}", getDocURL());
         LOGGER.info("Log level:         {}",
