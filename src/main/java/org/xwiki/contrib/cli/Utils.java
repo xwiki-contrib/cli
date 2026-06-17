@@ -21,8 +21,8 @@
 package org.xwiki.contrib.cli;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.net.URI;
@@ -308,6 +308,25 @@ public final class Utils
             .uri(URI.create(url))
             .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
             .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /**
+     * Perform a POST request.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
+     * @param url the URL to use.
+     * @param content the content to set.
+     * @param mimetype the mimetype of the content to set. null to use the default "text/plain; charset=utf8".
+     * @return the HTTP reponse.
+     */
+    public static HttpResponse<InputStream> httpPostStream(Command cmd, String url, String content, String mimetype)
+        throws DocException
+    {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
+            .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofInputStream());
     }
 
     public static String getUrlAction(Command cmd)
@@ -626,8 +645,13 @@ public final class Utils
 
     public static List<Path> listAllPagesMvnRepos(Command cmd) throws IOException
     {
-        var xmlFileDirPath = Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
+        var xmlFileDirPath = getMvnReposRessourcePath(cmd);
         return listSubDir(xmlFileDirPath);
+    }
+
+    public static Path getMvnReposRessourcePath(Command cmd)
+    {
+        return Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
     }
 
     private static List<Path> listSubDir(Path dir) throws IOException
@@ -649,22 +673,32 @@ public final class Utils
         return res;
     }
 
-    public static Map<String, String> getXarOfPages(List<String> references, Command command) throws DocException, IOException
+    public static Map<String, String> getXarOfPages(List<String> references, Command command)
+        throws DocException, IOException
     {
         var csrf = Utils.getCSRF(command);
         var xarPath = Utils.getUrlAction(command) + "export/cli-export?format=xar";
         var contentToSend = new StringBuilder("form_token=" + csrf);
         for (var r : references) {
-            contentToSend.append("&page=").append(URLEncoder.encode(r, StandardCharsets.UTF_8));
+            contentToSend.append("&pages=").append(URLEncoder.encode(r, StandardCharsets.UTF_8));
         }
-        var response = Utils.httpPost(command, xarPath, contentToSend.toString(), "application/x-www-form-urlencoded");
+        var response =
+            Utils.httpPostStream(command, xarPath, contentToSend.toString(), "application/x-www-form-urlencoded");
+        if (response.statusCode() != 200) {
+            throw new IOException(
+                "Invalid response from XWiki to retrieve XAR. Return code : " + response.statusCode());
+        }
 
-        var zipStream = new ZipInputStream(new ByteArrayInputStream(response.body().getBytes(StandardCharsets.UTF_8)));
+        var zipStream = new ZipInputStream(response.body());
         var result = new HashMap<String, String>();
         ZipEntry entry;
         byte[] buffer = new byte[1024];
         while ((entry = zipStream.getNextEntry()) != null) {
             if (entry.isDirectory()) {
+                continue;
+            }
+            if (entry.getName().equals("package.xml")) {
+                // Ignore package.xml which is not a page
                 continue;
             }
             ArrayList<Byte> bytes = new ArrayList<>(1024);

@@ -45,7 +45,7 @@ public class PageSync
             logger.error("Can't extract page " + cmd.pullReference());
             return;
         }
-        var targetFile = Path.of(extractedPage.get().getKey());
+        var targetFile = Path.of(Utils.getMvnReposRessourcePath(cmd).toString(), extractedPage.get().getKey());
         Files.writeString(targetFile, extractedPage.get().getValue());
     }
 
@@ -91,6 +91,7 @@ public class PageSync
             var content = source.getAttachment(a.name());
             target.setAttachment(a.name(), content);
         }
+        target.save();
     }
 
     private ArrayList<String> getAllPagesRefencesMvnRepo() throws IOException, DocException

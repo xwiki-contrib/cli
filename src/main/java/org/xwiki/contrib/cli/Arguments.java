@@ -20,18 +20,18 @@
 
 package org.xwiki.contrib.cli;
 
-import ch.qos.logback.classic.Level;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Pattern;
+
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import ch.qos.logback.classic.Level;
 
 public class Arguments
 {
@@ -41,7 +41,6 @@ public class Arguments
     {
         // Nothing to do
     }
-
 
     static void parseArgs(String[] args, Command cmd) throws CommandException
     {
@@ -173,11 +172,16 @@ public class Arguments
             cmd.setAction(Command.Action.HELP);
         }
 
-        if (cmd.action() == Command.Action.SYNC) {
-            if (cmd.noMvnRepoRead()) {
-                throw new CommandException(
-                    "Not implemented yet. The only supported initial source for sync is the maven repos.");
-            }
+        if (cmd.action() == Command.Action.SYNC && cmd.noMvnRepoRead()) {
+            throw new CommandException(
+                "Not implemented yet. The only supported initial source for sync is the maven repos.");
+        }
+        if (cmd.action() == Command.Action.SYNC
+            || cmd.action() == Command.Action.PUSH_ALL_PAGES
+            || cmd.action() == Command.Action.PULL_ALL_PAGES
+            || cmd.action() == Command.Action.PUSH_PAGE
+            || cmd.action() == Command.Action.PULL_PAGE)
+        {
             if (StringUtils.isEmpty(cmd.mvnRepo())) {
                 throw new CommandException("No maven repo specified.");
             }

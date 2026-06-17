@@ -104,13 +104,9 @@ class XWikiDirAutoSync
 
     private static final String PATH_JAVA = "java";
 
-    private static final String PATH_RESOURCES = "resources";
-
     private static final String EXTENSION_XWIKI = "xwiki";
 
     private final Logger logger = LoggerFactory.getLogger(XWikiDirAutoSync.class);
-
-    private final Path xmlFileDirPath;
 
     private final Command command;
 
@@ -127,7 +123,6 @@ class XWikiDirAutoSync
     XWikiDirAutoSync(Command cmd)
     {
         command = cmd;
-        xmlFileDirPath = Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
         syncPath = Path.of(cmd.cliDir());
         mavenSyncPath = Path.of(cmd.cliDir(), "maven");
     }
