@@ -128,8 +128,8 @@ class XWikiDirSync
     {
         command = cmd;
         xmlFileDirPath = Path.of(cmd.syncDataSource(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
-        syncPath = Path.of(cmd.syncPath());
-        mavenSyncPath = Path.of(cmd.syncPath(), "maven");
+        syncPath = Path.of(cmd.cliDir());
+        mavenSyncPath = Path.of(cmd.cliDir(), "maven");
     }
 
     public void monitor() throws IOException, DocException, ComponentLookupException, ParseException

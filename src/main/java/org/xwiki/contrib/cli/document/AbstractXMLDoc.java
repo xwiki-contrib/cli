@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.Node;
@@ -316,7 +317,7 @@ abstract class AbstractXMLDoc
         }
 
         var className = classNameElement.getText();
-        if (Utils.isEmpty(className)) {
+        if (StringUtils.isEmpty(className)) {
             return Optional.empty();
         }
         var numberElement = getElement(object, NODE_NAME_NUMBER);
@@ -325,7 +326,7 @@ abstract class AbstractXMLDoc
         }
 
         var number = numberElement.getText();
-        if (Utils.isEmpty(number)) {
+        if (StringUtils.isEmpty(number)) {
             return Optional.empty();
         }
 

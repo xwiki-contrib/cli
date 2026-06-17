@@ -23,6 +23,7 @@ package org.xwiki.contrib.cli;
 import java.nio.file.Path;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.document.MultipleDoc;
@@ -195,13 +196,13 @@ public class Command
                     throw new MessageForUserDocException("This property does not exist");
                 }
                 var oClass = cmd.objectClass;
-                if (Utils.isEmpty(oClass)) {
+                if (StringUtils.isEmpty(oClass)) {
                     oClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
                         .stream().findFirst().get()
                         .objectClass();
                 }
 
-                String ext = Utils.present(cmd.fileExtension)
+                String ext = StringUtils.isNotEmpty(cmd.fileExtension)
                     ? '.' + cmd.fileExtension
                     : cmd.getFileExtension(oClass, cmd.property);
                 var editing = new Editing();

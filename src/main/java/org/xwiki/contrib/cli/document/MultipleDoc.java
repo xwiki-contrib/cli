@@ -28,10 +28,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Scanner;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.cli.CancelledOperationDocException;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
-import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
@@ -67,23 +67,23 @@ public class MultipleDoc implements InputOutputDoc
 
         inputDocs.add(new CommandDoc(cmd));
 
-        if (Utils.present(cmd.inputFile())) {
+        if (StringUtils.isNotEmpty(cmd.inputFile())) {
             inputDocs.add(new XMLFileDoc(cmd, cmd.inputFile()));
         }
 
-        if (Utils.present(cmd.outputFile())) {
+        if (StringUtils.isNotEmpty(cmd.outputFile())) {
             outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile()));
         }
 
-        if (Utils.present(cmd.xmlReadDir())) {
+        if (StringUtils.isNotEmpty(cmd.xmlReadDir())) {
             inputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlReadDir(), wiki, page));
         }
 
-        if (Utils.present(cmd.xmlWriteDir())) {
+        if (StringUtils.isNotEmpty(cmd.xmlWriteDir())) {
             outputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlWriteDir(), wiki, page));
         }
 
-        if (Utils.present(cmd.url())) {
+        if (StringUtils.isNotEmpty(cmd.url())) {
             if (!cmd.wikiWriteonly()) {
                 inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
             }

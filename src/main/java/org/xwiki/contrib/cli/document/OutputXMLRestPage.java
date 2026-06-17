@@ -25,6 +25,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.MessageForUserDocException;
@@ -68,7 +69,7 @@ class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         ObjectInfo objectSpec;
-        if (Utils.isEmpty(objectClass) || Utils.isEmpty(objectNumber)) {
+        if (StringUtils.isEmpty(objectClass) || StringUtils.isEmpty(objectNumber)) {
             objectSpec = getInputPage()
                 .getObjectSpec(objectClass, objectNumber, property)
                 .orElseThrow(() -> new DocException(String.format("Can't find object of class %s number %s",

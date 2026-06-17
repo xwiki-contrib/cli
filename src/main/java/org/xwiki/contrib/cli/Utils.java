@@ -39,6 +39,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Namespace;
@@ -236,17 +237,6 @@ public final class Utils
         }
         var page = currentSpace.toString();
         return new PageReference(spaces, page);
-    }
-
-    /**
-     * Test if the string value is present.
-     *
-     * @param param the value to check
-     * @return if the param is not null and is not empty
-     */
-    public static boolean present(String param)
-    {
-        return param != null && !param.isEmpty();
     }
 
     /**
@@ -472,7 +462,7 @@ public final class Utils
     public static String getDocRestURLFromCommand(Command cmd, String wikiParam, String page, boolean withObjects)
         throws DocException
     {
-        var wiki = (wikiParam == null || wikiParam.isEmpty()) ? XWIKI : wikiParam;
+        var wiki = StringUtils.isEmpty(wikiParam) ? XWIKI : wikiParam;
         if (page == null) {
             throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
@@ -495,7 +485,7 @@ public final class Utils
         String attachmentName)
         throws MessageForUserDocException
     {
-        var wiki = (wikiParam == null || wikiParam.isEmpty()) ? XWIKI : wikiParam;
+        var wiki = StringUtils.isEmpty(wikiParam) ? XWIKI : wikiParam;
 
         if (page == null) {
             throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
@@ -505,15 +495,6 @@ public final class Utils
             + REST_URL_PREFIX + wiki
             + fromReferenceToRestPath(page)
             + "/attachments/" + attachmentName;
-    }
-
-    /**
-     * @param v the value to test.
-     * @return the given value is null or empty.
-     */
-    public static boolean isEmpty(String v)
-    {
-        return v == null || v.isEmpty();
     }
 
     /**
@@ -635,10 +616,12 @@ public final class Utils
             builder.header(header.getKey(), header.getValue());
         }
 
-        if (present(cmd.user()) && present(cmd.pass())) {
-            builder.header("Authorization",
-                "Basic " + Base64.getEncoder().encodeToString((cmd.user() + ":" + cmd.pass()).getBytes())
-            );
+        if (StringUtils.isNotEmpty(cmd.user())) {
+            if (StringUtils.isNotEmpty(cmd.pass())) {
+                builder.header("Authorization",
+                    "Basic " + Base64.getEncoder().encodeToString((cmd.user() + ":" + cmd.pass()).getBytes())
+                );
+            }
         }
         return builder;
     }

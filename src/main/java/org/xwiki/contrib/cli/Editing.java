@@ -34,6 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.component.embed.EmbeddableComponentManager;
@@ -77,7 +78,7 @@ final class Editing
         var filename = file.getAbsolutePath();
         var editor = getEditor(cmd);
 
-        if (Utils.isEmpty(editor)) {
+        if (StringUtils.isEmpty(editor)) {
             logger.error("Please select an editor with --editor or set an EDITOR environment variable");
             return;
         }
@@ -126,7 +127,7 @@ final class Editing
     public static String getEditor(Command cmd)
     {
         var editor = "";
-        if (!Utils.isEmpty(cmd.editor())) {
+        if (!StringUtils.isEmpty(cmd.editor())) {
             editor = cmd.editor();
         } else {
             try {
