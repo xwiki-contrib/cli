@@ -296,6 +296,11 @@ public final class Utils
             .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
     }
 
+    public static String getUrlAction(Command cmd)
+    {
+        return (StringUtils.isEmpty(cmd.wiki()) ? (cmd.url() + "/bin") : (cmd.url() + "/wiki/" + cmd.wiki())) + '/';
+    }
+
     /**
      * Get CSRF token from XWiki.
      *
@@ -328,7 +333,7 @@ public final class Utils
                 .lines().collect(Collectors.joining("\n"));
         var contentToSend = "form_token=" + csrf + "&content=" + URLEncoder.encode(content);
         var response = Utils.httpPost(command,
-            command.url() + "/bin/preview/xwiki-cli/script?xpage=plain&outputSyntax=plain", contentToSend,
+            getUrlAction(command) + "xwiki-cli/script?xpage=plain&outputSyntax=plain", contentToSend,
             "application/x-www-form-urlencoded");
         return response.body();
     }

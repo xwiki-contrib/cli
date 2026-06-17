@@ -46,7 +46,7 @@ import static java.nio.file.StandardWatchEventKinds.OVERFLOW;
 import static org.xwiki.contrib.cli.Utils.LANG_GROOVY;
 import static org.xwiki.contrib.cli.Utils.LANG_VELOCITY_EXTENSION;
 
-class XWikiDirSync
+class XWikiDirAutoSync
 {
     public static final String SEMI_COLUMN = ":";
 
@@ -108,7 +108,7 @@ class XWikiDirSync
 
     private static final String EXTENSION_XWIKI = "xwiki";
 
-    private final Logger logger = LoggerFactory.getLogger(XWikiDirSync.class);
+    private final Logger logger = LoggerFactory.getLogger(XWikiDirAutoSync.class);
 
     private final Path xmlFileDirPath;
 
@@ -124,7 +124,7 @@ class XWikiDirSync
 
     private final Editing editing = new Editing();
 
-    XWikiDirSync(Command cmd)
+    XWikiDirAutoSync(Command cmd)
     {
         command = cmd;
         xmlFileDirPath = Path.of(cmd.syncDataSource(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);

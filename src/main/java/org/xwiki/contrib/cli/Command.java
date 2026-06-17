@@ -20,7 +20,10 @@
 
 package org.xwiki.contrib.cli;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -51,7 +54,7 @@ public class Command
 
     private static final String HELP_TEXT = """
         xwiki-cli JAVA
-
+        
         Actions:
             -h, --help               Show the help
             -c, --configuration PATH  Read this configuration file. One --parameter value pair or item per line.
@@ -138,7 +141,6 @@ public class Command
                 });
             }
         },
-
         EDIT_MACRO {
             @Override
             void run(Command cmd) throws Exception
@@ -165,7 +167,6 @@ public class Command
                 });
             }
         },
-
         EDIT_PAGE {
             @Override
             void run(Command cmd) throws Exception
@@ -323,7 +324,7 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                XWikiDirSync ds = new XWikiDirSync(cmd);
+                XWikiDirAutoSync ds = new XWikiDirAutoSync(cmd);
                 try {
                     ds.doFirstSync();
                     ds.monitor();
@@ -333,6 +334,29 @@ public class Command
                     // TODO
                 }
             }
+        },
+        PULL_PAGE {
+            @Override
+            void run(Command cmd) throws DocException, IOException
+            {
+                var xarManager = new XARManager(cmd);
+                var extractedPage = xarManager.getXarOfPages(List.of(cmd.pullPageRef)).entrySet().stream().findFirst();
+                if (extractedPage.isEmpty()) {
+                    err.println("Can't extract page " + cmd.pullPageRef);
+                    return;
+                }
+                var targetFile = Path.of(cmd.xmlWriteDir);
+                Files.writeString(targetFile, extractedPage.get().getValue());
+            }
+        },
+        PUSH_PAGE {
+            // TODO
+        },
+        PULL_ALL_PAGES {
+            // TODO
+        },
+        PUSH_ALL_PAGES {
+            // TODO
         },
         LIST_ATTACHMENTS {
             @Override
