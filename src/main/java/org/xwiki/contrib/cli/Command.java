@@ -21,7 +21,6 @@
 package org.xwiki.contrib.cli;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -45,80 +44,85 @@ import static org.xwiki.contrib.cli.Arguments.parseArgs;
 public class Command
 {
     private static final String LINE = "\n\u001B[32m-----\u001B[0m";
+
     private static final String EDIT_PREFIX_CONTENT = "content-";
+
     private static final String OBJECT_PROPERTY_NAME_CODE = "code";
+
     private static final String XWIKI_FILE_EXTENSION = ".xwiki";
+
     private static final String ERROR_COULD_NOT_SAVE_DOCUMENT = "Could not save document";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Command.class);
 
     private static final String HELP_TEXT = """
         xwiki-cli JAVA
-        
+
         Actions:
             -h, --help               Show the help
-            -c, --configuration PATH  Read this configuration file. One --parameter value pair or item per line.
-                                      This overwrites previously passed parameters and is overwritten by following
-                                      parameters
+            -c, --configuration <PATH> Read this configuration file. One --parameter value pair or item per line.
+                                    This overwrites previously passed parameters and is overwritten by following
+                                    parameters
             --edit-page              Edit a complete XWiki document
             --get-content            Get the content of a XWiki document
-            --set-content CONTENT    Set the content of a XWiki document
+            --set-content <CONTENT>  Set the content of a XWiki document
             --edit-content           Edit the content of a XWiki document with a text editor
-            --edit-macro NAME[/NUMBER] Edit a macro in the content of a XWiki document or a property value
-                                     with a text editor, where NUMBER is the nth macro with this name (0-indexed).
-                                     If NUMBER is not given, 0 (the first macro) is assumed.
+            --edit-macro <NAME[/NUMBER]> Edit a macro in the content of a XWiki document or a property value
+                                    with a text editor, where NUMBER is the nth macro with this name (0-indexed).
+                                    If NUMBER is not given, 0 (the first macro) is assumed.
             --get-title              Get the title of a XWiki document
-            --set-title TITLE        Set the title of a XWiki document
+            --set-title <TITLE>       Set the title of a XWiki document
             --list-properties        List the document's properties,
-                                     optionally from the given object
+                                    optionally from the given object
             --list-objects           List the document's objects,
-                                     optionally from the given class
-            --edit-property PROPERTY Edit the content of a given property with a text editor
-            --get-property PROPERTY  Get the value of the given property,
-                                     optionally from the given object
-            --set-property PROPERTY  Set the value of the given property,
-                                     optionally from the given object (see -v to give a value)
-            --mount PATH             Mount a FUSE filesystem with the wiki contents at PATH
-            --sync-daemon            Sync data to PATH with content from maven repository. // TODO
-            --push-page              Push a page from the maven repository to a XWiki instance
-            --pull-page              Pull a page from a XWiki instance to the maven repository
+                                    optionally from the given class
+            --get-property <PROPERTY>  Get the value of the given property,
+                                    optionally from the given object
+            --set-property <PROPERTY> Set the value of the given property,
+                                    optionally from the given object (see -v to give a value)
+            --edit-property <PROPERTY> Edit the content of a given property with a text editor
+            --list-attachments       List attachments of a given XWiki document
+            --mount <PATH>           Mount a FUSE filesystem with the wiki contents at PATH
+            --sync-daemon            Run a sync daemon which will sync the Cli-dir to the XWiki instance and to the maven repository
+            --push-page <REFERENCE>  Push a page from the maven repository to a XWiki instance
+            --pull-page <REFERENCE>  Pull a page from a XWiki instance to the maven repository
             --push-all-pages         Push all page which are into the maven repository to a XWiki instance
             --pull-all-pages         Pull all pages, which are already into the the maven repository, from a XWiki instance to the maven repository
 
-        Parameters:
+        General Parameters:
             --loglevel               Define the log level. Default warn.
             --print-xml              Print received XML code (for debugging)
-            --editor EDITOR          Use this editor (necessary if environment variable EDITOR is not set)
-            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
-            -p PAGE                  Specify the page (dotted notation)
-            -u, --url URL            Specify the page's URL
-            -w WIKI                  Specify the wiki
-            --no-read-wiki           Don't write on the wiki // TODO
-            --no-write-wiki          Don't read from the wiki // TODO
-                                     Note that in this case you need to use an other source,
-                                     generally the XML dir.
-            --no-mvn-repo-write      // TODO flag if we write ????
-            --no-mvn-repo-read       // TODO flag ?? -> we would raise NotImplementedException
-            -o CLASS[/NUMBER]        Specify the class and optionally the number of the object to consider
-            -v VALUE                 The value to use
-            -property PROPERTY       Define the property to work on
-            --read-from-xml FILE     Read the document from the given file
-            --write-to-xml FILE      Write the document to the given file
-            --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
-            --cli-dir DIR            // TODO
-            --mvn-repo  DIR          Same as --write-to-xml but for a maven repository // TODO
-            --read-from-xml-dir DIR  Same as --read-from-xml but for a full wiki directory
-            --write-to-xml-dir DIR   Same as --write-to-xml but for a full wiki directory
-            --xml-dir DIR            Same as --read-from-xml-dir DIR --write-to-xml-dir DIR
+
             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
+            -u, --url <URL>          Specify the page's URL
+            -w <WIKI>                Specify the wiki
+
+        Parameters for single field or page edition:
+            --editor <EDITOR>        Use this editor (necessary if environment variable EDITOR is not set)
+            -p <PAGE>                Specify the page (dotted notation)
+            -o <CLASS[/NUMBER]>      Specify the class and optionally the number of the object to consider
+            -v <VALUE>               The value to use
+            -property <PROPERTY>     Define the property to work on
+            --read-from-xml <FILE>   Read the document from the given file
+            --write-to-xml <FILE>    Write the document to the given file
+            --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
             -n, --new                Allow creation of a document using --edit-content (and no input file given)
-            --ext EXT                Use this as a file extension when editing a file
-        
+            --ext <EXT>              Use this as a file extension when editing a file
+
+        Parameters for sync:
+            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
+
+            --no-read-wiki           Don't write on the wiki instance
+            --no-write-wiki          Don't read from the wiki instance
+            --no-mvn-repo-write      Don't write on the maven repository
+            --no-mvn-repo-read       Don't read from the maven repository
+
+            --cli-dir <DIR>          Directory which will have the XFF tree and the auto created maven project
+            --mvn-repo  <DIR>        Path to the maven repository
+
         Authentication:
-            --user USENAME
-                The XWiki username to use.
-            --pass PASS
-                The XWiki user’s password.
+            --user <USERNAME>        The XWiki username to use.
+            --pass <PASS>            The XWiki user’s password.
         """.trim();
 
     enum Action
@@ -339,24 +343,33 @@ public class Command
             @Override
             void run(Command cmd) throws DocException, IOException
             {
-                var xarManager = new XARManager(cmd);
-                var extractedPage = xarManager.getXarOfPages(List.of(cmd.pullPageRef)).entrySet().stream().findFirst();
-                if (extractedPage.isEmpty()) {
-                    err.println("Can't extract page " + cmd.pullPageRef);
-                    return;
-                }
-                var targetFile = Path.of(cmd.xmlWriteDir);
-                Files.writeString(targetFile, extractedPage.get().getValue());
+                var pageSync = new PageSync(cmd);
+                pageSync.pullPage();
             }
         },
         PUSH_PAGE {
-            // TODO
+            @Override
+            void run(Command cmd) throws DocException, IOException
+            {
+                var pageSync = new PageSync(cmd);
+                pageSync.pushPage();
+            }
         },
         PULL_ALL_PAGES {
-            // TODO
+            @Override
+            void run(Command cmd) throws DocException, IOException
+            {
+                var pageSync = new PageSync(cmd);
+                pageSync.pullPages();
+            }
         },
         PUSH_ALL_PAGES {
-            // TODO
+            @Override
+            void run(Command cmd) throws DocException, IOException
+            {
+                var pageSync = new PageSync(cmd);
+                pageSync.pushPages();
+            }
         },
         LIST_ATTACHMENTS {
             @Override
@@ -383,34 +396,66 @@ public class Command
     }
 
     private Action action;
-    private String wiki;
-    private String page;
-    private String macro;
-    private String objectClass;
-    private String objectNumber;
-    private String property;
-    private String value;
-    private String editor;
-    private boolean wikiReadonly;
-    private boolean wikiWriteonly;
-    private String outputFile;
-    private String inputFile;
-    private String xmlReadDir;
-    private String xmlWriteDir;
-    private Map<String, String> headers;
-    private String url;
-    private String user;
-    private String pass;
-    private String content;
+
     private String title;
+
+    private String macro;
+
     private String mountPath;
-    private String syncPath;
-    private String syncDataSource;
+
+    private String pushReference;
+
+    private String pullReference;
+
+    private String logLevel;
+
     private boolean printXML;
-    private String fileExtension;
-    private boolean debug;
-    private boolean pom;
+
+    private Map<String, String> headers;
+
+    private String url;
+
+    private String wiki;
+
+    private String editor;
+
+    private String page;
+
+    private String objectClass;
+
+    private String objectNumber;
+
+    private String value;
+
+    private String property;
+
+    private String outputFile;
+
+    private String inputFile;
+
+    private String content;
+
     private boolean acceptNewDocument;
+
+    private String fileExtension;
+
+    private boolean pom;
+
+    private boolean noMvnRepoWrite;
+
+    private boolean noMvnRepoRead;
+
+    private boolean noReadWiki;
+
+    private boolean noWriteWiki;
+
+    private String cliDir;
+
+    private String mvnRepo;
+
+    private String user;
+
+    private String pass;
 
     /**
      * {@return the log level}
@@ -427,8 +472,6 @@ public class Command
     {
         this.logLevel = logLevel;
     }
-
-    private String logLevel;
 
     /**
      * {@return the wiki ID}
@@ -575,38 +618,6 @@ public class Command
     }
 
     /**
-     * {@return only read on the wiki, all change won't take effect on the wiki.}
-     */
-    public boolean wikiReadonly()
-    {
-        return wikiReadonly;
-    }
-
-    /**
-     * @param wikiReadonly only read on the wiki, all change won't take effect on the wiki.
-     */
-    public void setWikiReadonly(boolean wikiReadonly)
-    {
-        this.wikiReadonly = wikiReadonly;
-    }
-
-    /**
-     * {@return only write on the wiki, so the source should come from somewhere else}.
-     */
-    public boolean wikiWriteonly()
-    {
-        return wikiWriteonly;
-    }
-
-    /**
-     * @param wikiWriteonly only write on the wiki, so the source should come from somewhere else.
-     */
-    public void setWikiWriteonly(boolean wikiWriteonly)
-    {
-        this.wikiWriteonly = wikiWriteonly;
-    }
-
-    /**
      * {@return outputFile the XML file to write.}
      */
     public String outputFile()
@@ -636,38 +647,6 @@ public class Command
     public void setInputFile(String inputFile)
     {
         this.inputFile = inputFile;
-    }
-
-    /**
-     * {@return Same as outputFile but for a full wiki directory.}
-     */
-    public String xmlReadDir()
-    {
-        return xmlReadDir;
-    }
-
-    /**
-     * @param xmlReadDir Same as outputFile but for a full wiki directory.
-     */
-    public void setXmlReadDir(String xmlReadDir)
-    {
-        this.xmlReadDir = xmlReadDir;
-    }
-
-    /**
-     * {@return Same as inputFile but for a full wiki directory.}
-     */
-    public String xmlWriteDir()
-    {
-        return xmlWriteDir;
-    }
-
-    /**
-     * @param xmlWriteDir Same as inputFile but for a full wiki directory.
-     */
-    public void setXmlWriteDir(String xmlWriteDir)
-    {
-        this.xmlWriteDir = xmlWriteDir;
     }
 
     /**
@@ -783,38 +762,6 @@ public class Command
     }
 
     /**
-     * {@return syncPath target directory to sync all files.}
-     */
-    public String syncPath()
-    {
-        return syncPath;
-    }
-
-    /**
-     * @param syncPath target directory to sync all files.
-     */
-    public void setSyncPath(String syncPath)
-    {
-        this.syncPath = syncPath;
-    }
-
-    /**
-     * {@return source directory to ready all data for sync.}
-     */
-    public String syncDataSource()
-    {
-        return syncDataSource;
-    }
-
-    /**
-     * @param syncDataSource source directory to ready all data for sync.
-     */
-    public void setSyncDataSource(String syncDataSource)
-    {
-        this.syncDataSource = syncDataSource;
-    }
-
-    /**
      * {@return mostly used for debug, show the full XML when we parse the XML file.}
      */
     public boolean printXML()
@@ -878,30 +825,107 @@ public class Command
         this.acceptNewDocument = acceptNewDocument;
     }
 
+    public String pushReference()
+    {
+        return pushReference;
+    }
+
+    public void setPushReference(String pushReference)
+    {
+        this.pushReference = pushReference;
+    }
+
+    public String pullReference()
+    {
+        return pullReference;
+    }
+
+    public void setPullReference(String pullReference)
+    {
+        this.pullReference = pullReference;
+    }
+
+    public boolean noMvnRepoWrite()
+    {
+        return noMvnRepoWrite;
+    }
+
+    public void setNoMvnRepoWrite(boolean noMvnRepoWrite)
+    {
+        this.noMvnRepoWrite = noMvnRepoWrite;
+    }
+
+    public boolean noMvnRepoRead()
+    {
+        return noMvnRepoRead;
+    }
+
+    public void setNoMvnRepoRead(boolean noMvnRepoRead)
+    {
+        this.noMvnRepoRead = noMvnRepoRead;
+    }
+
+    public boolean noReadWiki()
+    {
+        return noReadWiki;
+    }
+
+    public void setNoReadWiki(boolean noReadWiki)
+    {
+        this.noReadWiki = noReadWiki;
+    }
+
+    public boolean noWriteWiki()
+    {
+        return noWriteWiki;
+    }
+
+    public void setNoWriteWiki(boolean noWriteWiki)
+    {
+        this.noWriteWiki = noWriteWiki;
+    }
+
+    public String cliDir()
+    {
+        return cliDir;
+    }
+
+    public void setCliDir(String cliDir)
+    {
+        this.cliDir = cliDir;
+    }
+
+    public String mvnRepo()
+    {
+        return mvnRepo;
+    }
+
+    public void setMvnRepo(String mvnRepo)
+    {
+        this.mvnRepo = mvnRepo;
+    }
+
     void print()
     {
+        // TODO log all parameters ??
         LOGGER.info("Action:        {}", action);
         LOGGER.info("Wiki:          {}", wiki);
         LOGGER.info("Page:          {}", page);
         LOGGER.info("Object Class:  {}", objectClass);
         LOGGER.info("Object Number: {}", objectNumber);
         LOGGER.info("Property:      {}", property);
-        LOGGER.info("Wiki readonly: {}", wikiReadonly);
-        LOGGER.info("Wiki writeonly:{}", wikiWriteonly);
         LOGGER.info("Input file:    {}", inputFile);
         LOGGER.info("Output file:   {}", outputFile);
-        LOGGER.info("XML write dir: {}", xmlWriteDir);
         LOGGER.info("URL:           {}", url);
         LOGGER.info("User:          {}", user);
         LOGGER.info("Pass:          {}", given(pass));
         LOGGER.info("Content:       {}", given(content));
         LOGGER.info("Title:         {}", title);
         LOGGER.info("Accept New:    {}", acceptNewDocument);
-        LOGGER.info("Mount Path:      {}", mountPath);
-        LOGGER.info("Sync Path:       {}", cliDir);
-        LOGGER.info("Sync data source:{}", syncDataSource);
+        LOGGER.info("Mount Path:    {}", mountPath);
+        LOGGER.info("Sync Path:     {}", cliDir);
         LOGGER.info("Used Doc URL:  {}", getDocURL());
-        LOGGER.info("Log level:         {}",
+        LOGGER.info("Log level:     {}",
             ((ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory())
                 .getLogger(Logger.ROOT_LOGGER_NAME).getLevel());
         LOGGER.info("printXML:   {}", printXML);

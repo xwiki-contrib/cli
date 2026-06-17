@@ -75,19 +75,20 @@ public class MultipleDoc implements InputOutputDoc
             outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile()));
         }
 
-        if (StringUtils.isNotEmpty(cmd.xmlReadDir())) {
-            inputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlReadDir(), wiki, page));
-        }
-
-        if (StringUtils.isNotEmpty(cmd.xmlWriteDir())) {
-            outputDocs.add(new MvnRepoFileDoc(cmd, cmd.xmlWriteDir(), wiki, page));
+        if (StringUtils.isNotEmpty(cmd.mvnRepo())) {
+            if (!cmd.noMvnRepoRead()) {
+                inputDocs.add(new MvnRepoFileDoc(cmd, cmd.mvnRepo(), wiki, page));
+            }
+            if (!cmd.noMvnRepoWrite()) {
+                outputDocs.add(new MvnRepoFileDoc(cmd, cmd.mvnRepo(), wiki, page));
+            }
         }
 
         if (StringUtils.isNotEmpty(cmd.url())) {
-            if (!cmd.wikiWriteonly()) {
+            if (!cmd.noReadWiki()) {
                 inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
             }
-            if (!cmd.wikiReadonly()) {
+            if (!cmd.noWriteWiki()) {
                 outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
             }
         }

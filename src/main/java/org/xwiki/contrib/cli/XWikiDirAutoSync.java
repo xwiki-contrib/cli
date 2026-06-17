@@ -127,7 +127,7 @@ class XWikiDirAutoSync
     XWikiDirAutoSync(Command cmd)
     {
         command = cmd;
-        xmlFileDirPath = Path.of(cmd.syncDataSource(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
+        xmlFileDirPath = Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
         syncPath = Path.of(cmd.cliDir());
         mavenSyncPath = Path.of(cmd.cliDir(), "maven");
     }
@@ -210,7 +210,7 @@ class XWikiDirAutoSync
         Files.createDirectories(mavenSyncPath);
 
         // Create POM file
-        var sourceProjectPomPath = Path.of(command.syncDataSource(), POM_XML);
+        var sourceProjectPomPath = Path.of(command.mvnRepo(), POM_XML);
         var xmlFile = Path.of(mavenSyncPath.toString(), POM_XML);
         Files.copy(sourceProjectPomPath, xmlFile, StandardCopyOption.REPLACE_EXISTING);
 
