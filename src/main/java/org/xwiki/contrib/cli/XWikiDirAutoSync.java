@@ -139,7 +139,7 @@ class XWikiDirAutoSync
             return;
         }
 
-        logger.info("Ready!");
+        logger.info("Ready! Press CTRL+C to interrupt.");
 
         while (true) {
             // wait for key to be signaled
