@@ -219,15 +219,16 @@ public class Command
 
             private void askSyncDirectory(Console console, Command cmd)
             {
+                String userHome = System.getProperty("user.home");
                 String mvnRepo = cmd.mvnRepo();
                 File mvnRepoFile = new File(mvnRepo);
                 String mvnRepoName = mvnRepoFile.getName();
                 cmd.setCliDir(
                     getAnswerWithDefault(
                         console,
-                        "~/Work/XWiki/cli/" + mvnRepoName,
+                        userHome + "/Work/XWiki/cli/" + mvnRepoName,
                         "You will edit files in a 'sync' directory (following the XFF format).\n"
-                           + " Where do you want to work?"));
+                           + "Where do you want to work?"));
             }
 
             private String getAnswerWithDefault(Console console, String def, String msg)
