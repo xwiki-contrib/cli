@@ -33,6 +33,11 @@ import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.document.element.Property;
 
+/**
+ * A writable REST page.
+ *
+ * @version $Id$
+ */
 public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 {
     private static final String APPLICATION_XML_CHARSET_UTF_8 = "application/xml; charset=utf-8";
@@ -51,6 +56,14 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private InputXMLRestPage inputPage;
 
+    /**
+     * Constructor.
+     *
+     * @param cmd the command line called.
+     * @param wiki the wiki instance to use.
+     * @param page the page to use.
+     * @throws DocException if something when wrong while initializing this object.
+     */
     public OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);

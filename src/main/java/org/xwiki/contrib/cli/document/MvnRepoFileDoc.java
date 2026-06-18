@@ -13,6 +13,11 @@ import org.xwiki.contrib.cli.Utils;
  */
 public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
 {
+    /**
+     * @param cmd cmd the command line called.
+     * @param reference the reference of the page.
+     * @throws IOException if something when wrong while initializing this object.
+     */
     public MvnRepoFileDoc(Command cmd, String reference) throws IOException
     {
         super(cmd, Path.of(cmd.mvnRepo(), "src", "main", "resources",

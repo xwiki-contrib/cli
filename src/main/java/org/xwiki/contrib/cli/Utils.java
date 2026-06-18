@@ -329,6 +329,11 @@ public final class Utils
             .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofInputStream());
     }
 
+    /**
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
+     * @return the URL prefix for an action (view, get, edit, preview, ...) on the XWiki instance
+     */
     public static String getUrlAction(Command cmd)
     {
         return (StringUtils.isEmpty(cmd.wiki()) ? (cmd.url() + "/bin") : (cmd.url() + "/wiki/" + cmd.wiki())) + '/';
@@ -643,12 +648,22 @@ public final class Utils
         }
     }
 
+    /**
+     * @param cmd the Command to use.
+     * @return the list of all pages which is in the maven repository.
+     * @throws IOException if something when wrong while trying to list all files in the repository.
+     */
     public static List<Path> listAllPagesMvnRepos(Command cmd) throws IOException
     {
         var xmlFileDirPath = getMvnReposRessourcePath(cmd);
         return listSubDir(xmlFileDirPath);
     }
 
+    /**
+     * @param cmd the Command to use.
+     * @return get the path of the java resource directory of the maven repository. It's at this path where we will find
+     *     all XWiki pages of a XAR project.
+     */
     public static Path getMvnReposRessourcePath(Command cmd)
     {
         return Path.of(cmd.mvnRepo(), PATH_SRC, PATH_MAIN, PATH_RESOURCES);
@@ -673,6 +688,15 @@ public final class Utils
         return res;
     }
 
+    /**
+     * Export a XAR from a XWiki instance.
+     *
+     * @param references the list of the reference of the pages to extract.
+     * @param command the Command to use.
+     * @return a map with the key which is the path of the file and a string with the page content.
+     * @throws DocException if something went wrong with the XWiki instance.
+     * @throws IOException if something went wrong while extracting the XAR archive.
+     */
     public static Map<String, String> getXarOfPages(List<String> references, Command command)
         throws DocException, IOException
     {

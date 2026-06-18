@@ -14,7 +14,7 @@ import org.xwiki.contrib.cli.document.OutputDoc;
 import org.xwiki.contrib.cli.document.OutputXMLRestPage;
 import org.xwiki.contrib.cli.document.XMLFileDoc;
 
-public class PageSync
+class PageSync
 {
     private final Logger logger = LoggerFactory.getLogger(PageSync.class);
 

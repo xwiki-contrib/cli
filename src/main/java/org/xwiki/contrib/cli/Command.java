@@ -26,7 +26,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -40,6 +39,7 @@ import static java.lang.System.out;
 import static org.xwiki.contrib.cli.Arguments.endArgs;
 import static org.xwiki.contrib.cli.Arguments.parseArgs;
 import static org.xwiki.contrib.cli.Arguments.readConfigFile;
+
 
 /**
  * Represent a command run by a user with all parameter which can be passed.
@@ -90,16 +90,18 @@ public class Command
             --edit-property <PROPERTY> Edit the content of a given property with a text editor
             --list-attachments       List attachments of a given XWiki document
             --mount <PATH>           Mount a FUSE filesystem with the wiki contents at PATH
-            --sync-daemon            Run a sync daemon which will sync the Cli-dir to the XWiki instance and to the maven repository
+            --sync-daemon            Run a sync daemon which will sync the Cli-dir to the XWiki instance and to the
+                                     maven repository
             --push-page <REFERENCE>  Push a page from the maven repository to a XWiki instance
             --pull-page <REFERENCE>  Pull a page from a XWiki instance to the maven repository
             --push-all-pages         Push all page which are into the maven repository to a XWiki instance
-            --pull-all-pages         Pull all pages, which are already into the the maven repository, from a XWiki instance to the maven repository
-
+            --pull-all-pages         Pull all pages, which are already into the the maven repository, from a XWiki 
+                                     instance to the maven repository
+        
         General Parameters:
             --loglevel               Define the log level. Default warn.
             --print-xml              Print received XML code (for debugging)
-
+        
             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
             -u, --url <URL>          Specify the page's URL
             -w <WIKI>                Specify the wiki
@@ -961,7 +963,7 @@ public class Command
     }
 
     /**
-     * {@return give the possibility to add new document.}
+     * @return give the possibility to add new document.
      */
     public boolean acceptNewDocument()
     {
@@ -976,81 +978,131 @@ public class Command
         this.acceptNewDocument = acceptNewDocument;
     }
 
+    /**
+     * @return the document reference to push to the XWiki instance.
+     */
     public String pushReference()
     {
         return pushReference;
     }
 
+    /**
+     * @param pushReference the document reference to push to the XWiki instance.
+     */
     public void setPushReference(String pushReference)
     {
         this.pushReference = pushReference;
     }
 
+    /**
+     * @return the document reference to pull from the XWiki instance.
+     */
     public String pullReference()
     {
         return pullReference;
     }
 
+    /**
+     * @param pullReference the document reference to pull from the XWiki instance.
+     */
     public void setPullReference(String pullReference)
     {
         this.pullReference = pullReference;
     }
 
+    /**
+     * @return true, if we don't want to write into the maven repos.
+     */
     public boolean noMvnRepoWrite()
     {
         return noMvnRepoWrite;
     }
 
+    /**
+     * @param noMvnRepoWrite true, if we don't want to write into the maven repos.
+     */
     public void setNoMvnRepoWrite(boolean noMvnRepoWrite)
     {
         this.noMvnRepoWrite = noMvnRepoWrite;
     }
 
+    /**
+     * @return true, if we don't want to read from the maven repos.
+     */
     public boolean noMvnRepoRead()
     {
         return noMvnRepoRead;
     }
 
+    /**
+     * @param noMvnRepoRead true, if we don't want to read from the maven repos.
+     */
     public void setNoMvnRepoRead(boolean noMvnRepoRead)
     {
         this.noMvnRepoRead = noMvnRepoRead;
     }
 
+    /**
+     * @return true, if we don't want to read from the XWiki instance.
+     */
     public boolean noReadWiki()
     {
         return noReadWiki;
     }
 
+    /**
+     * @param noReadWiki true, if we don't want to read from the XWiki instance.
+     */
     public void setNoReadWiki(boolean noReadWiki)
     {
         this.noReadWiki = noReadWiki;
     }
 
+    /**
+     * @return true, if we don't want to write into the XWiki instance.
+     */
     public boolean noWriteWiki()
     {
         return noWriteWiki;
     }
 
+    /**
+     * @param noWriteWiki true, if we don't want to write into the XWiki instance.
+     */
     public void setNoWriteWiki(boolean noWriteWiki)
     {
         this.noWriteWiki = noWriteWiki;
     }
 
+    /**
+     * @return the directory where XWiki CLI will create a hierarchy which is easily editable.
+     */
     public String cliDir()
     {
         return cliDir;
     }
 
+    /**
+     * @param cliDir the directory where XWiki CLI will create a hierarchy which is easily editable.
+     */
     public void setCliDir(String cliDir)
     {
         this.cliDir = cliDir;
     }
 
+    /**
+     * @return the maven repository where there are the XAR project. It's generally a git repository, but it's not
+     *     mandatory.
+     */
     public String mvnRepo()
     {
         return mvnRepo;
     }
 
+    /**
+     * @param mvnRepo the maven repository where there are the XAR project. It's generally a git repository, but
+     *     it's not mandatory.
+     */
     public void setMvnRepo(String mvnRepo)
     {
         this.mvnRepo = mvnRepo;

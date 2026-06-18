@@ -33,7 +33,12 @@ import org.slf4j.LoggerFactory;
 
 import ch.qos.logback.classic.Level;
 
-public class Arguments
+/**
+ * Class dedicated to handle command arguments, parameter from config file and to check that everything is correct.
+ *
+ * @version $Id$
+ */
+public final class Arguments
 {
     private static final Pattern HEADER_SPLIT_PATTERN = Pattern.compile("\\s*:\\s*");
 
