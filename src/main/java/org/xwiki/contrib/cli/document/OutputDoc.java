@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli.document;
 
 import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
  * A writable document. Write only if InputDoc is not also implemented.
@@ -71,4 +72,10 @@ public interface OutputDoc
      * @return a friendly string like "the XML file SomeDoc.xml"
      */
     String getFriendlyName();
+
+    void addObj(ObjectInfo o) throws DocException;
+
+    void deleteObj(ObjectInfo o) throws DocException;
+
+    void deleteAttachment(String name) throws DocException;
 }

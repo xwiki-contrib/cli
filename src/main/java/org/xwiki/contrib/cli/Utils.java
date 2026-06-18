@@ -52,8 +52,8 @@ import org.dom4j.Namespace;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.xml.sax.SAXException;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Bytes;
 
 /**
@@ -294,6 +294,22 @@ public final class Utils
     }
 
     /**
+     * Perform a DELETE request.
+     *
+     * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
+     *     headers to use.
+     * @param url the URL to use.
+     * @return the HTTP reponse.
+     */
+    public static HttpResponse<String> httpDelete(Command cmd, String url)
+        throws DocException
+    {
+        return internalHttpRequest(cmd, HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .DELETE(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    /**
      * Perform a POST request.
      *
      * @param cmd the Command produced by parsing arguments from the cli. It contains authentication and custom
@@ -309,6 +325,7 @@ public final class Utils
         return internalHttpRequest(cmd, HttpRequest.newBuilder()
             .uri(URI.create(url))
             .header(CONTENT_TYPE, mimetype == null ? TEXT_PLAIN_CHARSET_UTF_8 : mimetype)
+            .header("XWiki-Form-Token", getCSRF(cmd))
             .POST(BodyPublishers.ofString(content)), HttpResponse.BodyHandlers.ofString());
     }
 
@@ -367,7 +384,7 @@ public final class Utils
      */
     public static String executeScriptOnXWiki(String scriptResourceName, Command command) throws DocException
     {
-        var csrf = Utils.getCSRF(command);
+        var csrf = getCSRF(command);
         var content =
             new BufferedReader(new InputStreamReader(Utils.class.getResourceAsStream(scriptResourceName)))
                 .lines().collect(Collectors.joining("\n"));
@@ -537,6 +554,32 @@ public final class Utils
             + REST_URL_PREFIX + wiki
             + fromReferenceToRestPath(page)
             + "/attachments/" + attachmentName;
+    }
+
+    public static String getObjectAddRestURLFromCommand(Command cmd, String wiki, String page)
+        throws MessageForUserDocException
+    {
+        if (page == null) {
+            throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
+        }
+
+        return cmd.url()
+            + REST_URL_PREFIX + wiki
+            + fromReferenceToRestPath(page)
+            + "/objects";
+    }
+
+    public static String getObjectRestURLFromCommand(Command cmd, String wiki, String page, ObjectInfo o)
+        throws MessageForUserDocException
+    {
+        if (page == null) {
+            throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
+        }
+
+        return cmd.url()
+            + REST_URL_PREFIX + wiki
+            + fromReferenceToRestPath(page)
+            + "/objects/" + o.objectClass() + '/' + o.number();
     }
 
     /**

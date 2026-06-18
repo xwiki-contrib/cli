@@ -160,13 +160,47 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     {
         String attachmentURL =
             Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, attachmentName);
-        Utils.httpPut(cmd, attachmentURL, content, "application/octet-stream");
+        checkStatus(Utils.httpPut(cmd, attachmentURL, content, "application/octet-stream"));
     }
 
     @Override
     public String getFriendlyName()
     {
         return "the page at [" + url + "]";
+    }
+
+    @Override
+    public void addObj(ObjectInfo o) throws DocException
+    {
+        var objectExist = !getInputPage().getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
+        if (objectExist) {
+            throw new DocException("Object with number " + o.number() + " already exists");
+        } else {
+            var addObjUrl = Utils.getObjectAddRestURLFromCommand(cmd, wiki, page);
+            var requestParams =  "className=" + o.objectClass();
+            checkStatus(Utils.httpPost(cmd, addObjUrl, requestParams, "application/x-www-form-urlencoded"));
+        }
+    }
+
+    @Override
+    public void deleteObj(ObjectInfo o) throws DocException
+    {
+        var objectExist = !getInputPage().getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
+        if (objectExist) {
+            var objUrl = Utils.getObjectRestURLFromCommand(cmd, wiki, page, o);
+            checkStatus(Utils.httpDelete(cmd, objUrl));
+        }
+    }
+
+    @Override
+    public void deleteAttachment(String name) throws DocException
+    {
+        var attachmentExit = getInputPage().getAttachments().stream().anyMatch(o -> o.name().equals(name));
+        if (attachmentExit) {
+            String attachmentURL =
+                Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, name);
+            checkStatus(Utils.httpDelete(cmd, attachmentURL));
+        }
     }
 
     private InputXMLRestPage getInputPage() throws DocException

@@ -27,11 +27,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.dom4j.Element;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.XMLWriter;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
  * This class represents a "XAR" XML file.
@@ -125,5 +127,23 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
     public String getFriendlyName()
     {
         return "the XML file [" + filename + "]";
+    }
+
+    @Override
+    public void addObj(ObjectInfo o)
+    {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void deleteObj(ObjectInfo o)
+    {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public void deleteAttachment(String name)
+    {
+        throw new NotImplementedException();
     }
 }

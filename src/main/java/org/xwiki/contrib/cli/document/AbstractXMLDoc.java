@@ -43,7 +43,7 @@ import org.xwiki.contrib.cli.document.element.Property;
 
 import static java.lang.System.err;
 
-abstract class AbstractXMLDoc
+public abstract class AbstractXMLDoc
 {
     protected static final String NODE_NAME_CLASS_NAME = "className";
 

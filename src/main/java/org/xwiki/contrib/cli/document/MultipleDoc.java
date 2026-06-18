@@ -267,6 +267,30 @@ public class MultipleDoc implements InputOutputDoc
         return "the merged document";
     }
 
+    @Override
+    public void addObj(ObjectInfo o) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.addObj(o);
+        }
+    }
+
+    @Override
+    public void deleteObj(ObjectInfo o) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.deleteObj(o);
+        }
+    }
+
+    @Override
+    public void deleteAttachment(String name) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.deleteAttachment(name);
+        }
+    }
+
     private InputDoc pickInputFile(String what) throws DocException
     {
         out.println(
