@@ -51,7 +51,9 @@ final class Main
 
     static void runCommand(Command cmd) throws Exception
     {
-        cmd.print();
+        if ("DEBUG".equals(cmd.logLevel())) {
+            cmd.print();
+        }
 
         try {
             cmd.action().run(cmd);

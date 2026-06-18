@@ -174,26 +174,27 @@ public class Arguments
 
         if (cmd.action() == Command.Action.SYNC && cmd.noMvnRepoRead()) {
             throw new CommandException(
-                "Not implemented yet. The only supported initial source for sync is the maven repos.");
+                "Not implemented yet. The only supported initial source for sync is the Maven repository.");
         }
+
         if (cmd.action() == Command.Action.SYNC && StringUtils.isEmpty(cmd.url())) {
             throw new CommandException(
                 "XWiki instance URL is required for sync mode.");
         }
-        if (cmd.action() == Command.Action.SYNC
+
+        if ((cmd.action() == Command.Action.SYNC
             || cmd.action() == Command.Action.PUSH_ALL_PAGES
             || cmd.action() == Command.Action.PULL_ALL_PAGES
             || cmd.action() == Command.Action.PUSH_PAGE
-            || cmd.action() == Command.Action.PULL_PAGE)
+            || cmd.action() == Command.Action.PULL_PAGE) && StringUtils.isEmpty(cmd.mvnRepo()))
         {
-            if (StringUtils.isEmpty(cmd.mvnRepo())) {
-                throw new CommandException("No maven repo specified.");
-            }
+           throw new CommandException("This action requires providing a Maven repository.");
         }
 
         if (cmd.logLevel() == null) {
-            cmd.setLogLevel(Level.WARN.toString());
+            cmd.setLogLevel(Level.INFO.toString());
         }
+
         var ctx = (ch.qos.logback.classic.LoggerContext) LoggerFactory.getILoggerFactory();
         ctx.getLogger(Logger.ROOT_LOGGER_NAME).setLevel(Level.valueOf(cmd.logLevel()));
     }

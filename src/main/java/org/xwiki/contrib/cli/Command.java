@@ -328,10 +328,13 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
+                LOGGER.info("Sync starting at [{}] on Maven repository [{}]", cmd.cliDir(), cmd.mvnRepo());
                 XWikiDirAutoSync ds = new XWikiDirAutoSync(cmd);
                 try {
                     ds.doFirstSync();
+                    LOGGER.info("Adding watches...");
                     ds.monitor();
+                    LOGGER.info("Ready!");
                 } catch (Exception e) {
                     LOGGER.error("Sync crashed", e);
                 } finally {
