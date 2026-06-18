@@ -197,7 +197,8 @@ public class Command
                         printWriter.printf("--pass %s\n", cmd.pass());
                         printWriter.printf("--mvn-repo %s\n", cmd.mvnRepo());
                         printWriter.printf("--cli-dir %s\n", cmd.cliDir());
-                        printWriter.println("--sync-daemon\n");
+                        printWriter.println("--sync-daemon");
+                        printWriter.println("--pom");
                     }
                 }
             }
