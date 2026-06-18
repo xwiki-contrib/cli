@@ -26,6 +26,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
@@ -104,7 +106,7 @@ public class Command
         
             -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
             -u, --url <URL>          Specify the page's URL
-            -w <WIKI>                Specify the wiki
+            -w <WIKI>                Specify the wiki. Default is 'xwiki' (the main wiki).
 
         Parameters for single field or page edition:
             --editor <EDITOR>        Use this editor (necessary if environment variable EDITOR is not set)
@@ -121,13 +123,17 @@ public class Command
         Parameters for sync:
             --pom                    Autocreate or reuse a XWiki maven project for autocompletion
 
-            --no-read-wiki           Don't write on the wiki instance
             --no-write-wiki          Don't read from the wiki instance
             --no-mvn-repo-write      Don't write on the maven repository
-            --no-mvn-repo-read       Don't read from the maven repository
+            --first-sync-from <mvn|wiki> Specify the source of the first sync. 
+                                     'mvn' means to use the maven repository. 
+                                     'wiki' means to use a XWiki instance. 
+                                     The default is to to 'mvn'.
 
             --cli-dir <DIR>          Directory which will have the XFF tree and the auto created maven project
             --mvn-repo <DIR>         Path to the maven repository
+            --spaces <SPACE>         The XWiki space to use as the source. Note this parameter could be provided 
+                                     multiple times.
 
         Authentication:
             --user <USERNAME>        The XWiki username to use.
@@ -549,6 +555,8 @@ public class Command
         }
     }
 
+    enum FirstSyncFrom {MVN, WIKI}
+
     private Action action;
 
     private String title;
@@ -569,7 +577,7 @@ public class Command
 
     private String url;
 
-    private String wiki;
+    private String wiki = "xwiki";
 
     private String editor;
 
@@ -597,15 +605,15 @@ public class Command
 
     private boolean noMvnRepoWrite;
 
-    private boolean noMvnRepoRead;
-
-    private boolean noReadWiki;
-
     private boolean noWriteWiki;
+
+    private FirstSyncFrom firstSyncFrom = FirstSyncFrom.MVN;
 
     private String cliDir;
 
     private String mvnRepo;
+
+    private List<String> spaces = new ArrayList<>(5);
 
     private String user;
 
@@ -1028,38 +1036,6 @@ public class Command
     }
 
     /**
-     * @return true, if we don't want to read from the maven repos.
-     */
-    public boolean noMvnRepoRead()
-    {
-        return noMvnRepoRead;
-    }
-
-    /**
-     * @param noMvnRepoRead true, if we don't want to read from the maven repos.
-     */
-    public void setNoMvnRepoRead(boolean noMvnRepoRead)
-    {
-        this.noMvnRepoRead = noMvnRepoRead;
-    }
-
-    /**
-     * @return true, if we don't want to read from the XWiki instance.
-     */
-    public boolean noReadWiki()
-    {
-        return noReadWiki;
-    }
-
-    /**
-     * @param noReadWiki true, if we don't want to read from the XWiki instance.
-     */
-    public void setNoReadWiki(boolean noReadWiki)
-    {
-        this.noReadWiki = noReadWiki;
-    }
-
-    /**
      * @return true, if we don't want to write into the XWiki instance.
      */
     public boolean noWriteWiki()
@@ -1073,6 +1049,16 @@ public class Command
     public void setNoWriteWiki(boolean noWriteWiki)
     {
         this.noWriteWiki = noWriteWiki;
+    }
+
+    public FirstSyncFrom firstSyncFrom()
+    {
+        return firstSyncFrom;
+    }
+
+    public void setFirstSyncFrom(FirstSyncFrom firstSyncFrom)
+    {
+        this.firstSyncFrom = firstSyncFrom;
     }
 
     /**
@@ -1107,6 +1093,11 @@ public class Command
     public void setMvnRepo(String mvnRepo)
     {
         this.mvnRepo = mvnRepo;
+    }
+
+    public List<String> spaces()
+    {
+        return spaces;
     }
 
     void print()

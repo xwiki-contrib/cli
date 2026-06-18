@@ -27,7 +27,7 @@ import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.MessageForUserDocException;
 import org.xwiki.contrib.cli.Utils;
 
-class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
+public class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {
     protected final String wiki;
 
@@ -35,7 +35,7 @@ class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 
     private final String url;
 
-    InputXMLRestPage(Command cmd, String wiki, String page) throws DocException
+    public InputXMLRestPage(Command cmd, String wiki, String page) throws DocException
     {
         super(cmd);
 

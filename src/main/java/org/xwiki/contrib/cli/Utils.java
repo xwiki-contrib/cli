@@ -52,6 +52,7 @@ import org.dom4j.Namespace;
 import org.dom4j.io.SAXReader;
 import org.xml.sax.SAXException;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Bytes;
 
 /**
@@ -497,15 +498,14 @@ public final class Utils
 
     /**
      * @param cmd the Command to use.
-     * @param wikiParam the wiki ID.
+     * @param wiki the wiki ID.
      * @param page the serialized page reference.
      * @param withObjects define if we need to get the document with objects.
      * @return the REST document URL specified by the given user-provided command.
      */
-    public static String getDocRestURLFromCommand(Command cmd, String wikiParam, String page, boolean withObjects)
+    public static String getDocRestURLFromCommand(Command cmd, String wiki, String page, boolean withObjects)
         throws DocException
     {
-        var wiki = StringUtils.isEmpty(wikiParam) ? XWIKI : wikiParam;
         if (page == null) {
             throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
@@ -518,18 +518,16 @@ public final class Utils
 
     /**
      * @param cmd the Command to use.
-     * @param wikiParam the wiki ID.
+     * @param wiki the wiki ID.
      * @param page the serialized page reference.
      * @param attachmentName the name of the attachment.
      * @return the REST URL to the specified attachment.
      * @throws MessageForUserDocException
      */
-    public static String getAttachmentRestURLFromCommand(Command cmd, String wikiParam, String page,
+    public static String getAttachmentRestURLFromCommand(Command cmd, String wiki, String page,
         String attachmentName)
         throws MessageForUserDocException
     {
-        var wiki = StringUtils.isEmpty(wikiParam) ? XWIKI : wikiParam;
-
         if (page == null) {
             throw new MessageForUserDocException(EXCEPTION_MSG_SPECIFY_PAGE);
         }
@@ -657,6 +655,30 @@ public final class Utils
     {
         var xmlFileDirPath = getMvnReposRessourcePath(cmd);
         return listSubDir(xmlFileDirPath);
+    }
+
+    public static List<String> listAllPagesForSpaceXWiki(Command cmd, List<String> spaces)
+        throws IOException, DocException
+    {
+        var res = new ArrayList<String>();
+        for (var space : spaces) {
+            var requestUrl = cmd.url() + "/rest/liveData/sources/liveTable/entries?namespace=wiki:" + cmd.wiki()
+                + "&sourceParams.queryFilters=unique&sourceParams.space=" + URLEncoder.encode(space,
+                StandardCharsets.UTF_8) + "&properties=doc.fullName&limit=1000";
+
+            var response = httpGet(cmd, requestUrl);
+            if (response.statusCode() != 200) {
+                throw new DocException("Can't get list of document for space " + space);
+            }
+            var domdoc = parseXML(response.body());
+            var root = domdoc.getRootElement();
+            var entries = root.selectNodes("//ns2:entries/ns2:entry");
+            for (var entry : entries) {
+                var value = entry.selectSingleNode("ns2:values/entry[key='doc.fullName']/value").getText();
+                res.add(value);
+            }
+        }
+        return res;
     }
 
     /**

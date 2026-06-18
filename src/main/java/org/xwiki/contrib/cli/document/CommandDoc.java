@@ -54,6 +54,12 @@ public class CommandDoc implements InputDoc
     }
 
     @Override
+    public String getReference() throws DocException
+    {
+        throw new UnsupportedOperationException(NOT_IMPLEMENTED);
+    }
+
+    @Override
     public String getTitle()
     {
         return cmd.title();

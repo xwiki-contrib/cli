@@ -155,12 +155,21 @@ public final class Arguments
                 case "--ext" -> cmd.setFileExtension(getNextParameter(args, i++));
 
                 case "--pom" -> cmd.setPom(true);
-                case "--no-read-wiki" -> cmd.setNoReadWiki(true);
                 case "--no-write-wiki" -> cmd.setNoWriteWiki(true);
                 case "--no-mvn-repo-write" -> cmd.setNoMvnRepoWrite(true);
-                case "--no-mvn-repo-read" -> cmd.setNoMvnRepoRead(true);
+                case "--first-sync-from" -> {
+                    var value = getNextParameter(args, i++);
+                    if ("wiki".equalsIgnoreCase(value)) {
+                        cmd.setFirstSyncFrom(Command.FirstSyncFrom.WIKI);
+                    } else if ("mvn".equalsIgnoreCase(value)) {
+                        cmd.setFirstSyncFrom(Command.FirstSyncFrom.MVN);
+                    } else {
+                        throw new CommandException("Invalid first sync from " + value);
+                    }
+                }
                 case "--cli-dir" -> cmd.setCliDir(getNextParameter(args, i++));
                 case "--mvn-repo" -> cmd.setMvnRepo(getNextParameter(args, i++));
+                case "--spaces" -> cmd.spaces().add(getNextParameter(args, i++));
 
                 case "--user" -> cmd.setUser(getNextParameter(args, i++));
                 case "--pass" -> cmd.setPass(getNextParameter(args, i++));
@@ -177,23 +186,19 @@ public final class Arguments
             cmd.setAction(Command.Action.REPL);
         }
 
-        if (cmd.action() == Command.Action.SYNC && cmd.noMvnRepoRead()) {
-            throw new CommandException(
-                "Not implemented yet. The only supported initial source for sync is the Maven repository.");
-        }
-
         if (cmd.action() == Command.Action.SYNC && StringUtils.isEmpty(cmd.url())) {
             throw new CommandException(
                 "XWiki instance URL is required for sync mode.");
         }
 
-        if ((cmd.action() == Command.Action.SYNC
+        if (((cmd.action() == Command.Action.SYNC && cmd.firstSyncFrom() == Command.FirstSyncFrom.MVN)
             || cmd.action() == Command.Action.PUSH_ALL_PAGES
             || cmd.action() == Command.Action.PULL_ALL_PAGES
             || cmd.action() == Command.Action.PUSH_PAGE
-            || cmd.action() == Command.Action.PULL_PAGE) && StringUtils.isEmpty(cmd.mvnRepo()))
+            || cmd.action() == Command.Action.PULL_PAGE)
+            && StringUtils.isEmpty(cmd.mvnRepo()))
         {
-           throw new CommandException("This action requires providing a Maven repository.");
+            throw new CommandException("This action requires providing a Maven repository.");
         }
 
         if (cmd.logLevel() == null) {

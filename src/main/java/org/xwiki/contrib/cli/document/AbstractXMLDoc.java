@@ -146,7 +146,7 @@ abstract class AbstractXMLDoc
     {
         var domdoc = getDom();
         var root = domdoc.getRootElement();
-        var syntaxId = getElement(root, NODE_NAME_SYNTAX_ID);
+        var syntaxId = getElement(root, fromRest ? "syntax" : NODE_NAME_SYNTAX_ID);
         if (syntaxId == null) {
             return null;
         }
@@ -261,7 +261,11 @@ abstract class AbstractXMLDoc
 
     public String getReference() throws DocException
     {
-        return getDom().valueOf("//xwikidoc/@reference");
+        if (fromRest) {
+            return getElement(getDom().getRootElement(), "fullName").getText();
+        } else {
+            return getDom().valueOf("//xwikidoc/@reference");
+        }
     }
 
     protected void setXML(String str, boolean fromRest)

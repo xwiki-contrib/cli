@@ -41,6 +41,12 @@ public interface InputDoc
     String getContent() throws DocException;
 
     /**
+     * @return the reference of the document.
+     * @throws DocException
+     */
+    String getReference() throws DocException;
+
+    /**
      * @return the syntax of the document.
      * @throws DocException
      */

@@ -75,22 +75,12 @@ public class MultipleDoc implements InputOutputDoc
             outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile()));
         }
 
-        if (StringUtils.isNotEmpty(cmd.mvnRepo())) {
-            if (!cmd.noMvnRepoRead()) {
-                inputDocs.add(new MvnRepoFileDoc(cmd, page));
-            }
-            if (!cmd.noMvnRepoWrite()) {
-                outputDocs.add(new MvnRepoFileDoc(cmd, page));
-            }
+        if (StringUtils.isNotEmpty(cmd.mvnRepo()) && !cmd.noMvnRepoWrite()) {
+            outputDocs.add(new MvnRepoFileDoc(cmd, page));
         }
 
-        if (StringUtils.isNotEmpty(cmd.url())) {
-            if (!cmd.noReadWiki()) {
-                inputDocs.add(new InputXMLRestPage(cmd, wiki, page));
-            }
-            if (!cmd.noWriteWiki()) {
-                outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
-            }
+        if (StringUtils.isNotEmpty(cmd.url()) && !cmd.noWriteWiki()) {
+            outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
         }
     }
 
@@ -114,6 +104,23 @@ public class MultipleDoc implements InputOutputDoc
         }
 
         return content;
+    }
+
+    @Override
+    public String getReference() throws DocException
+    {
+        String reference = null;
+        for (var inputDoc : inputDocs) {
+            var newContent = inputDoc.getReference();
+            if (reference == null) {
+                reference = newContent;
+            } else if (newContent != null && !reference.equals(newContent)) {
+                // Should never happen...
+                throw new DocException("Inconsistent reference");
+            }
+        }
+
+        return reference;
     }
 
     @Override
