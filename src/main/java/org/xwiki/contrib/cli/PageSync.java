@@ -73,7 +73,7 @@ public class PageSync
             if (page.getValue().isEmpty()) {
                 logger.error("Can't extract page [{}]", page.getKey());
             }
-            var targetFile = Path.of(page.getKey());
+            var targetFile = Path.of(Utils.getMvnReposRessourcePath(cmd).toString(), page.getKey());
             Files.writeString(targetFile, page.getValue());
         }
     }
