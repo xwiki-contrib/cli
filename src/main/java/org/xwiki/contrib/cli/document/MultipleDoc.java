@@ -55,20 +55,24 @@ public class MultipleDoc implements InputOutputDoc
      * Create a new multiple document.
      *
      * @param cmd the command.
-     * @param wiki the wiki ID.
-     * @param page the page reference.
      * @throws DocException
      * @throws IOException
      */
-    public MultipleDoc(Command cmd, String wiki, String page) throws DocException, IOException
+    public MultipleDoc(Command cmd) throws DocException, IOException
     {
+        String wiki = cmd.wiki();
+        String page = cmd.page();
         inputDocs = new ArrayList<>();
         outputDocs = new ArrayList<>();
 
         inputDocs.add(new CommandDoc(cmd));
 
         if (StringUtils.isNotEmpty(cmd.inputFile())) {
-            inputDocs.add(new XMLFileDoc(cmd, cmd.inputFile()));
+            XMLFileDoc inputDoc = new XMLFileDoc(cmd, cmd.inputFile());
+            if (StringUtils.isEmpty(page)) {
+                page = inputDoc.getReference();
+            }
+            inputDocs.add(inputDoc);
         }
 
         if (StringUtils.isNotEmpty(cmd.outputFile())) {

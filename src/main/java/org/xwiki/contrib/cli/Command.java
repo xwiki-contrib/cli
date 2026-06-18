@@ -29,18 +29,16 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.document.MultipleDoc;
 import org.xwiki.contrib.cli.document.element.MacroInstance;
-
-import static java.lang.System.err;
-import static java.lang.System.out;
-import static org.xwiki.contrib.cli.Arguments.endArgs;
-import static org.xwiki.contrib.cli.Arguments.parseArgs;
-import static org.xwiki.contrib.cli.Arguments.readConfigFile;
+import org.xwiki.contrib.cli.document.element.ObjectInfo;
 
 /**
  * Represent a command run by a user with all parameter which can be passed.
@@ -62,82 +60,74 @@ public class Command
     private static final Logger LOGGER = LoggerFactory.getLogger(Command.class);
 
     private static final String HELP_TEXT = """
-        xwiki-cli JAVA
-
         Actions:
-            -h, --help               Show the help
-            -c, --configuration <PATH> Read this configuration file. One --parameter value pair or item per line.
-                                    This overwrites previously passed parameters and is overwritten by following
-                                    parameters
-            --repl, --interactive    Run in interactive mode
+            -h, --help                   Show the help
+            -c, --configuration <PATH>   Read this configuration file. One --parameter value pair or item per line.
+                                         This overwrites previously passed parameters and is overwritten by following
+                                         parameters
+            --repl, --interactive        Run in interactive mode
 
-            --edit-page              Edit a complete XWiki document
-            --get-content            Get the content of a XWiki document
-            --set-content <CONTENT>  Set the content of a XWiki document
-            --edit-content           Edit the content of a XWiki document with a text editor
+            --edit-page                  Edit a complete XWiki document
+            --get-content                Get the content of a XWiki document
+            --set-content <CONTENT>      Set the content of a XWiki document
+            --edit-content               Edit the content of a XWiki document with a text editor
             --edit-macro <NAME[/NUMBER]> Edit a macro in the content of a XWiki document or a property value
-                                    with a text editor, where NUMBER is the nth macro with this name (0-indexed).
-                                    If NUMBER is not given, 0 (the first macro) is assumed.
-            --get-title              Get the title of a XWiki document
-            --set-title <TITLE>       Set the title of a XWiki document
-            --list-properties        List the document's properties,
-                                    optionally from the given object
-            --list-objects           List the document's objects,
-                                    optionally from the given class
-            --get-property <PROPERTY>  Get the value of the given property,
-                                    optionally from the given object
-            --set-property <PROPERTY> Set the value of the given property,
-                                    optionally from the given object (see -v to give a value)
-            --edit-property <PROPERTY> Edit the content of a given property with a text editor
-            --list-attachments       List attachments of a given XWiki document
-            --mount <PATH>           Mount a FUSE filesystem with the wiki contents at PATH
-            --sync-daemon            Run a sync daemon which will sync the Cli-dir to the XWiki instance and to the
-                                     maven repository
-            --push-page <REFERENCE>  Push a page from the maven repository to a XWiki instance
-            --pull-page <REFERENCE>  Pull a page from a XWiki instance to the maven repository
-            --push-all-pages         Push all page which are into the maven repository to a XWiki instance
-            --pull-all-pages         Pull all pages, which are already into the the maven repository, from a XWiki 
-                                     instance to the maven repository
+                                         with a text editor, where NUMBER is the nth macro with this name (0-indexed).
+                                         If NUMBER is not given, 0 (the first macro) is assumed.
+            --get-title                  Get the title of a XWiki document
+            --set-title <TITLE>          Set the title of a XWiki document
+            --list-properties            List the document's properties, optionally from the given object
+            --list-objects               List the document's objects, optionally from the given class
+            --get-property <PROPERTY>    Get the value of the given property, optionally from the given object
+            --set-property <PROPERTY>    Set the value of the given property, optionally from the given object
+                                         (see -v to provide a value)
+            --edit-property <PROPERTY>   Edit the content of a given property with a text editor
+            --list-attachments           List attachments of a given XWiki document
+            --mount <PATH>               Mount a FUSE filesystem with the wiki contents at PATH
+            --edit-tree                  Provide a working directory from which the instance and the maven repository
+                                         can be updated
+            --push-page <REFERENCE>      Push a page from the maven repository to a XWiki instance
+            --pull-page <REFERENCE>      Pull a page from a XWiki instance to the maven repository
+            --push-all-pages             Push all pages from the maven repository to the XWiki instance
+            --pull-all-pages             Update all pages present in the %aven repository from the XWiki instance
         
         General Parameters:
-            --loglevel               Define the log level. Default warn.
-            --print-xml              Print received XML code (for debugging)
-        
-            -H 'Header-Name: Val'    Add a custom HTTP header (repeat to have several ones)
-            -u, --url <URL>          Specify the page's URL
-            -w <WIKI>                Specify the wiki. Default is 'xwiki' (the main wiki).
+            --log-level                  Define the log level. Default warn.
+            --print-xml                  Print received XML code (for debugging)
+
+            -H 'Header-Name: Val'        Add a custom HTTP header (repeat to have several ones)
+            -u, --url <URL>              Specify the page's URL
+            -w <WIKI>                    Specify the wiki. Default is 'xwiki' (the main wiki).
 
         Parameters for single field or page edition:
-            --editor <EDITOR>        Use this editor (necessary if environment variable EDITOR is not set)
-            -p <PAGE>                Specify the page (dotted notation)
-            -o <CLASS[/NUMBER]>      Specify the class and optionally the number of the object to consider
-            -v <VALUE>               The value to use
-            -property <PROPERTY>     Define the property to work on
-            --read-from-xml <FILE>   Read the document from the given file
-            --write-to-xml <FILE>    Write the document to the given file
-            --xml-file FILE          Same as --write-to-xml FILE --read-from-xml FILE
-            -n, --new                Allow creation of a document using --edit-content (and no input file given)
-            --ext <EXT>              Use this as a file extension when editing a file
+            --editor <EDITOR>            Use this editor (necessary if environment variable EDITOR is not set)
+            -p <PAGE>                    Specify the page (dotted notation)
+            -o <CLASS[/NUMBER]>          Specify the class and optionally the number of the object to consider
+            -v <VALUE>                   The value to use
+            -property <PROPERTY>         Define the property to work on
+            --read-from-xml <FILE>       Read the document from the given file
+            --write-to-xml <FILE>        Write the document to the given file
+            --xml-file FILE              Same as --write-to-xml FILE --read-from-xml FILE
+            -n, --new                    Allow creation of a document using --edit-content (and no input file given)
+            --ext <EXT>                  Use this as a file extension when editing a file
 
-        Parameters for sync:
-            --pom                    Autocreate or reuse a XWiki maven project for autocompletion
+        Parameters for --edit-tree:
+            --no-write-wiki              Don't read from the wiki instance
+            --no-mvn-repo-write          Don't write on the maven repository
+            --first-sync-from <mvn|wiki> Specify the source for the working directory generation.
+                                          - 'mvn' will use the maven repository.
+                                          - 'wiki' will use the XWiki instance.
+                                         The default is 'mvn'.
 
-            --no-write-wiki          Don't read from the wiki instance
-            --no-mvn-repo-write      Don't write on the maven repository
-            --first-sync-from <mvn|wiki> Specify the source of the first sync. 
-                                     'mvn' means to use the maven repository. 
-                                     'wiki' means to use a XWiki instance. 
-                                     The default is to to 'mvn'.
-
-            --cli-dir <DIR>          Directory which will have the XFF tree and the auto created maven project
-            --mvn-repo <DIR>         Path to the maven repository
-            --spaces <SPACE>         The XWiki space to use as the source. Note this parameter could be provided 
-                                     multiple times.
+            --working-directory <DIR>    Directory which will have the XFF tree and the auto created Maven project
+            --mvn-repo <DIR>             Path to the maven repository
+            --spaces <SPACE>             The XWiki space to use as the source. Note this parameter could be provided
+                                         multiple times.
 
         Authentication:
-            --user <USERNAME>        The XWiki username to use.
-            --pass <PASS>            The XWiki user’s password.
-        """.trim();
+            --user <USERNAME>            The XWiki username to use.
+            --pass <PASS>                The XWiki user’s password.
+        """;
 
     enum Action
     {
@@ -145,83 +135,257 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
+                // We don't want the action to be set, the real action shall be defined by the user in during the
+                // interactive session.
+                cmd.setAction(null);
+
                 Console console = System.console();
                 console.printf("Welcome to XWiki-CLI's interactive session!\n");
-                File currentDirectory = new File("").getAbsoluteFile();
-                File configFile = new File(currentDirectory, "xwikicli.config");
-                if (configFile.exists()
-                    && askYesNo(console,
-                    "There is a xwikicli.config file in the current directory. Do you want to use it?")
-                )
-                {
-                    readConfigFile(configFile.getAbsolutePath(), cmd);
-                    endArgs(cmd);
-                    cmd.print();
-                    console.printf("Let's go\n");
-                    Main.runCommand(cmd);
-                    return;
-                }
+                printPrelude();
 
-                console.printf("If you want to be guided, type 'guide'");
                 String line;
-                while ((line = console.readLine("> ")) != null) {
-                    if ("go".equals(line)) {
-                        endArgs(cmd);
-                        Main.runCommand(cmd);
-                        break;
-                    } else if ("guide".equals(line)) {
-                        guide(console, cmd);
-                        break;
-                    }
-
-                    try {
-                        parseArgs(line.split("\\s", 2), cmd);
-                    } catch (CommandException e) {
-                        console.printf("%s\n", e.getMessage());
+                while ( (line = console.readLine("> ")) != null) {
+                    switch (line.trim()) {
+                        case "run":
+                            Arguments.endArgs(cmd);
+                            Main.runCommand(cmd);
+                            break;
+                        case "guide":
+                            guide(console, cmd);
+                            return;
+                        case "help", "-h", "--help":
+                            console.printf(HELP_TEXT);
+                            break;
+                        case "":
+                            break;
+                        default:
+                            try {
+                                Arguments.parseArgs(line.split("\\s", 2), cmd);
+                            } catch (CommandException e) {
+                                console.printf("%s\n", e.getMessage());
+                            }
                     }
                 }
             }
 
-            private void guide(Console console, Command cmd) throws IOException
+            private static void printPrelude()
             {
-                // We first check if we are in a maven project
-                File currentDirectory = new File("").getAbsoluteFile();
-                // TODO: allow working without a maven project
-                askMavenDirectory(console, cmd, currentDirectory);
-                askSyncDirectory(console, cmd);
-                askInstance(console, cmd);
-                askWhetherToSave(console, cmd);
+                System.console().printf("""
+                    If you want to be guided, type 'guide'.
+                    Otherwise, you can type parameters to use, one for each line, like this:
+    
+                    --paramater
+    
+                    or
+    
+                    --paramater VALUE
+    
+                    Type 'help' for parameter usage.
+                    And then when you are ready to run your action, type 'run'.
+                    (Note: we don't yet have proper command editing in the interactive mode, but you can use something
+                    like rlwrap for a better command editing experience.)
+                    """);
             }
 
-            private void askWhetherToSave(Console console, Command cmd) throws IOException
+            private void guide(Console console, Command cmd) throws Exception
+            {
+                String origUser = cmd.user();
+                String origPass = cmd.pass();
+                String origURL = cmd.url();
+                String origMvnRepo = cmd.mvnRepo();
+                String origCliDir = cmd.workingDirectory();
+
+                // TODO: allow working without a maven project
+                console.printf("First, we need to define a few things like which Maven project to work on "
+                   + "and which XWiki instance to use.\n");
+                askMavenDirectory(console, cmd);
+                askInstance(console, cmd);
+                askWhatToDo(console, cmd);
+                askWhetherToSave(console, cmd, origURL, origUser, origPass, origMvnRepo, origCliDir);
+                Arguments.endArgs(cmd);
+                Main.runCommand(cmd);
+            }
+
+            private void askWhatToDo(Console console, Command cmd)
+            {
+                String answer = getAnswerWithDefault(console, "1", """
+                        XWiki-cli provides different ways of working. This guide lets you:
+                        
+                        [1] Use a temporary working directory from which you can edit everything,
+                            and your Maven repository as well as the XWiki instance will be updated in real time
+                        [2] Edit a single value (page, object property, content, macro).
+                            This will open an editor and your Maven repository as well as the XWiki instance will be
+                            updated each time you save the file opened in your editor
+                        [3] Push a page present in the maven project to the XWiki instance
+                        [4] Push all pages in the maven project to the XWiki instance
+                        [5] Pull a page present from the XWiki instance to the maven project
+                        [6] Pull (update) all pages present in the Maven project from the XWiki instance
+
+                        What do you want to do?
+                        """.trim());
+
+                switch (answer.trim()) {
+                    case "1":
+                        askSyncDirectory(console, cmd);
+                        cmd.setAction(EDIT_TREE);
+                        break;
+                    case "2":
+                        askEditAction(console, cmd);
+                        break;
+                    case "3":
+                        cmd.setAction(PUSH_PAGE);
+                        askDocumentToEdit(console, cmd);
+                        break;
+                    case "4":
+                        cmd.setAction(PUSH_ALL_PAGES);
+                        break;
+                    case "5":
+                        cmd.setAction(PULL_PAGE);
+                        askDocumentToEdit(console, cmd);
+                        break;
+                    case "6":
+                        cmd.setAction(PULL_ALL_PAGES);
+                        break;
+                    default:
+                        couldNotUnderstandAnswer(console);
+                        askWhatToDo(console, cmd);
+                }
+            }
+
+            private static void couldNotUnderstandAnswer(Console console)
+            {
+                console.printf("Could not understand this answer, let's retry.\n");
+            }
+
+            private void askEditAction(Console console, Command cmd)
+            {
+                String answer = getAnswerWithDefault(console, "1", """
+                        You can edit:
+                        
+                        [1] A whole document
+                        [2] The content of a document
+                        [3] The macro in a document
+                        [4] The value of a property
+                        
+                        What do you want to do?
+                        """.trim());
+                switch (answer.trim()) {
+                    case "1":
+                        cmd.setAction(EDIT_PAGE);
+                        askDocumentToEdit(console, cmd);
+                        break;
+                    case "2":
+                        cmd.setAction(EDIT_CONTENT);
+                        askDocumentToEdit(console, cmd);
+                        if (!askYesNo(console,
+                                "Is the macro in the content of the document? (as opposed to in a property)")
+                        ) {
+                            askPropertyToEdit(console, cmd);
+                        }
+                        break;
+                    case "3":
+                        cmd.setAction(EDIT_MACRO);
+                        askDocumentToEdit(console, cmd);
+                        break;
+                    case "4":
+                        cmd.setAction(EDIT_PROPERTY);
+                        askDocumentToEdit(console, cmd);
+                        askPropertyToEdit(console, cmd);
+                        break;
+                    default:
+                        couldNotUnderstandAnswer(console);
+                        askEditAction(console, cmd);
+                }
+            }
+
+            private void askPropertyToEdit(Console console, Command cmd)
+            {
+                String propertyName = askNonEmptyThing(console,
+                        "Please give the name of the property to edit (e.g. script_content)");
+                cmd.setProperty(propertyName);
+                String objectClass = console.readLine(
+                        "You can specify the class name of the object to edit (or leave empty for auto-detection): ");
+                if (StringUtils.isNotEmpty(objectClass)) {
+                    cmd.setObjectClass(objectClass);
+                    String objectNumber = console.readLine(
+                            "You can specify the object number (or leave empty to use the first available): ");
+                    if (StringUtils.isNotEmpty(objectNumber)) {
+                        cmd.setObjectNumber(objectNumber);
+                    }
+                }
+            }
+
+            private void askDocumentToEdit(Console console, Command cmd)
+            {
+                String ref = askNonEmptyThing(console,
+                    "Please give the reference of the document to modify "
+                            + "(e.g. Main.WebHome) or "
+                            + "the path to the XML file of the document "
+                            + "(e.g. /home/user/Work/XWiki/my-project-ui/src/main/resources/Main/WebHome.xml)\n> ");
+
+                if (new File(ref).exists()) {
+                    cmd.setInputFile(ref);
+                    cmd.setOutputFile(ref);
+                } else {
+                    cmd.setPage(ref);
+                }
+            }
+
+            private static String askNonEmptyThing(Console console, String msg)
+            {
+                String answer = "";
+                while (answer.isEmpty()) {
+                    answer = console.readLine(msg).trim();
+                }
+                return answer;
+            }
+
+            private void askWhetherToSave(Console console, Command cmd, String origURL, String origUser,
+                  String origPass, String origMvnRepo, String origCliDir) throws IOException
             {
                 File currentDirectory = new File("").getAbsoluteFile();
                 File configFile = new File(currentDirectory, "xwikicli.config");
                 String path = configFile.getAbsolutePath();
-                if (askYesNo(console, "All set! Do you want to save this configuration in %s?", path)) {
+                if (!(Objects.equals(cmd.url(), origURL)
+                        && Objects.equals(cmd.user(), origUser)
+                        && Objects.equals(cmd.pass(), origPass)
+                        && Objects.equals(cmd.mvnRepo(), origMvnRepo)
+                        && Objects.equals(cmd.workingDirectory(), origCliDir)
+                    ) && askYesNo(console,
+                        "Do you want to save common parameters as configuration in %s for next time?", path)
+                ) {
                     FileWriter fileWriter = new FileWriter(configFile);
                     try (PrintWriter printWriter = new PrintWriter(fileWriter)) {
-                        printWriter.printf("--url %s\n", cmd.url());
-                        printWriter.printf("--user %s\n", cmd.user());
-                        printWriter.printf("--pass %s\n", cmd.pass());
-                        printWriter.printf("--mvn-repo %s\n", cmd.mvnRepo());
-                        printWriter.printf("--cli-dir %s\n", cmd.cliDir());
-                        printWriter.println("--sync-daemon");
-                        printWriter.println("--pom");
+                        printParameterNotEmpty(printWriter, "--url", cmd.url());
+                        printParameterNotEmpty(printWriter, "--user", cmd.user());
+                        printParameterNotEmpty(printWriter, "--pass", cmd.pass());
+                        printParameterNotEmpty(printWriter, "--mvn-repo", cmd.mvnRepo());
+                        printParameterNotEmpty(printWriter, "--cli-dir", cmd.workingDirectory());
                     }
+                }
+            }
+
+            private void printParameterNotEmpty(PrintWriter printWriter, String paramName, String value)
+            {
+                if (StringUtils.isNotEmpty(value)) {
+                    printWriter.printf("%s %s\n", paramName, value);
                 }
             }
 
             private void askInstance(Console console, Command cmd)
             {
                 if (!askYesNo(console, "Do you want to work with an XWiki instance?")) {
+                    cmd.setUrl(null);
                     return;
                 }
 
-                cmd.setUrl(getAnswerWithDefault(console, "http://localhost:8080/xwiki",
-                    "Please provide the URL of your instance"));
-                cmd.setUser(getAnswerWithDefault(console, "Admin", "Please provide the XWiki user to use"));
-                cmd.setPass(getAnswerWithDefault(console, "admin", "Please provide the user password"));
+                String defaultURL = ObjectUtils.firstNonNull(cmd.url(), "http://localhost:8080/xwiki");
+                cmd.setUrl(getAnswerWithDefault(console, defaultURL, "Please provide the URL of your instance"));
+                String defaultUser = ObjectUtils.firstNonNull(cmd.user(), "Admin");
+                String defaultPassword = ObjectUtils.firstNonNull(cmd.pass(), "admin");
+
+                cmd.setUser(getAnswerWithDefault(console, defaultUser, "Please provide the XWiki user to use"));
+                cmd.setPass(getAnswerWithDefault(console, defaultPassword, "Please provide the user password"));
             }
 
             private void askSyncDirectory(Console console, Command cmd)
@@ -230,10 +394,10 @@ public class Command
                 String mvnRepo = cmd.mvnRepo();
                 File mvnRepoFile = new File(mvnRepo);
                 String mvnRepoName = mvnRepoFile.getName();
-                cmd.setCliDir(
+                cmd.setWorkingDirectory(
                     getAnswerWithDefault(
                         console,
-                        userHome + "/Work/XWiki/cli/" + mvnRepoName,
+                        ObjectUtils.firstNonNull(cmd.workingDirectory(), userHome + "/Work/XWiki/cli/" + mvnRepoName),
                         "You will edit files in a 'sync' directory (following the XFF format).\n"
                             + "Where do you want to work?"));
             }
@@ -247,8 +411,10 @@ public class Command
                 return answer;
             }
 
-            private void askMavenDirectory(Console console, Command cmd, File currentDirectory)
+            private void askMavenDirectory(Console console, Command cmd)
             {
+                // We first check if we are in a maven project
+                File currentDirectory = new File("").getAbsoluteFile();
                 File projectDirectory;
                 if (new File(currentDirectory, "pom.xml").exists()) {
                     projectDirectory =
@@ -271,7 +437,7 @@ public class Command
                     if (pomFile.exists()) {
                         return projectDirectory;
                     } else {
-                        // askYesNo("There's no pom.xml file here. Do you want to create a new project?"))
+                        // TODO suggest creating a new Maven project?
                         path =
                             console.readLine("There's no pom.xml file here. Please provide the path to your project: ");
                     }
@@ -292,15 +458,14 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var editing = new Editing();
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 editing.editValue(cmd, doc.getContent(), EDIT_PREFIX_CONTENT, XWIKI_FILE_EXTENSION, newValue -> {
                     try {
                         doc.setContent(newValue);
                         doc.save();
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
-                        e.printStackTrace();
+                        LOGGER.error(ERROR_COULD_NOT_SAVE_DOCUMENT, e);
                     }
                 });
             }
@@ -313,20 +478,19 @@ public class Command
                     throw new Exception("Please provide --macro");
                 }
                 var editing = new Editing();
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                String macroContent = editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
+                var doc = new MultipleDoc(cmd);
+                String macroContent = editing.getMacroContent(doc, cmd.objectClass, cmd.objectNumber(), cmd.property,
                     MacroInstance.fromString(cmd.macro));
                 String filePrefix = cmd.macro.replace('/', '-');
                 String fileEx = Editing.getFileExtensionForMacroSpec(MacroInstance.fromString(cmd.macro));
                 editing.editValue(cmd, macroContent, filePrefix, fileEx, newValue -> {
                     try {
-                        editing.setMacro(doc, cmd.objectClass, cmd.objectNumber, cmd.property,
+                        editing.setMacro(doc, cmd.objectClass, cmd.objectNumber(), cmd.property,
                             MacroInstance.fromString(cmd.macro), newValue);
                         doc.save();
                     } catch (Exception e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
-                        e.printStackTrace();
+                        LOGGER.error(ERROR_COULD_NOT_SAVE_DOCUMENT, e);
                     }
                 });
             }
@@ -335,7 +499,7 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 var objects = doc.getObjects(null, null, null);
                 String res = "title=" + doc.getTitle() + "\n\n";
                 for (var o : objects) {
@@ -350,8 +514,7 @@ public class Command
                         Editing.updateDocFromTextPage(doc, newRes);
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
-                        e.printStackTrace();
+                        LOGGER.error(ERROR_COULD_NOT_SAVE_DOCUMENT, e);
                     }
                 });
             }
@@ -360,30 +523,33 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                var val = doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property);
+                var doc = new MultipleDoc(cmd);
+                var val = doc.getValue(cmd.objectClass(), cmd.objectNumber(), cmd.property);
                 if (val.isEmpty()) {
                     throw new MessageForUserDocException("This property does not exist");
                 }
-                var oClass = cmd.objectClass;
+                var oClass = cmd.objectClass();
                 if (StringUtils.isEmpty(oClass)) {
-                    oClass = doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)
-                        .stream().findFirst().get()
-                        .objectClass();
+                    Optional<ObjectInfo> first = doc.getObjects(cmd.objectClass(), cmd.objectNumber(), cmd.property)
+                                                         .stream().findFirst();
+                    if (first.isPresent()) {
+                        oClass = first.get().objectClass();
+                    } else {
+                        oClass = "";
+                    }
                 }
 
-                String ext = StringUtils.isNotEmpty(cmd.fileExtension)
-                    ? '.' + cmd.fileExtension
-                    : cmd.getFileExtension(oClass, cmd.property);
+                String ext = StringUtils.isNotEmpty(cmd.fileExtension())
+                    ? '.' + cmd.fileExtension()
+                    : cmd.getFileExtension(oClass, cmd.property());
                 var editing = new Editing();
                 editing.editValue(cmd, val.get(), "property-", ext, newValue -> {
                     try {
-                        doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, newValue);
+                        doc.setValue(cmd.objectClass(), cmd.objectNumber(), cmd.property(), newValue);
                         doc.save();
                     } catch (DocException e) {
                         // FIXME we can't really print stuff here, it will mess up any terminal editor.
-                        err.println(ERROR_COULD_NOT_SAVE_DOCUMENT);
-                        e.printStackTrace();
+                        LOGGER.error(ERROR_COULD_NOT_SAVE_DOCUMENT, e);
                     }
                 });
             }
@@ -392,15 +558,15 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(doc.getContent()));
+                var doc = new MultipleDoc(cmd);
+                System.console().printf(value(doc.getContent()) + "\n");
             }
         },
         SET_CONTENT {
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 doc.setContent(cmd.content);
                 doc.save();
             }
@@ -409,15 +575,15 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(doc.getTitle()));
+                var doc = new MultipleDoc(cmd);
+                System.console().printf(value(doc.getTitle()) + "\n");
             }
         },
         SET_TITLE {
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 doc.setTitle(cmd.title);
                 doc.save();
             }
@@ -426,19 +592,19 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                out.println(value(doc.getValue(cmd.objectClass, cmd.objectNumber, cmd.property).orElse("empty")));
+                var doc = new MultipleDoc(cmd);
+                System.console().printf(value(doc.getValue(cmd.objectClass, cmd.objectNumber(), cmd.property).orElse("empty")) + "\n");
             }
         },
         SET_PROPERTY_VALUE {
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 if (cmd.value == null) {
-                    err.println("--set-property: please provide a value to set with -v VALUE");
+                    LOGGER.error("--set-property: please provide a value to set with -v VALUE");
                 }
-                doc.setValue(cmd.objectClass, cmd.objectNumber, cmd.property, cmd.value);
+                doc.setValue(cmd.objectClass, cmd.objectNumber(), cmd.property, cmd.value);
                 doc.save();
             }
         },
@@ -446,9 +612,9 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
-                    out.println(object.objectClass() + '/' + object.number());
+                var doc = new MultipleDoc(cmd);
+                for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber(), cmd.property)) {
+                    System.console().printf(object.objectClass() + '/' + object.number() + "\n");
                 }
             }
         },
@@ -456,8 +622,8 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
-                for (var obj : doc.getObjects(cmd.objectClass, cmd.objectNumber, cmd.property)) {
+                var doc = new MultipleDoc(cmd);
+                for (var obj : doc.getObjects(cmd.objectClass, cmd.objectNumber(), cmd.property)) {
                     for (var prop : obj.properties()) {
                         var val = prop.value();
                         if (val == null) {
@@ -467,35 +633,36 @@ public class Command
                         } else if (severalLines(val)) {
                             val = LINE + '\n' + val + LINE;
                         }
-                        out.println(prop.name() + " = " + val);
+                        System.console().printf(prop.name() + " = " + val + "\n");
                     }
                 }
             }
         },
         MOUNT {
             @Override
-            void run(Command cmd) throws Exception
+            void run(Command cmd)
             {
                 XWikiFS fs = new XWikiFS(cmd);
                 try {
-                    fs.mount(Path.of(cmd.mountPath), true);
+                    fs.mount(Path.of(cmd.mountPath()), true);
                 } finally {
                     fs.umount();
                 }
             }
         },
-        SYNC {
+        EDIT_TREE {
             @Override
-            void run(Command cmd) throws Exception
+            void run(Command cmd)
             {
-                LOGGER.info("Sync starting at [{}] on Maven repository [{}]", cmd.cliDir(), cmd.mvnRepo());
+                LOGGER.info("Preparing the working directory at [{}] on Maven repository [{}]",
+                        cmd.workingDirectory(), cmd.mvnRepo());
                 XWikiDirAutoSync ds = new XWikiDirAutoSync(cmd);
                 try {
                     ds.doFirstSync();
-                    LOGGER.info("Adding watches...");
+                    LOGGER.info("Monitoring the working directory for changes...");
                     ds.monitor();
                 } catch (Exception e) {
-                    LOGGER.error("Sync crashed", e);
+                    LOGGER.error("Something wrong happened", e);
                 } finally {
                     // TODO
                 }
@@ -537,23 +704,23 @@ public class Command
             @Override
             void run(Command cmd) throws Exception
             {
-                var doc = new MultipleDoc(cmd, cmd.wiki, cmd.page);
+                var doc = new MultipleDoc(cmd);
                 for (var attachment : doc.getAttachments()) {
-                    out.println(attachment.name() + " (size: " + attachment.size() + ")");
+                    System.console().printf(attachment.name() + " (size: " + attachment.size() + ")\n");
                 }
             }
         },
         HELP {
             @Override
-            void run(Command cmd) throws Exception
+            void run(Command cmd)
             {
-                out.println(HELP_TEXT);
+                System.console().printf("xwiki-cli JAVA\n\n" + HELP_TEXT);
             }
         };
 
         void run(Command cmd) throws Exception
         {
-            err.println("No action was specified");
+            LOGGER.error("No action was specified");
         }
     }
 
@@ -606,8 +773,6 @@ public class Command
     private boolean acceptNewDocument;
 
     private String fileExtension;
-
-    private boolean pom;
 
     private boolean noMvnRepoWrite;
 
@@ -698,7 +863,7 @@ public class Command
     }
 
     /**
-     * @param macro the name of the targetted macro
+     * @param macro the name of the targeted macro
      */
     public void setMacro(String macro)
     {
@@ -962,23 +1127,7 @@ public class Command
     }
 
     /**
-     * {@return add automatically a pom file to make easier the edition with an IDE.}
-     */
-    public boolean pom()
-    {
-        return pom;
-    }
-
-    /**
-     * @param pom add automatically a pom file to make easier the edition with an IDE.
-     */
-    public void setPom(boolean pom)
-    {
-        this.pom = pom;
-    }
-
-    /**
-     * @return give the possibility to add new document.
+     * {@return give the possibility to add new document.}
      */
     public boolean acceptNewDocument()
     {
@@ -994,7 +1143,7 @@ public class Command
     }
 
     /**
-     * @return the document reference to push to the XWiki instance.
+     * {@return the document reference to push to the XWiki instance.}
      */
     public String pushReference()
     {
@@ -1010,7 +1159,7 @@ public class Command
     }
 
     /**
-     * @return the document reference to pull from the XWiki instance.
+     * {@return the document reference to pull from the XWiki instance}
      */
     public String pullReference()
     {
@@ -1026,7 +1175,7 @@ public class Command
     }
 
     /**
-     * @return true, if we don't want to write into the maven repos.
+     * {@return true, if we don't want to write into the maven repos}
      */
     public boolean noMvnRepoWrite()
     {
@@ -1042,7 +1191,7 @@ public class Command
     }
 
     /**
-     * @return true, if we don't want to write into the XWiki instance.
+     * {@return true, if we don't want to write into the XWiki instance.}
      */
     public boolean noWriteWiki()
     {
@@ -1070,7 +1219,7 @@ public class Command
     /**
      * @return the directory where XWiki CLI will create a hierarchy which is easily editable.
      */
-    public String cliDir()
+    public String workingDirectory()
     {
         return cliDir;
     }
@@ -1078,14 +1227,14 @@ public class Command
     /**
      * @param cliDir the directory where XWiki CLI will create a hierarchy which is easily editable.
      */
-    public void setCliDir(String cliDir)
+    public void setWorkingDirectory(String cliDir)
     {
         this.cliDir = cliDir;
     }
 
     /**
-     * @return the maven repository where there are the XAR project. It's generally a git repository, but it's not
-     *     mandatory.
+     * {@return the maven repository where there are the XAR project. It's generally a git repository, but it's not
+     *         mandatory.}
      */
     public String mvnRepo()
     {
@@ -1192,7 +1341,7 @@ public class Command
             return ".vm";
         }
 
-        if (this.pom || (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content"))) {
+        if (objectClass.equals("XWiki.ScriptComponentClass") && property.equals("script_content")) {
             return ".groovy";
         }
 

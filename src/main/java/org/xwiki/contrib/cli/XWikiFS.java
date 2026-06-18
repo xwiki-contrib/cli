@@ -533,7 +533,7 @@ class XWikiFS extends FuseStubFS
             String page = pageMatcher.group(3).replace(DOT, ESCAPED_DOT);
 
             try {
-                MultipleDoc document = new MultipleDoc(command, pageMatcher.group(1), space + '.' + page);
+                MultipleDoc document = new MultipleDoc(command);
 
                 String remainingPath = path.substring(pageMatcher.end());
 
@@ -588,7 +588,7 @@ class XWikiFS extends FuseStubFS
             String page = pageMatcher.group(3).replace(DOT, ESCAPED_DOT);
 
             try {
-                MultipleDoc document = new MultipleDoc(this.command, pageMatcher.group(1), space + '.' + page);
+                MultipleDoc document = new MultipleDoc(this.command);
 
                 String remainingPath = path.substring(pageMatcher.end());
 

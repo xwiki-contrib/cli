@@ -185,12 +185,6 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
             return;
         }
 
-        throw new MessageForUserDocException(
-            "Unexpected status " + status + ". " + (logger.isDebugEnabled() ? "Body: " + response.body()
-                : " Use --debug to print the body of the HTTP request"));
-    }
-
-    private record ObjectValueSetter(String property, String value)
-    {
+        Utils.handleUnexpectedStatus(status, response, logger);
     }
 }

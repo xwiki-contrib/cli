@@ -20,10 +20,16 @@
 
 package org.xwiki.contrib.cli;
 
+import org.xwiki.logging.LogLevel;
+
+import java.io.File;
+import java.io.IOException;
+
 import static java.lang.System.err;
 import static java.lang.System.out;
 import static org.xwiki.contrib.cli.Arguments.endArgs;
 import static org.xwiki.contrib.cli.Arguments.parseArgs;
+import static org.xwiki.contrib.cli.Arguments.readConfigFile;
 
 final class Main
 {
@@ -35,6 +41,8 @@ final class Main
     public static void main(String[] args) throws Exception
     {
         Command cmd = new Command();
+        maybeReadConfigFile(cmd);
+
         try {
             parseArgs(args, cmd);
             endArgs(cmd);
@@ -49,9 +57,19 @@ final class Main
         runCommand(cmd);
     }
 
+    private static void maybeReadConfigFile(Command cmd) throws IOException, CommandException
+    {
+        File currentDirectory = new File("").getAbsoluteFile();
+        File configFile = new File(currentDirectory, "xwikicli.config");
+        if (configFile.exists()) {
+            System.console().printf("There is a xwikicli.config file in the current directory. Using it.\n");
+            readConfigFile(configFile.getAbsolutePath(), cmd);
+        }
+    }
+
     static void runCommand(Command cmd) throws Exception
     {
-        if ("DEBUG".equals(cmd.logLevel())) {
+        if (LogLevel.DEBUG.toString().equals(cmd.logLevel())) {
             cmd.print();
         }
 

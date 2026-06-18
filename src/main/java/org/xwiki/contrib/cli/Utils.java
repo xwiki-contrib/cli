@@ -50,6 +50,7 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Namespace;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
 import org.xml.sax.SAXException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -795,4 +796,18 @@ public final class Utils
             throw new DocException(e);
         }
     }
+
+    public static void handleUnexpectedStatus(int status, HttpResponse<String> response, Logger logger)
+            throws MessageForUserDocException
+    {
+        throw new MessageForUserDocException(
+            "Unexpected status "
+                + status
+                + ". URL: " + response.uri()
+                + (logger.isDebugEnabled()
+                ? " - Body: " + response.body()
+                : " - Use --log-level DEBUG to print the body of the HTTP request")
+        );
+    }
+
 }

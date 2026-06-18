@@ -58,6 +58,7 @@ public final class Arguments
         while (i < args.length) {
             switch (args[i]) {
                 case "--help", "-help", "-h", "help" -> cmd.setAction(Command.Action.HELP);
+                case "--repl", "--interactive", "-i" -> cmd.setAction(Command.Action.REPL);
                 case "-c", "--configuration" -> {
                     try {
                         readConfigFile(getNextParameter(args, i++), cmd);
@@ -100,8 +101,8 @@ public final class Arguments
                     cmd.setMountPath(getNextParameter(args, i++));
                     cmd.setAction(Command.Action.MOUNT);
                 }
-                case "--sync-daemon" -> {
-                    cmd.setAction(Command.Action.SYNC);
+                case "--edit-tree" -> {
+                    cmd.setAction(Command.Action.EDIT_TREE);
                 }
                 case "--pull-page" -> {
                     cmd.setPullReference(getNextParameter(args, i++));
@@ -118,7 +119,7 @@ public final class Arguments
                     cmd.setAction(Command.Action.PUSH_ALL_PAGES);
                 }
 
-                case "--loglevel" -> cmd.setLogLevel(getNextParameter(args, i++));
+                case "--log-level" -> cmd.setLogLevel(getNextParameter(args, i++));
                 case "--print-xml" -> cmd.setPrintXML(true);
                 case "-H" -> {
                     String[] header = HEADER_SPLIT_PATTERN.split(getNextParameter(args, i));
@@ -153,8 +154,6 @@ public final class Arguments
                 }
                 case "-n", "--new" -> cmd.setAcceptNewDocument(true);
                 case "--ext" -> cmd.setFileExtension(getNextParameter(args, i++));
-
-                case "--pom" -> cmd.setPom(true);
                 case "--no-write-wiki" -> cmd.setNoWriteWiki(true);
                 case "--no-mvn-repo-write" -> cmd.setNoMvnRepoWrite(true);
                 case "--first-sync-from" -> {
@@ -167,14 +166,14 @@ public final class Arguments
                         throw new CommandException("Invalid first sync from " + value);
                     }
                 }
-                case "--cli-dir" -> cmd.setCliDir(getNextParameter(args, i++));
+                case "--working-directory" -> cmd.setWorkingDirectory(getNextParameter(args, i++));
                 case "--mvn-repo" -> cmd.setMvnRepo(getNextParameter(args, i++));
                 case "--spaces" -> cmd.spaces().add(getNextParameter(args, i++));
 
                 case "--user" -> cmd.setUser(getNextParameter(args, i++));
                 case "--pass" -> cmd.setPass(getNextParameter(args, i++));
 
-                default -> throw new CommandException("Unknown option {" + args[i] + "}. Try --help.");
+                default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
             }
             i++;
         }
@@ -182,16 +181,19 @@ public final class Arguments
 
     static void endArgs(Command cmd) throws CommandException
     {
+        setLogLevel(cmd);
+
         if (cmd.action() == null) {
+            System.out.println("No action has been provided, opening an interactive session. Use --help for help.");
             cmd.setAction(Command.Action.REPL);
         }
 
-        if (cmd.action() == Command.Action.SYNC && StringUtils.isEmpty(cmd.url())) {
+        if (cmd.action() == Command.Action.EDIT_TREE && StringUtils.isEmpty(cmd.url())) {
             throw new CommandException(
                 "XWiki instance URL is required for sync mode.");
         }
 
-        if (((cmd.action() == Command.Action.SYNC && cmd.firstSyncFrom() == Command.FirstSyncFrom.MVN)
+        if (((cmd.action() == Command.Action.EDIT_TREE && cmd.firstSyncFrom() == Command.FirstSyncFrom.MVN)
             || cmd.action() == Command.Action.PUSH_ALL_PAGES
             || cmd.action() == Command.Action.PULL_ALL_PAGES
             || cmd.action() == Command.Action.PUSH_PAGE
@@ -201,6 +203,10 @@ public final class Arguments
             throw new CommandException("This action requires providing a Maven repository.");
         }
 
+    }
+
+    private static void setLogLevel(Command cmd)
+    {
         if (cmd.logLevel() == null) {
             cmd.setLogLevel(Level.INFO.toString());
         }

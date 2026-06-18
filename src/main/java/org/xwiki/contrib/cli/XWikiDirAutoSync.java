@@ -128,8 +128,8 @@ class XWikiDirAutoSync
     XWikiDirAutoSync(Command cmd)
     {
         command = cmd;
-        syncPath = Path.of(cmd.cliDir());
-        mavenSyncPath = Path.of(cmd.cliDir(), "maven");
+        syncPath = Path.of(cmd.workingDirectory());
+        mavenSyncPath = Path.of(cmd.workingDirectory(), "maven");
     }
 
     public void monitor() throws IOException, DocException, ComponentLookupException, ParseException
@@ -194,9 +194,7 @@ class XWikiDirAutoSync
     void doFirstSync() throws DocException, IOException, ComponentLookupException, ParseException
     {
         Utils.executeScriptOnXWiki("/ensure_scripting_doc_api_installed.xwiki", this.command);
-        if (command.pom()) {
-            createMavenProject();
-        }
+        createMavenProject();
         if (command.firstSyncFrom() == Command.FirstSyncFrom.WIKI) {
             syncFromWiki();
         } else {
@@ -302,9 +300,7 @@ class XWikiDirAutoSync
         for (var p : allPages) {
             var xmlFile = new XMLFileDoc(command, p.toString());
             syncDocToXFF(xmlFile);
-            if (command.pom()) {
-                syncDocToMvnProject(xmlFile);
-            }
+            syncDocToMvnProject(xmlFile);
         }
     }
 
@@ -314,9 +310,7 @@ class XWikiDirAutoSync
         for (var p : allPages) {
             var restDoc = new InputXMLRestPage(command, command.wiki(), p);
             syncDocToXFF(restDoc);
-            if (command.pom()) {
-                syncDocToMvnProject(restDoc);
-            }
+            syncDocToMvnProject(restDoc);
         }
     }
 
@@ -515,7 +509,7 @@ class XWikiDirAutoSync
             String page = pageMatcher.group(2).replace(FSDirUtils.DOT, FSDirUtils.ESCAPED_DOT);
 
             try {
-                MultipleDoc document = new MultipleDoc(command, command.wiki(), space + '.' + page);
+                MultipleDoc document = new MultipleDoc(command);
 
                 String remainingPath = path.substring(pageMatcher.end());
 

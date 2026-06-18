@@ -20,6 +20,7 @@
 
 package org.xwiki.contrib.cli.document;
 
+import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,6 +35,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
+import org.xwiki.contrib.cli.MessageForUserDocException;
 import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
