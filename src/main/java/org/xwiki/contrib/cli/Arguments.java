@@ -160,7 +160,7 @@ public class Arguments
                 case "--user" -> cmd.setUser(getNextParameter(args, i++));
                 case "--pass" -> cmd.setPass(getNextParameter(args, i++));
 
-                default -> throw new CommandException("Unknown option " + args[i] + ". Try --help.");
+                default -> throw new CommandException("Unknown option {" + args[i] + "}. Try --help.");
             }
             i++;
         }
