@@ -42,7 +42,6 @@ import static org.xwiki.contrib.cli.Arguments.endArgs;
 import static org.xwiki.contrib.cli.Arguments.parseArgs;
 import static org.xwiki.contrib.cli.Arguments.readConfigFile;
 
-
 /**
  * Represent a command run by a user with all parameter which can be passed.
  *
@@ -151,8 +150,10 @@ public class Command
                 File currentDirectory = new File("").getAbsoluteFile();
                 File configFile = new File(currentDirectory, "xwikicli.config");
                 if (configFile.exists()
-                    && askYesNo(console, "There is a xwikicli.config file in the current directory. Do you want to use it?")
-                ) {
+                    && askYesNo(console,
+                    "There is a xwikicli.config file in the current directory. Do you want to use it?")
+                )
+                {
                     readConfigFile(configFile.getAbsolutePath(), cmd);
                     endArgs(cmd);
                     cmd.print();
@@ -163,7 +164,7 @@ public class Command
 
                 console.printf("If you want to be guided, type 'guide'");
                 String line;
-                while ( (line = console.readLine("> ")) != null) {
+                while ((line = console.readLine("> ")) != null) {
                     if ("go".equals(line)) {
                         endArgs(cmd);
                         Main.runCommand(cmd);
@@ -218,9 +219,9 @@ public class Command
                 }
 
                 cmd.setUrl(getAnswerWithDefault(console, "http://localhost:8080/xwiki",
-                        "Please provide the URL of your instance"));
-                cmd.setUser(getAnswerWithDefault(console, "Admin","Please provide the XWiki user to use"));
-                cmd.setPass(getAnswerWithDefault(console, "admin","Please provide the user password"));
+                    "Please provide the URL of your instance"));
+                cmd.setUser(getAnswerWithDefault(console, "Admin", "Please provide the XWiki user to use"));
+                cmd.setPass(getAnswerWithDefault(console, "admin", "Please provide the user password"));
             }
 
             private void askSyncDirectory(Console console, Command cmd)
@@ -234,7 +235,7 @@ public class Command
                         console,
                         userHome + "/Work/XWiki/cli/" + mvnRepoName,
                         "You will edit files in a 'sync' directory (following the XFF format).\n"
-                           + "Where do you want to work?"));
+                            + "Where do you want to work?"));
             }
 
             private String getAnswerWithDefault(Console console, String def, String msg)
@@ -246,14 +247,14 @@ public class Command
                 return answer;
             }
 
-
             private void askMavenDirectory(Console console, Command cmd, File currentDirectory)
             {
                 File projectDirectory;
                 if (new File(currentDirectory, "pom.xml").exists()) {
-                    projectDirectory = askYesNo(console, "Do you want to work on the Maven project there? %s ", currentDirectory)
-                        ? currentDirectory
-                        : askProjectPath(console);
+                    projectDirectory =
+                        askYesNo(console, "Do you want to work on the Maven project there? %s ", currentDirectory)
+                            ? currentDirectory
+                            : askProjectPath(console);
                 } else {
                     projectDirectory = askProjectPath(console);
                 }
@@ -271,7 +272,8 @@ public class Command
                         return projectDirectory;
                     } else {
                         // askYesNo("There's no pom.xml file here. Do you want to create a new project?"))
-                        path = console.readLine("There's no pom.xml file here. Please provide the path to your project: ");
+                        path =
+                            console.readLine("There's no pom.xml file here. Please provide the path to your project: ");
                     }
                 }
             }
@@ -555,7 +557,11 @@ public class Command
         }
     }
 
-    enum FirstSyncFrom {MVN, WIKI}
+    enum FirstSyncFrom
+    {
+        MVN,
+        WIKI
+    }
 
     private Action action;
 
