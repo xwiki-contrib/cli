@@ -20,7 +20,11 @@
 
 package org.xwiki.contrib.cli;
 
+import java.io.Console;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +39,7 @@ import static java.lang.System.err;
 import static java.lang.System.out;
 import static org.xwiki.contrib.cli.Arguments.endArgs;
 import static org.xwiki.contrib.cli.Arguments.parseArgs;
+import static org.xwiki.contrib.cli.Arguments.readConfigFile;
 
 /**
  * Represent a command run by a user with all parameter which can be passed.
@@ -63,6 +68,8 @@ public class Command
             -c, --configuration <PATH> Read this configuration file. One --parameter value pair or item per line.
                                     This overwrites previously passed parameters and is overwritten by following
                                     parameters
+            --repl, --interactive    Run in interactive mode
+
             --edit-page              Edit a complete XWiki document
             --get-content            Get the content of a XWiki document
             --set-content <CONTENT>  Set the content of a XWiki document
@@ -127,6 +134,147 @@ public class Command
 
     enum Action
     {
+        REPL {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                Console console = System.console();
+                console.printf("Welcome to XWiki-CLI's interactive session!\n");
+                File currentDirectory = new File("").getAbsoluteFile();
+                File configFile = new File(currentDirectory, "xwikicli.config");
+                if (configFile.exists()
+                    && askYesNo(console, "There is a xwikicli.config file in the current directory. Do you want to use it?")
+                ) {
+                    readConfigFile(configFile.getAbsolutePath(), cmd);
+                    endArgs(cmd);
+                    cmd.print();
+                    console.printf("Let's go\n");
+                    Main.runCommand(cmd);
+                    return;
+                }
+
+                console.printf("If you want to be guided, type 'guide'");
+                String line;
+                while ( (line = console.readLine("> ")) != null) {
+                    if ("go".equals(line)) {
+                        endArgs(cmd);
+                        Main.runCommand(cmd);
+                        break;
+                    } else if ("guide".equals(line)) {
+                        guide(console, cmd);
+                        break;
+                    }
+
+                    try {
+                        parseArgs(line.split("\\s", 2), cmd);
+                    } catch (CommandException e) {
+                        console.printf("%s\n", e.getMessage());
+                    }
+                }
+            }
+
+            private void guide(Console console, Command cmd) throws IOException
+            {
+                // We first check if we are in a maven project
+                File currentDirectory = new File("").getAbsoluteFile();
+                // TODO: allow working without a maven project
+                askMavenDirectory(console, cmd, currentDirectory);
+                askSyncDirectory(console, cmd);
+                askInstance(console, cmd);
+                askWhetherToSave(console, cmd);
+            }
+
+            private void askWhetherToSave(Console console, Command cmd) throws IOException
+            {
+                File currentDirectory = new File("").getAbsoluteFile();
+                File configFile = new File(currentDirectory, "xwikicli.config");
+                String path = configFile.getAbsolutePath();
+                if (askYesNo(console, "All set! Do you want to save this configuration in %s?", path)) {
+                    FileWriter fileWriter = new FileWriter(configFile);
+                    try (PrintWriter printWriter = new PrintWriter(fileWriter)) {
+                        printWriter.printf("--url %s\n", cmd.url());
+                        printWriter.printf("--user %s\n", cmd.user());
+                        printWriter.printf("--pass %s\n", cmd.pass());
+                        printWriter.printf("--mvn-repo %s\n", cmd.mvnRepo());
+                        printWriter.printf("--cli-dir %s\n", cmd.cliDir());
+                        printWriter.println("--sync-daemon\n");
+                    }
+                }
+            }
+
+            private void askInstance(Console console, Command cmd)
+            {
+                if (!askYesNo(console, "Do you want to work with an XWiki instance?")) {
+                    return;
+                }
+
+                cmd.setUrl(getAnswerWithDefault(console, "http://localhost:8080/xwiki",
+                        "Please provide the URL of your instance"));
+                cmd.setUser(getAnswerWithDefault(console, "Admin","Please provide the XWiki user to use"));
+                cmd.setPass(getAnswerWithDefault(console, "admin","Please provide the user password"));
+            }
+
+            private void askSyncDirectory(Console console, Command cmd)
+            {
+                String mvnRepo = cmd.mvnRepo();
+                File mvnRepoFile = new File(mvnRepo);
+                String mvnRepoName = mvnRepoFile.getName();
+                cmd.setCliDir(
+                    getAnswerWithDefault(
+                        console,
+                        "~/Work/XWiki/cli/" + mvnRepoName,
+                        "You will edit files in a 'sync' directory (following the XFF format).\n"
+                           + " Where do you want to work?"));
+            }
+
+            private String getAnswerWithDefault(Console console, String def, String msg)
+            {
+                String answer = console.readLine(msg + " (Default: %s): ", def);
+                if (answer.isEmpty()) {
+                    answer = def;
+                }
+                return answer;
+            }
+
+
+            private void askMavenDirectory(Console console, Command cmd, File currentDirectory)
+            {
+                File projectDirectory;
+                if (new File(currentDirectory, "pom.xml").exists()) {
+                    projectDirectory = askYesNo(console, "Do you want to work on the Maven project there? %s ", currentDirectory)
+                        ? currentDirectory
+                        : askProjectPath(console);
+                } else {
+                    projectDirectory = askProjectPath(console);
+                }
+                cmd.setMvnRepo(projectDirectory.getAbsolutePath());
+            }
+
+            private static File askProjectPath(Console console)
+            {
+                File projectDirectory;
+                String path = console.readLine("Please provide the path to your project: ");
+                while (true) {
+                    projectDirectory = new File(path);
+                    File pomFile = new File(projectDirectory, "pom.xml");
+                    if (pomFile.exists()) {
+                        return projectDirectory;
+                    } else {
+                        // askYesNo("There's no pom.xml file here. Do you want to create a new project?"))
+                        path = console.readLine("There's no pom.xml file here. Please provide the path to your project: ");
+                    }
+                }
+            }
+
+            private boolean askYesNo(Console console, String msg, Object... parameters)
+            {
+                String answer = console.readLine(msg + " [Y/n]: ", parameters).trim();
+                return switch (answer) {
+                    case "", "y", "Y", "yes", "YES" -> true;
+                    default -> false;
+                };
+            }
+        },
         EDIT_CONTENT {
             @Override
             void run(Command cmd) throws Exception

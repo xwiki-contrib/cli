@@ -169,7 +169,7 @@ public class Arguments
     static void endArgs(Command cmd) throws CommandException
     {
         if (cmd.action() == null) {
-            cmd.setAction(Command.Action.HELP);
+            cmd.setAction(Command.Action.REPL);
         }
 
         if (cmd.action() == Command.Action.SYNC && cmd.noMvnRepoRead()) {
@@ -207,7 +207,7 @@ public class Arguments
         return args[i + 1];
     }
 
-    private static void readConfigFile(String path, Command cmd) throws IOException, CommandException
+    static void readConfigFile(String path, Command cmd) throws IOException, CommandException
     {
         try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
             String line;
