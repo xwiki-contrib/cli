@@ -139,6 +139,8 @@ class XWikiDirAutoSync
             return;
         }
 
+        logger.info("Ready!");
+
         while (true) {
             // wait for key to be signaled
             try {

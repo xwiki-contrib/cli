@@ -482,7 +482,6 @@ public class Command
                     ds.doFirstSync();
                     LOGGER.info("Adding watches...");
                     ds.monitor();
-                    LOGGER.info("Ready!");
                 } catch (Exception e) {
                     LOGGER.error("Sync crashed", e);
                 } finally {
