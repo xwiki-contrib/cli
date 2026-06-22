@@ -714,7 +714,7 @@ public class Command
             @Override
             void run(Command cmd)
             {
-                System.console().printf("xwiki-cli JAVA\n\n" + HELP_TEXT);
+                System.console().printf("xwiki-cli JAVA\n\n%s", HELP_TEXT);
             }
         };
 
