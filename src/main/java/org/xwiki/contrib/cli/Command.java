@@ -360,7 +360,7 @@ public class Command
                         printParameterNotEmpty(printWriter, "--user", cmd.user());
                         printParameterNotEmpty(printWriter, "--pass", cmd.pass());
                         printParameterNotEmpty(printWriter, "--mvn-repo", cmd.mvnRepo());
-                        printParameterNotEmpty(printWriter, "--cli-dir", cmd.workingDirectory());
+                        printParameterNotEmpty(printWriter, "--working-directory", cmd.workingDirectory());
                     }
                 }
             }
