@@ -44,7 +44,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     protected final String wiki;
 
-    protected final String page;
+    protected final String reference;
 
     private final String url;
 
@@ -61,15 +61,15 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
      *
      * @param cmd the command line called.
      * @param wiki the wiki instance to use.
-     * @param page the page to use.
+     * @param reference the reference to use.
      * @throws DocException if something when wrong while initializing this object.
      */
-    public OutputXMLRestPage(Command cmd, String wiki, String page) throws DocException
+    public OutputXMLRestPage(Command cmd, String wiki, String reference) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, false);
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, false);
         this.wiki = wiki;
-        this.page = page;
+        this.reference = reference;
     }
 
     @Override
@@ -159,7 +159,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     public void setAttachment(String attachmentName, byte[] content) throws DocException
     {
         String attachmentURL =
-            Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, attachmentName);
+            Utils.getAttachmentRestURLFromCommand(cmd, wiki, reference, attachmentName);
         checkStatus(Utils.httpPut(cmd, attachmentURL, content, "application/octet-stream"));
     }
 
@@ -176,7 +176,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         if (objectExist) {
             throw new DocException("Object with number " + o.number() + " already exists");
         } else {
-            var addObjUrl = Utils.getObjectAddRestURLFromCommand(cmd, wiki, page);
+            var addObjUrl = Utils.getObjectAddRestURLFromCommand(cmd, wiki, reference);
             var requestParams =  "className=" + o.objectClass();
             checkStatus(Utils.httpPost(cmd, addObjUrl, requestParams, "application/x-www-form-urlencoded"));
         }
@@ -187,7 +187,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     {
         var objectExist = !getInputPage().getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
         if (objectExist) {
-            var objUrl = Utils.getObjectRestURLFromCommand(cmd, wiki, page, o);
+            var objUrl = Utils.getObjectRestURLFromCommand(cmd, wiki, reference, o);
             checkStatus(Utils.httpDelete(cmd, objUrl));
         }
     }
@@ -198,7 +198,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
         var attachmentExit = getInputPage().getAttachments().stream().anyMatch(o -> o.name().equals(name));
         if (attachmentExit) {
             String attachmentURL =
-                Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, name);
+                Utils.getAttachmentRestURLFromCommand(cmd, wiki, reference, name);
             checkStatus(Utils.httpDelete(cmd, attachmentURL));
         }
     }
@@ -206,7 +206,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     private InputXMLRestPage getInputPage() throws DocException
     {
         if (inputPage == null) {
-            inputPage = new InputXMLRestPage(cmd, wiki, page);
+            inputPage = new InputXMLRestPage(cmd, wiki, reference);
         }
         return inputPage;
     }

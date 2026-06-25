@@ -24,24 +24,23 @@ import java.net.http.HttpResponse;
 
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
-import org.xwiki.contrib.cli.MessageForUserDocException;
 import org.xwiki.contrib.cli.Utils;
 
 public class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
 {
     protected final String wiki;
 
-    protected final String page;
+    protected final String reference;
 
     private final String url;
 
-    public InputXMLRestPage(Command cmd, String wiki, String page) throws DocException
+    public InputXMLRestPage(Command cmd, String wiki, String reference) throws DocException
     {
         super(cmd);
 
-        this.page = page;
+        this.reference = reference;
         this.wiki = wiki;
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, page, true);
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, true);
 
         var response = Utils.httpGet(cmd, url);
         var status = response.statusCode();
@@ -67,16 +66,17 @@ public class InputXMLRestPage extends AbstractXMLDoc implements InputDoc
         return wiki;
     }
 
-    public String getPage()
+    @Override
+    public String getReference()
     {
-        return page;
+        return reference;
     }
 
     @Override
     public byte[] getAttachment(String attachmentName) throws DocException
     {
 
-        String attachmentURL = Utils.getAttachmentRestURLFromCommand(cmd, wiki, page, attachmentName);
+        String attachmentURL = Utils.getAttachmentRestURLFromCommand(cmd, wiki, reference, attachmentName);
         return Utils.httpGetBytes(cmd, attachmentURL).body();
     }
 

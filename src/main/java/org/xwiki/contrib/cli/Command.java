@@ -67,7 +67,7 @@ public class Command
                                          parameters
             --repl, --interactive        Run in interactive mode
 
-            --edit-page                  Edit a complete XWiki document
+            --edit-doc                   Edit a complete XWiki document
             --get-content                Get the content of a XWiki document
             --set-content <CONTENT>      Set the content of a XWiki document
             --edit-content               Edit the content of a XWiki document with a text editor
@@ -86,10 +86,10 @@ public class Command
             --mount <PATH>               Mount a FUSE filesystem with the wiki contents at PATH
             --edit-tree                  Provide a working directory from which the instance and the maven repository
                                          can be updated
-            --push-page <REFERENCE>      Push a page from the maven repository to a XWiki instance
-            --pull-page <REFERENCE>      Pull a page from a XWiki instance to the maven repository
-            --push-all-pages             Push all pages from the maven repository to the XWiki instance
-            --pull-all-pages             Update all pages present in the %aven repository from the XWiki instance
+            --push-doc <REFERENCE>       Push a document from the maven repository to a XWiki instance
+            --pull-doc <REFERENCE>       Pull a document from a XWiki instance to the maven repository
+            --push-all-docs              Push all documents from the maven repository to the XWiki instance
+            --pull-all-docs              Update all documents present in the %aven repository from the XWiki instance
         
         General Parameters:
             --log-level                  Define the log level. Default warn.
@@ -101,10 +101,10 @@ public class Command
 
         Parameters for single field or page edition:
             --editor <EDITOR>            Use this editor (necessary if environment variable EDITOR is not set)
-            -p <PAGE>                    Specify the page (dotted notation)
+            -r, --ref <REFERENCE>        Specify the page (dotted notation)
             -o <CLASS[/NUMBER]>          Specify the class and optionally the number of the object to consider
             -v <VALUE>                   The value to use
-            -property <PROPERTY>         Define the property to work on
+            --property <PROPERTY>        Define the property to work on
             --read-from-xml <FILE>       Read the document from the given file
             --write-to-xml <FILE>        Write the document to the given file
             --xml-file FILE              Same as --write-to-xml FILE --read-from-xml FILE
@@ -233,18 +233,18 @@ public class Command
                         askEditAction(console, cmd);
                         break;
                     case "3":
-                        cmd.setAction(PUSH_PAGE);
+                        cmd.setAction(PUSH_DOCUMENT);
                         askDocumentToEdit(console, cmd);
                         break;
                     case "4":
-                        cmd.setAction(PUSH_ALL_PAGES);
+                        cmd.setAction(PUSH_ALL_DOCUMENTS);
                         break;
                     case "5":
-                        cmd.setAction(PULL_PAGE);
+                        cmd.setAction(PULL_DOCUMENT);
                         askDocumentToEdit(console, cmd);
                         break;
                     case "6":
-                        cmd.setAction(PULL_ALL_PAGES);
+                        cmd.setAction(PULL_ALL_DOCUMENTS);
                         break;
                     default:
                         couldNotUnderstandAnswer(console);
@@ -271,7 +271,7 @@ public class Command
                         """.trim());
                 switch (answer.trim()) {
                     case "1":
-                        cmd.setAction(EDIT_PAGE);
+                        cmd.setAction(EDIT_DOCUMENT);
                         askDocumentToEdit(console, cmd);
                         break;
                     case "2":
@@ -327,7 +327,7 @@ public class Command
                     cmd.setInputFile(ref);
                     cmd.setOutputFile(ref);
                 } else {
-                    cmd.setPage(ref);
+                    cmd.setReference(ref);
                 }
             }
 
@@ -495,7 +495,7 @@ public class Command
                 });
             }
         },
-        EDIT_PAGE {
+        EDIT_DOCUMENT {
             @Override
             void run(Command cmd) throws Exception
             {
@@ -668,7 +668,7 @@ public class Command
                 }
             }
         },
-        PULL_PAGE {
+        PULL_DOCUMENT {
             @Override
             void run(Command cmd) throws DocException, IOException
             {
@@ -676,7 +676,7 @@ public class Command
                 pageSync.pullPage();
             }
         },
-        PUSH_PAGE {
+        PUSH_DOCUMENT {
             @Override
             void run(Command cmd) throws DocException, IOException
             {
@@ -684,7 +684,7 @@ public class Command
                 pageSync.pushPage();
             }
         },
-        PULL_ALL_PAGES {
+        PULL_ALL_DOCUMENTS {
             @Override
             void run(Command cmd) throws DocException, IOException
             {
@@ -692,7 +692,7 @@ public class Command
                 pageSync.pullPages();
             }
         },
-        PUSH_ALL_PAGES {
+        PUSH_ALL_DOCUMENTS {
             @Override
             void run(Command cmd) throws DocException, IOException
             {
@@ -754,7 +754,7 @@ public class Command
 
     private String editor;
 
-    private String page;
+    private String reference;
 
     private String objectClass;
 
@@ -841,17 +841,17 @@ public class Command
     /**
      * {@return the page to edit/read.}
      */
-    public String page()
+    public String reference()
     {
-        return page;
+        return reference;
     }
 
     /**
-     * @param page the page to edit/read.
+     * @param reference the reference of the document to edit/read.
      */
-    public void setPage(String page)
+    public void setReference(String reference)
     {
-        this.page = page;
+        this.reference = reference;
     }
 
     /**
@@ -1260,7 +1260,7 @@ public class Command
         // TODO log all parameters ??
         LOGGER.info("Action:        {}", action);
         LOGGER.info("Wiki:          {}", wiki);
-        LOGGER.info("Page:          {}", page);
+        LOGGER.info("Reference:     {}", reference);
         LOGGER.info("Object Class:  {}", objectClass);
         LOGGER.info("Object Number: {}", objectNumber);
         LOGGER.info("Property:      {}", property);
@@ -1315,7 +1315,7 @@ public class Command
     private String getDocURL()
     {
         try {
-            return Utils.getDocRestURLFromCommand(this, wiki, page, false);
+            return Utils.getDocRestURLFromCommand(this, wiki, reference, false);
         } catch (DocException e) {
             return "(N/A)";
         }

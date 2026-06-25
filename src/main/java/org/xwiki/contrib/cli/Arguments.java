@@ -66,7 +66,7 @@ public final class Arguments
                         throw new CommandException("Could not read config file", e);
                     }
                 }
-                case "--edit-page" -> cmd.setAction(Command.Action.EDIT_PAGE);
+                case "--edit-doc" -> cmd.setAction(Command.Action.EDIT_DOCUMENT);
                 case "--get-content" -> cmd.setAction(Command.Action.GET_CONTENT);
                 case "--set-content" -> {
                     cmd.setContent(getNextParameter(args, i++));
@@ -104,19 +104,19 @@ public final class Arguments
                 case "--edit-tree" -> {
                     cmd.setAction(Command.Action.EDIT_TREE);
                 }
-                case "--pull-page" -> {
+                case "--pull-doc" -> {
                     cmd.setPullReference(getNextParameter(args, i++));
-                    cmd.setAction(Command.Action.PULL_PAGE);
+                    cmd.setAction(Command.Action.PULL_DOCUMENT);
                 }
-                case "--push-page" -> {
+                case "--push-doc" -> {
                     cmd.setPushReference(getNextParameter(args, i++));
-                    cmd.setAction(Command.Action.PUSH_PAGE);
+                    cmd.setAction(Command.Action.PUSH_DOCUMENT);
                 }
-                case "--pull-all-pages" -> {
-                    cmd.setAction(Command.Action.PULL_ALL_PAGES);
+                case "--pull-all-docs" -> {
+                    cmd.setAction(Command.Action.PULL_ALL_DOCUMENTS);
                 }
-                case "--push-all-pages" -> {
-                    cmd.setAction(Command.Action.PUSH_ALL_PAGES);
+                case "--push-all-docs" -> {
+                    cmd.setAction(Command.Action.PUSH_ALL_DOCUMENTS);
                 }
 
                 case "--log-level" -> cmd.setLogLevel(getNextParameter(args, i++));
@@ -129,7 +129,7 @@ public final class Arguments
                 case "-w" -> cmd.setWiki(getNextParameter(args, i++));
 
                 case "--editor" -> cmd.setEditor(getNextParameter(args, i++));
-                case "-p" -> cmd.setPage(getNextParameter(args, i++));
+                case "-r", "--ref" -> cmd.setReference(getNextParameter(args, i++));
                 case "-o" -> {
                     var objectParts = getNextParameter(args, i).split("/");
                     cmd.setObjectClass(objectParts[0]);
@@ -194,10 +194,10 @@ public final class Arguments
         }
 
         if (((cmd.action() == Command.Action.EDIT_TREE && cmd.firstSyncFrom() == Command.FirstSyncFrom.MVN)
-            || cmd.action() == Command.Action.PUSH_ALL_PAGES
-            || cmd.action() == Command.Action.PULL_ALL_PAGES
-            || cmd.action() == Command.Action.PUSH_PAGE
-            || cmd.action() == Command.Action.PULL_PAGE)
+            || cmd.action() == Command.Action.PUSH_ALL_DOCUMENTS
+            || cmd.action() == Command.Action.PULL_ALL_DOCUMENTS
+            || cmd.action() == Command.Action.PUSH_DOCUMENT
+            || cmd.action() == Command.Action.PULL_DOCUMENT)
             && StringUtils.isEmpty(cmd.mvnRepo()))
         {
             throw new CommandException("This action requires providing a Maven repository.");

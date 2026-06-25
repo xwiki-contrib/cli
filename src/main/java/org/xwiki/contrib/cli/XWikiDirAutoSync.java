@@ -509,7 +509,7 @@ class XWikiDirAutoSync
             String page = pageMatcher.group(2).replace(FSDirUtils.DOT, FSDirUtils.ESCAPED_DOT);
 
             try {
-                MultipleDoc document = new MultipleDoc(command);
+                MultipleDoc document = new MultipleDoc(command, command.wiki(), space + '.' + page);
 
                 String remainingPath = path.substring(pageMatcher.end());
 

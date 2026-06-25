@@ -60,8 +60,11 @@ public class MultipleDoc implements InputOutputDoc
      */
     public MultipleDoc(Command cmd) throws DocException, IOException
     {
-        String wiki = cmd.wiki();
-        String page = cmd.page();
+        this(cmd, cmd.wiki(), cmd.reference());
+    }
+
+    public MultipleDoc(Command cmd, String wiki, String reference) throws DocException, IOException
+    {
         inputDocs = new ArrayList<>();
         outputDocs = new ArrayList<>();
 
@@ -69,8 +72,8 @@ public class MultipleDoc implements InputOutputDoc
 
         if (StringUtils.isNotEmpty(cmd.inputFile())) {
             XMLFileDoc inputDoc = new XMLFileDoc(cmd, cmd.inputFile());
-            if (StringUtils.isEmpty(page)) {
-                page = inputDoc.getReference();
+            if (StringUtils.isEmpty(reference)) {
+                reference = inputDoc.getReference();
             }
             inputDocs.add(inputDoc);
         }
@@ -80,11 +83,11 @@ public class MultipleDoc implements InputOutputDoc
         }
 
         if (StringUtils.isNotEmpty(cmd.mvnRepo()) && !cmd.noMvnRepoWrite()) {
-            outputDocs.add(new MvnRepoFileDoc(cmd, page));
+            outputDocs.add(new MvnRepoFileDoc(cmd, reference));
         }
 
         if (StringUtils.isNotEmpty(cmd.url()) && !cmd.noWriteWiki()) {
-            outputDocs.add(new OutputXMLRestPage(cmd, wiki, page));
+            outputDocs.add(new OutputXMLRestPage(cmd, wiki, reference));
         }
     }
 
