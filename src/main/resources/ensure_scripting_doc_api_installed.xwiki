@@ -2,7 +2,7 @@
 import org.xwiki.extension.ExtensionId
 def installedExtension = services.extension.installed.repository.getInstalledExtension(new ExtensionId("org.xwiki.contrib.scriptingdocumentation:scripting-documentation-api"))
 if (installedExtension == null) {
-    def j = services.extension.install("org.xwiki.contrib.scriptingdocumentation:scripting-documentation-api", "1.5.0", "wiki:xwiki")
+    def j = services.extension.install("org.xwiki.contrib.scriptingdocumentation:scripting-documentation-api", "1.5.0", "wiki:${services.wiki.currentWikiId}")
     j.join()
 }
 {{/groovy}}
