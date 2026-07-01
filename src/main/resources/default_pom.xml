@@ -4,8 +4,7 @@
   <parent>
     <groupId>org.xwiki.contrib</groupId>
     <artifactId>parent-platform</artifactId>
-    <!-- TODO ideally we would like to use the running XWiki version here -->
-    <version>16.10.15</version>
+    <version>__XWIKI_RUNNING_VERSION__</version>
   </parent>
   <groupId>org.xwiki.contrib.cli</groupId>
   <artifactId>groovy-script</artifactId>

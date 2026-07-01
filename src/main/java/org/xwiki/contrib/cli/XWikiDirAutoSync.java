@@ -219,6 +219,7 @@ class XWikiDirAutoSync
             var pom =
                 new BufferedReader(new InputStreamReader(XWikiDirAutoSync.class.getResourceAsStream("/default_pom.xml")))
                     .lines().collect(Collectors.joining("\n"));
+            pom = pom.replace("__XWIKI_RUNNING_VERSION__", Utils.getXWikiRunningVersion(command));
             Files.writeString(xmlFile, pom);
         } else {
             var sourceProjectPomPath = Path.of(command.mvnRepo(), POM_XML);

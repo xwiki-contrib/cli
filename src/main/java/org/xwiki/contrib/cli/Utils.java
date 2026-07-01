@@ -725,6 +725,18 @@ public final class Utils
         return res;
     }
 
+    public static String getXWikiRunningVersion(Command cmd) throws DocException
+    {
+        var response = httpGet(cmd, cmd.url() + "/rest");
+        if (response.statusCode() != 200) {
+            throw new DocException("Can't get version from REST API");
+        }
+        var domdoc = parseXML(response.body());
+        var root = domdoc.getRootElement();
+        var nodeVersion = root.selectSingleNode("//xwiki/*[local-name()='version']");
+        return nodeVersion.getText();
+    }
+
     /**
      * @param cmd the Command to use.
      * @return get the path of the java resource directory of the maven repository. It's at this path where we will find
