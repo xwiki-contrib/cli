@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.document.InputDoc;
-import org.xwiki.contrib.cli.document.InputXMLRestPage;
+import org.xwiki.contrib.cli.document.InputOutputDoc;
 import org.xwiki.contrib.cli.document.MvnRepoFileDoc;
 import org.xwiki.contrib.cli.document.OutputDoc;
-import org.xwiki.contrib.cli.document.OutputXMLRestPage;
+import org.xwiki.contrib.cli.document.XMLRestPage;
 import org.xwiki.contrib.cli.document.XMLFileDoc;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
@@ -39,10 +39,8 @@ class PageSync
     public void pushPage() throws IOException, DocException
     {
         var mvnPage = new MvnRepoFileDoc(cmd, cmd.pushReference());
-        var xwikiPage = new OutputXMLRestPage(cmd, cmd.wiki(), cmd.pushReference());
-        var xwikiPageRead = new InputXMLRestPage(cmd, cmd.wiki(), cmd.pushReference());
-        // TODO we would proabably refactor this in a better way to not duplicate the output doc and inputdoc
-        syncPage(mvnPage, xwikiPage, xwikiPageRead);
+        var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), cmd.pushReference());
+        syncPage(mvnPage, xwikiPage);
     }
 
     /**
@@ -68,9 +66,8 @@ class PageSync
         var allPagesReferences = getAllPagesRefencesMvnRepo();
         for (var pageRef : allPagesReferences) {
             var mvnPage = new MvnRepoFileDoc(cmd, pageRef);
-            var xwikiPage = new OutputXMLRestPage(cmd, cmd.wiki(), pageRef);
-            var xwikiPageRead = new InputXMLRestPage(cmd, cmd.wiki(), pageRef);
-            syncPage(mvnPage, xwikiPage, xwikiPageRead);
+            var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), pageRef);
+            syncPage(mvnPage, xwikiPage);
         }
     }
 
@@ -103,13 +100,13 @@ class PageSync
         return res;
     }
 
-    private void syncPage(InputDoc source, OutputDoc target, InputDoc targetRead)
+    private void syncPage(InputDoc source, InputOutputDoc target)
         throws DocException
     {
         target.setTitle(source.getTitle());
         target.setContent(source.getContent());
         var allObjects = source.getObjects(null, null, null);
-        var allObjectsDestination = targetRead.getObjects(null, null, null);
+        var allObjectsDestination = target.getObjects(null, null, null);
         var objectByClass = convertObjectListToMap(allObjects);
         var objectByClassDest = convertObjectListToMap(allObjectsDestination);
         var allClassesToHandle = new HashSet<>(objectByClass.keySet());
@@ -147,7 +144,7 @@ class PageSync
 
         var attachmentsByName = source.getAttachments().stream().map(AttachmentInfo::name).collect(Collectors.toSet());
         var attachmentsTargetByName =
-            targetRead.getAttachments().stream().map(AttachmentInfo::name).collect(Collectors.toSet());
+            target.getAttachments().stream().map(AttachmentInfo::name).collect(Collectors.toSet());
         var allAttachmentsByName = new HashSet<>(attachmentsByName);
         allAttachmentsByName.addAll(attachmentsTargetByName);
         var attachmentToRemove = new ArrayList<String>();

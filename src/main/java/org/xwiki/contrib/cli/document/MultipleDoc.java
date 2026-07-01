@@ -87,7 +87,7 @@ public class MultipleDoc implements InputOutputDoc
         }
 
         if (StringUtils.isNotEmpty(cmd.url()) && !cmd.noWriteWiki()) {
-            outputDocs.add(new OutputXMLRestPage(cmd, wiki, reference));
+            outputDocs.add(new XMLRestPage(cmd, wiki, reference));
         }
     }
 

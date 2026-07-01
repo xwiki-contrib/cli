@@ -30,9 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.component.manager.ComponentLookupException;
 import org.xwiki.contrib.cli.document.InputDoc;
-import org.xwiki.contrib.cli.document.InputXMLRestPage;
 import org.xwiki.contrib.cli.document.MultipleDoc;
 import org.xwiki.contrib.cli.document.XMLFileDoc;
+import org.xwiki.contrib.cli.document.XMLRestPage;
 import org.xwiki.contrib.cli.document.element.ExtensionInfos;
 import org.xwiki.contrib.cli.document.element.ExtensionInfosList;
 import org.xwiki.contrib.cli.document.element.MacroInstance;
@@ -217,7 +217,8 @@ class XWikiDirAutoSync
         var xmlFile = Path.of(mavenSyncPath.toString(), POM_XML);
         if (command.firstSyncFrom() == Command.FirstSyncFrom.WIKI) {
             var pom =
-                new BufferedReader(new InputStreamReader(XWikiDirAutoSync.class.getResourceAsStream("/default_pom.xml")))
+                new BufferedReader(
+                    new InputStreamReader(XWikiDirAutoSync.class.getResourceAsStream("/default_pom.xml")))
                     .lines().collect(Collectors.joining("\n"));
             pom = pom.replace("__XWIKI_RUNNING_VERSION__", Utils.getXWikiRunningVersion(command));
             Files.writeString(xmlFile, pom);
@@ -309,7 +310,7 @@ class XWikiDirAutoSync
     {
         var allPages = Utils.listAllPagesForSpaceXWiki(command, command.spaces());
         for (var p : allPages) {
-            var restDoc = new InputXMLRestPage(command, command.wiki(), p);
+            var restDoc = new XMLRestPage(command, command.wiki(), p);
             syncDocToXFF(restDoc);
             syncDocToMvnProject(restDoc);
         }
@@ -366,7 +367,8 @@ class XWikiDirAutoSync
         }
     }
 
-    private void syncDocToMvnProject(InputDoc doc) throws DocException, IOException, ComponentLookupException, ParseException
+    private void syncDocToMvnProject(InputDoc doc)
+        throws DocException, IOException, ComponentLookupException, ParseException
     {
         var dstXFFFile = syncPath.toString() + Utils.fromReferenceToXFFPath(doc.getReference());
         var dstJava = Path.of(mavenSyncPath.toString(), PATH_SRC, PATH_MAIN, PATH_JAVA,

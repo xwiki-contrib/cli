@@ -34,11 +34,11 @@ import org.xwiki.contrib.cli.document.element.ObjectInfo;
 import org.xwiki.contrib.cli.document.element.Property;
 
 /**
- * A writable REST page.
+ * A readable and writable REST page.
  *
  * @version $Id$
  */
-public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
+public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
 {
     private static final String APPLICATION_XML_CHARSET_UTF_8 = "application/xml; charset=utf-8";
 
@@ -54,8 +54,6 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
 
     private final List<ObjectInfo> objectValues = new LinkedList<>();
 
-    private InputXMLRestPage inputPage;
-
     /**
      * Constructor.
      *
@@ -64,12 +62,62 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
      * @param reference the reference to use.
      * @throws DocException if something when wrong while initializing this object.
      */
-    public OutputXMLRestPage(Command cmd, String wiki, String reference) throws DocException
+    public XMLRestPage(Command cmd, String wiki, String reference) throws DocException
     {
         super(cmd);
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, false);
-        this.wiki = wiki;
+
         this.reference = reference;
+        this.wiki = wiki;
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, true);
+
+        var response = Utils.httpGet(cmd, url);
+        var status = response.statusCode();
+        if (status == 200) {
+            handleResponse(response);
+        } else if (status == 404 && cmd.acceptNewDocument()) {
+            // 404 : Document not found, we assume it's a document we would like to create
+            response = Utils.httpPut(cmd, url, "", null);
+            status = response.statusCode();
+            if (status == 201) {
+                // 201 : New Document Created
+                handleResponse(response);
+            } else {
+                Utils.handleUnexpectedStatus(status, response, logger);
+            }
+        } else {
+            Utils.handleUnexpectedStatus(status, response, logger);
+        }
+    }
+
+    public String getWiki()
+    {
+        return wiki;
+    }
+
+    @Override
+    public String getReference()
+    {
+        return reference;
+    }
+
+    @Override
+    public byte[] getAttachment(String attachmentName) throws DocException
+    {
+
+        String attachmentURL = Utils.getAttachmentRestURLFromCommand(cmd, wiki, reference, attachmentName);
+        return Utils.httpGetBytes(cmd, attachmentURL).body();
+    }
+
+    @Override
+    public String getFriendlyName()
+    {
+        return "the page at [" + url + "]";
+    }
+
+    private void handleResponse(HttpResponse<String> response)
+    {
+        var body = response.body();
+        setXML(body, true);
     }
 
     @Override
@@ -83,8 +131,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     {
         ObjectInfo objectSpec;
         if (StringUtils.isEmpty(objectClass) || StringUtils.isEmpty(objectNumber)) {
-            objectSpec = getInputPage()
-                .getObjectSpec(objectClass, objectNumber, property)
+            objectSpec = getObjectSpec(objectClass, objectNumber, property)
                 .orElseThrow(() -> new DocException(String.format("Can't find object of class %s number %s",
                     objectClass, objectNumber)));
         } else {
@@ -164,20 +211,14 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     }
 
     @Override
-    public String getFriendlyName()
-    {
-        return "the page at [" + url + "]";
-    }
-
-    @Override
     public void addObj(ObjectInfo o) throws DocException
     {
-        var objectExist = !getInputPage().getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
+        var objectExist = !getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
         if (objectExist) {
             throw new DocException("Object with number " + o.number() + " already exists");
         } else {
             var addObjUrl = Utils.getObjectAddRestURLFromCommand(cmd, wiki, reference);
-            var requestParams =  "className=" + o.objectClass();
+            var requestParams = "className=" + o.objectClass();
             checkStatus(Utils.httpPost(cmd, addObjUrl, requestParams, "application/x-www-form-urlencoded"));
         }
     }
@@ -185,7 +226,7 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void deleteObj(ObjectInfo o) throws DocException
     {
-        var objectExist = !getInputPage().getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
+        var objectExist = !getObjects(o.objectClass(), String.valueOf(o.number()), null).isEmpty();
         if (objectExist) {
             var objUrl = Utils.getObjectRestURLFromCommand(cmd, wiki, reference, o);
             checkStatus(Utils.httpDelete(cmd, objUrl));
@@ -195,20 +236,12 @@ public class OutputXMLRestPage extends AbstractXMLDoc implements OutputDoc
     @Override
     public void deleteAttachment(String name) throws DocException
     {
-        var attachmentExit = getInputPage().getAttachments().stream().anyMatch(o -> o.name().equals(name));
+        var attachmentExit = getAttachments().stream().anyMatch(o -> o.name().equals(name));
         if (attachmentExit) {
             String attachmentURL =
                 Utils.getAttachmentRestURLFromCommand(cmd, wiki, reference, name);
             checkStatus(Utils.httpDelete(cmd, attachmentURL));
         }
-    }
-
-    private InputXMLRestPage getInputPage() throws DocException
-    {
-        if (inputPage == null) {
-            inputPage = new InputXMLRestPage(cmd, wiki, reference);
-        }
-        return inputPage;
     }
 
     private void checkStatus(HttpResponse<String> response) throws MessageForUserDocException
