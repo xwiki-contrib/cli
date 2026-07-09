@@ -62,7 +62,7 @@ final class Main
         File currentDirectory = new File("").getAbsoluteFile();
         File configFile = new File(currentDirectory, "xwikicli.config");
         if (configFile.exists()) {
-            System.console().printf("There is a xwikicli.config file in the current directory. Using it.\n");
+            System.err.print("There is a xwikicli.config file in the current directory. Using it.\n");
             readConfigFile(configFile.getAbsolutePath(), cmd);
         }
     }
