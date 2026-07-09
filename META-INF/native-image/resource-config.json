@@ -1,6 +1,11 @@
 {
   "resources": {
-    "includes": []
+    "includes": [
+      {"pattern": ".*\\.xwiki$"},
+      {"pattern": "default_pom\\.xml$"},
+      {"pattern": ".*-version\\.properties$"},
+      {"pattern": ".*-dependees\\.properties$"}
+    ]
   },
   "bundles": [
     {
