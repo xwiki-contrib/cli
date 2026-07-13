@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -127,6 +128,16 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     }
 
     @Override
+    public String getContent() throws DocException
+    {
+        if (!StringUtils.isEmpty(content)) {
+            return content;
+        } else {
+            return super.getContent();
+        }
+    }
+
+    @Override
     public void setValue(String objectClass, String objectNumber, String property, String value) throws DocException
     {
         ObjectInfo objectSpec;
@@ -151,9 +162,69 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     }
 
     @Override
+    public Optional<String> getValue(String objectClass, String objectNumber, String property) throws DocException
+    {
+        ObjectInfo objectSpec;
+        if (StringUtils.isEmpty(objectClass) || StringUtils.isEmpty(objectNumber)) {
+            objectSpec = getObjectSpec(objectClass, objectNumber, property)
+                .orElseThrow(() -> new DocException(String.format("Can't find object of class %s number %s",
+                    objectClass, objectNumber)));
+        } else {
+            objectSpec = new ObjectInfo(objectClass, Integer.parseInt(objectNumber), new LinkedList<>());
+        }
+
+        var valuesForGivenObjectSpec = objectValues.stream()
+            .filter(o -> objectSpec.objectClass().equals(o.objectClass()) && objectSpec.number() == o.number())
+            .findFirst().orElseGet(() -> {
+                objectValues.add(objectSpec);
+                return objectSpec;
+            });
+        var propertyValue = valuesForGivenObjectSpec.properties()
+            .stream().filter(p -> p.name().equals(property)).map(Property::value).findFirst();
+        if (propertyValue.isEmpty()) {
+            propertyValue = super.getValue(objectClass, objectNumber, property);
+        }
+        return propertyValue;
+    }
+
+    @Override
+    public Collection<ObjectInfo> getObjects(String objectClass, String objectNumber, String property)
+        throws DocException
+    {
+        var objects = super.getObjects(objectClass, objectNumber, property);
+        var result = new LinkedList<ObjectInfo>();
+
+        // Override result with value set in XMLRestPage. In this place we save only value which are pending to be saved.
+        for (var obj : objects) {
+            var properties = new LinkedList<Property>();
+            for (var prop : obj.properties()) {
+                var objectValue = objectValues.stream()
+                    .filter(o -> o.objectClass().equals(obj.objectClass()) && obj.number() == o.number())
+                    .findFirst().orElse(new ObjectInfo("", 0, List.of()))
+                    .properties().stream().filter(p -> p.name().equals(prop.name())).findFirst();
+
+                properties.add(objectValue.orElse(prop));
+            }
+            result.add(new ObjectInfo(obj.objectClass(), obj.number(), properties));
+        }
+
+        return result;
+    }
+
+    @Override
     public void setTitle(String str) throws DocException
     {
         title = str;
+    }
+
+    @Override
+    public String getTitle() throws DocException
+    {
+        if (!StringUtils.isEmpty(title)) {
+            return title;
+        } else {
+            return super.getTitle();
+        }
     }
 
     @Override
