@@ -48,6 +48,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     protected final String reference;
 
     private final String url;
+    private final String urlWithObject;
 
     private String content;
 
@@ -69,9 +70,10 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
 
         this.reference = reference;
         this.wiki = wiki;
-        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, true);
+        url = Utils.getDocRestURLFromCommand(cmd, wiki, reference, false);
+        urlWithObject = Utils.getDocRestURLFromCommand(cmd, wiki, reference, true);
 
-        var response = Utils.httpGet(cmd, url);
+        var response = Utils.httpGet(cmd, urlWithObject);
         var status = response.statusCode();
         if (status == 200) {
             handleResponse(response);
@@ -237,6 +239,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
             int builderSize =
                 500 + objectSpec.properties().stream().map(i -> i.value().length() + 100).reduce(0, Integer::sum);
             StringBuilder xml = new StringBuilder(builderSize);
+            xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
             xml.append("<object xmlns='http://www.xwiki.org'>");
             xml.append("<className>").append(objectClassName).append("</className>");
             xml.append("<number>").append(objectNumber).append("</number>");
@@ -254,7 +257,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
         if (content != null || title != null) {
             int builderSize = (content == null ? 0 : content.length()) + (title == null ? 0 : title.length()) + 500;
             var xml = new StringBuilder(builderSize);
-            xml.append("<page xmlns='http://www.xwiki.org'>");
+            xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><page xmlns=\"http://www.xwiki.org\">");
 
             if (content != null) {
                 xml.append("<content>").append(Utils.escapeXML(content)).append("</content>");
