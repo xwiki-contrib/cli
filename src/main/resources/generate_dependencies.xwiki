@@ -2,11 +2,12 @@
 import com.fasterxml.jackson.databind.ObjectMapper
 import java.nio.charset.StandardCharsets
 
-record ExtensionInfos(
-    String groupId,
-    String artefactId,
-    String version)
-{}
+class ExtensionInfos
+{
+    String groupId
+    String artefactId
+    String version
+}
 
 def allClassPath = new HashSet()
 def extensionsList = new ArrayList<ExtensionInfos>()
@@ -35,7 +36,7 @@ services.extension.installed.getInstalledExtensions().forEach { it ->
             return
         }
         if (allClassPath.contains(path.path)) {
-            extensionsList.add(new ExtensionInfos(idSplit[0], idSplit[1], it.id.version.value))
+            extensionsList.add(new ExtensionInfos(groupId: idSplit[0], artefactId: idSplit[1], version: it.id.version.value))
         }
     }
 }
@@ -57,7 +58,7 @@ services.extension.coreExtensions.forEach { it ->
             return
         }
         if (allClassPath.contains(path.path)) {
-           extensionsList.add(new ExtensionInfos(idSplit[0], idSplit[1], it.id.version.value))
+           extensionsList.add(new ExtensionInfos(groupId: idSplit[0], artefactId: idSplit[1], version: it.id.version.value))
         }
     }
 }
