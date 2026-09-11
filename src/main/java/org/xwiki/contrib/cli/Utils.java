@@ -107,6 +107,8 @@ public final class Utils
 
     private static final String PATH_RESOURCES = "resources";
 
+    private static final String REST = "/rest";
+
     private Utils()
     {
         // Intentionally left blank.
@@ -368,7 +370,7 @@ public final class Utils
     public static String getCSRF(Command cmd) throws DocException
     {
         var response = internalHttpRequest(cmd, HttpRequest.newBuilder()
-            .uri(URI.create(cmd.url() + "/rest"))
+            .uri(URI.create(cmd.url() + REST))
             .GET(), HttpResponse.BodyHandlers.ofString());
         return response.headers().firstValue("xwiki-form-token")
             .orElseThrow(() -> new DocException("Can't get CSRF token from XWiki"));
@@ -701,8 +703,16 @@ public final class Utils
         return listSubDir(xmlFileDirPath);
     }
 
+    /**
+     * List all page reference for a provided space.
+     *
+     * @param cmd the CLI command.
+     * @param spaces the space to list the pages.
+     * @return a list of pages references.
+     * @throws DocException in case of something when wrong.
+     */
     public static List<String> listAllPagesForSpaceXWiki(Command cmd, List<String> spaces)
-        throws IOException, DocException
+        throws DocException
     {
         var res = new ArrayList<String>();
         for (var space : spaces) {
@@ -725,9 +735,16 @@ public final class Utils
         return res;
     }
 
+    /**
+     * Get the version of XWiki which is running.
+     *
+     * @param cmd the CLI command.
+     * @return the XWiki version in string.
+     * @throws DocException in case of something went wrong.
+     */
     public static String getXWikiRunningVersion(Command cmd) throws DocException
     {
-        var response = httpGet(cmd, cmd.url() + "/rest");
+        var response = httpGet(cmd, cmd.url() + REST);
         if (response.statusCode() != 200) {
             throw new DocException("Can't get version from REST API");
         }
@@ -852,8 +869,16 @@ public final class Utils
         }
     }
 
+    /**
+     * Log unhandled status from XWiki.
+     *
+     * @param status the status code.
+     * @param response the http response.
+     * @param logger the logger.
+     * @throws MessageForUserDocException the exception that will be thrown.
+     */
     public static void handleUnexpectedStatus(int status, HttpResponse<String> response, Logger logger)
-            throws MessageForUserDocException
+        throws MessageForUserDocException
     {
         throw new MessageForUserDocException(
             "Unexpected status "
@@ -864,5 +889,4 @@ public final class Utils
                 : " - Use --log-level DEBUG to print the body of the HTTP request")
         );
     }
-
 }
