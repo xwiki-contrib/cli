@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<page xmlns="http://www.xwiki.org">
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main" rel="http://www.xwiki.org/rel/space"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome" rel="http://www.xwiki.org/rel/parent"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/history" rel="http://www.xwiki.org/rel/history"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/children" rel="http://www.xwiki.org/rel/children"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/objects" rel="http://www.xwiki.org/rel/objects"/>
+    <link href="https://example.org/xwiki/rest/syntaxes" rel="http://www.xwiki.org/rel/syntaxes"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome" rel="self"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/classes/Main.WebHome" rel="http://www.xwiki.org/rel/class"/>
+    <id>xwiki:Main.WebHome</id>
+    <fullName>Main.WebHome</fullName>
+    <wiki>xwiki</wiki>
+    <space>Main</space>
+    <name>WebHome</name>
+    <title>My example title</title>
+    <rawTitle>My example title</rawTitle>
+    <parent>WebHome</parent>
+    <parentId>xwiki:Main.WebHome</parentId>
+    <version>16.5</version>
+    <author>XWiki.tkrieck</author>
+    <xwikiRelativeUrl>https://example.org/xwiki/bin/view/Main/</xwikiRelativeUrl>
+    <xwikiAbsoluteUrl>https://example.org/xwiki/bin/view/Main/</xwikiAbsoluteUrl>
+    <translations default="en">
+    <translation language="en">
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome" rel="http://www.xwiki.org/rel/page"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/history" rel="http://www.xwiki.org/rel/history"/>
+    </translation>
+    <translation language="fr">
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/translations/fr" rel="http://www.xwiki.org/rel/page"/>
+    <link href="https://example.org/xwiki/rest/wikis/xwiki/spaces/Main/pages/WebHome/translations/fr/history" rel="http://www.xwiki.org/rel/history"/>
+    </translation>
+    </translations>
+    <syntax>xwiki/2.1</syntax>
+    <language>
+    </language>
+    <majorVersion>16</majorVersion>
+    <minorVersion>5</minorVersion>
+    <hidden>false</hidden>
+    <enforceRequiredRights>false</enforceRequiredRights>
+    <created>2026-06-25T15:00:40+02:00</created>
+    <creator>XWiki.tkrieck</creator>
+    <modified>2026-06-25T15:00:41+02:00</modified>
+    <modifier>XWiki.tkrieck</modifier>
+    <originalMetadataAuthor>xwiki:XWiki.tkrieck</originalMetadataAuthor>
+    <comment>Update document after refactoring.</comment>
+    <content>My example content</content>
+    <hierarchy>
+        <item>
+            <label>xwiki</label>
+            <name>xwiki</name>
+            <type>wiki</type>
+            <url>https://example.org/xwiki/bin/view/Main/</url>
+        </item>
+        <item>
+            <label>Main</label>
+            <name>Main</name>
+            <type>space</type>
+            <url>https://example.org/xwiki/bin/view/Main/</url>
+        </item>
+        <item>
+            <label>WebHome</label>
+            <name>WebHome</name>
+            <type>document</type>
+            <url>https://example.org/xwiki/bin/view/Main/</url>
+        </item>
+    </hierarchy>
+</page>
