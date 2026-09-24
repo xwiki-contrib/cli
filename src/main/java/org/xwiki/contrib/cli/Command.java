@@ -176,11 +176,11 @@ public class Command
                     If you want to be guided, type 'guide'.
                     Otherwise, you can type parameters to use, one for each line, like this:
     
-                    --paramater
+                    --parameter
     
                     or
     
-                    --paramater VALUE
+                    --parameter VALUE
     
                     Type 'help' for parameter usage.
                     And then when you are ready to run your action, type 'run'.
