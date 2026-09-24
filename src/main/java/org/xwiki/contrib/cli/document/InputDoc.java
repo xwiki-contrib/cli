@@ -54,8 +54,16 @@ public interface InputDoc
 
     /**
      * @return the title of the document.
+     * @throws DocException
      */
     String getTitle() throws DocException;
+
+    /**
+     * @param metadata to get the value of.
+     * @return the value of the metadata of the document.
+     * @throws DocException
+     */
+    String getMetadata(String metadata) throws DocException;
 
     /**
      * @param objectClass the class of object to consider, or empty if no class is specified.

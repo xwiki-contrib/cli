@@ -22,8 +22,10 @@ package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -50,9 +52,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     private final String url;
     private final String urlWithObject;
 
-    private String content;
-
-    private String title;
+    private final Map<String, String> metadataMap = new HashMap<>();
 
     private final List<ObjectInfo> objectValues = new LinkedList<>();
 
@@ -121,22 +121,6 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     {
         var body = response.body();
         setXML(body, true);
-    }
-
-    @Override
-    public void setContent(String str) throws DocException
-    {
-        content = str;
-    }
-
-    @Override
-    public String getContent() throws DocException
-    {
-        if (!StringUtils.isEmpty(content)) {
-            return content;
-        } else {
-            return super.getContent();
-        }
     }
 
     @Override
@@ -214,18 +198,19 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     }
 
     @Override
-    public void setTitle(String str) throws DocException
+    public void setMetadata(String metadata, String metavalue) throws DocException
     {
-        title = str;
+        metadataMap.put(metadata, metavalue);
     }
 
     @Override
-    public String getTitle() throws DocException
+    public String getMetadata(String metadata) throws DocException
     {
-        if (title == null) {
-            return super.getTitle();
+        String metaValue = metadataMap.get(metadata);
+        if (metaValue == null) {
+            return super.getMetadata(metadata);
         }
-        return title;
+        return metaValue;
     }
 
     @Override
@@ -253,24 +238,23 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
                 APPLICATION_XML_CHARSET_UTF_8));
         }
 
-        if (content != null || title != null) {
-            int builderSize = (content == null ? 0 : content.length()) + (title == null ? 0 : title.length()) + 500;
-            var xml = new StringBuilder(builderSize);
+        if (!metadataMap.isEmpty()) {
+            var xml = new StringBuilder();
             xml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><page xmlns=\"http://www.xwiki.org\">");
 
-            if (content != null) {
-                xml.append("<content>").append(Utils.escapeXML(content)).append("</content>");
+            String metadataName;
+            for (var metadataWithValue : metadataMap.entrySet()) {
+                metadataName = Utils.escapeXML(metadataWithValue.getKey());
+                xml.append("<").append(metadataName).append(">")
+                    .append(Utils.escapeXML(metadataWithValue.getValue()))
+                    .append("</").append(metadataName).append(">");
             }
 
-            if (title != null) {
-                xml.append("<title>").append(Utils.escapeXML(title)).append("</title>");
-            }
 
             xml.append("</page>");
 
             objectValues.clear();
-            content = null;
-            title = null;
+            metadataMap.clear();
             checkStatus(Utils.httpPut(cmd, url, xml.toString(), APPLICATION_XML_CHARSET_UTF_8));
         }
     }

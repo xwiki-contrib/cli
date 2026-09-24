@@ -45,6 +45,14 @@ public interface OutputDoc
     void setTitle(String str) throws DocException;
 
     /**
+     * Set a metadata value of the document.
+     *
+     * @param metadata to change the value of
+     * @param metavalue the new value of the metadata
+     */
+    void setMetadata(String metadata, String metavalue) throws DocException;
+
+    /**
      * Set the value of the property in the first object specified by the given parameters.
      *
      * @param objectClass the class of the object to update, or empty if no class is specified.

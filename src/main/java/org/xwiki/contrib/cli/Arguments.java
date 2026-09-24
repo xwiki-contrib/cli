@@ -82,6 +82,15 @@ public final class Arguments
                     cmd.setTitle(getNextParameter(args, i++));
                     cmd.setAction(Command.Action.SET_TITLE);
                 }
+                case "--get-metadata" -> {
+                    cmd.setMetadata(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.GET_METADATA);
+                }
+                case "--set-metadata" -> {
+                    cmd.setMetadata(getNextParameter(args, i++));
+                    cmd.setMetadataValue(getNextParameter(args, i++));
+                    cmd.setAction(Command.Action.SET_METADATA);
+                }
                 case "--list-properties" -> cmd.setAction(Command.Action.LIST_PROPERTIES);
                 case "--list-objects" -> cmd.setAction(Command.Action.LIST_OBJECTS);
                 case "--get-property" -> {

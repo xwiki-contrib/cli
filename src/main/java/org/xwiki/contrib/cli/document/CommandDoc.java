@@ -66,6 +66,15 @@ public class CommandDoc implements InputDoc
     }
 
     @Override
+    public String getMetadata(String metadata)
+    {
+        if (metadata.equals(cmd.metadata())) {
+            return cmd.metadataValue();
+        }
+        return null;
+    }
+
+    @Override
     public String getSyntaxId()
     {
         throw new UnsupportedOperationException(NOT_IMPLEMENTED);

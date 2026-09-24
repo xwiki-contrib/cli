@@ -20,7 +20,6 @@
 
 package org.xwiki.contrib.cli.document;
 
-import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -35,7 +34,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xwiki.contrib.cli.Command;
 import org.xwiki.contrib.cli.DocException;
-import org.xwiki.contrib.cli.MessageForUserDocException;
 import org.xwiki.contrib.cli.Utils;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
@@ -92,55 +90,48 @@ public abstract class AbstractXMLDoc
 
     public String getContent() throws DocException
     {
-        var domdoc = getDom();
-        var root = domdoc.getRootElement();
-        var content = getElement(root, NODE_NAME_CONTENT);
-        if (content == null) {
-            return null;
-        }
-        return content.getText();
+        return getMetadata(NODE_NAME_CONTENT);
     }
 
     public void setContent(String str) throws DocException
     {
-        var domdoc = getDom();
-        if (domdoc == null) {
-            throw new DocumentNotFoundException();
-        }
-        var root = domdoc.getRootElement();
-        var content = getElement(root, NODE_NAME_CONTENT);
-        if (content == null) {
-            throw new DocException("Content not found");
-        }
-
-        content.setText(str);
-        xml = null;
+        setMetadata(NODE_NAME_CONTENT, str);
     }
 
     public String getTitle() throws DocException
     {
-        var domdoc = getDom();
-        var root = domdoc.getRootElement();
-        var title = getElement(root, NODE_NAME_TITLE);
-        if (title == null) {
-            return null;
-        }
-        return title.getText();
+        return getMetadata(NODE_NAME_TITLE);
     }
 
     public void setTitle(String str) throws DocException
+    {
+        setMetadata(NODE_NAME_TITLE, str);
+    }
+
+    public String getMetadata(String metadata) throws DocException
+    {
+        var domdoc = getDom();
+        var root = domdoc.getRootElement();
+        var metadataElement = getElement(root, metadata);
+        if (metadataElement == null) {
+            return null;
+        }
+        return metadataElement.getText();
+    }
+
+    public void setMetadata(String metadata, String metavalue) throws DocException
     {
         var domdoc = getDom();
         if (domdoc == null) {
             throw new DocumentNotFoundException();
         }
         var root = domdoc.getRootElement();
-        var title = getElement(root, NODE_NAME_TITLE);
-        if (title == null) {
-            throw new DocException("Title not found");
+        var metadataElement = getElement(root, metadata);
+        if (metadataElement == null) {
+            throw new DocException("Metadata not found");
         }
 
-        title.setText(str);
+        metadataElement.setText(metavalue);
         xml = null;
     }
 

@@ -76,6 +76,8 @@ public class Command
                                          If NUMBER is not given, 0 (the first macro) is assumed.
             --get-title                  Get the title of a XWiki document
             --set-title <TITLE>          Set the title of a XWiki document
+            --get-metadata <KEY>         Get the value of the metadata of a XWiki document
+            --set-metadata <KEY> <VALUE> Set the value of the metadata of a XWiki document
             --list-properties            List the document's properties, optionally from the given object
             --list-objects               List the document's objects, optionally from the given class
             --get-property <PROPERTY>    Get the value of the given property, optionally from the given object
@@ -590,6 +592,23 @@ public class Command
                 doc.save();
             }
         },
+        GET_METADATA {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                var doc = new MultipleDoc(cmd);
+                cmd.printf("%s\n", value(doc.getMetadata(cmd.metadata)));
+            }
+        },
+        SET_METADATA {
+            @Override
+            void run(Command cmd) throws Exception
+            {
+                var doc = new MultipleDoc(cmd);
+                doc.setMetadata(cmd.metadata, cmd.metavalue);
+                doc.save();
+            }
+        },
         GET_PROPERTY_VALUE {
             @Override
             void run(Command cmd) throws Exception
@@ -735,6 +754,10 @@ public class Command
     private Action action;
 
     private String title;
+
+    private String metadata;
+
+    private String metavalue;
 
     private String macro;
 
@@ -1082,6 +1105,38 @@ public class Command
     public void setTitle(String title)
     {
         this.title = title;
+    }
+
+    /**
+     * @return metadata key.
+     */
+    public String metadata()
+    {
+        return metadata;
+    }
+
+    /**
+     * @return metadata value.
+     */
+    public String metadataValue()
+    {
+        return metavalue;
+    }
+
+    /**
+     * @param metadata to set.
+     */
+    public void setMetadata(String metadata)
+    {
+        this.metadata = metadata;
+    }
+
+    /**
+     * @param metadataValue to set.
+     */
+    public void setMetadataValue(String metadataValue)
+    {
+        this.metavalue = metadataValue;
     }
 
     /**

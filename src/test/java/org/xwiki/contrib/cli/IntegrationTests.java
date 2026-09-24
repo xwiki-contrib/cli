@@ -71,6 +71,17 @@ public class IntegrationTests
         outputEquals("My example " + element);
     }
 
+    @Test
+    public void testGetHidden() throws Exception
+    {
+        run(r -> {
+            r.once("/rest/wikis/xwiki/spaces/Main/pages/WebHome", e -> {
+                sendResponse(e, getFileContent("Main.WebHome.xml"), HttpURLConnection.HTTP_OK);
+            });
+        }, "--get-metadata", "hidden", "-r", "Main.WebHome");
+        outputEquals("false");
+    }
+
     @ParameterizedTest
     @ValueSource(strings = { "title", "content" })
     public void testSetTitleAndContent(String element) throws Exception
@@ -87,6 +98,24 @@ public class IntegrationTests
                 }
             });
         }, "--set-" + element, "new " + element + "", "-r", "Main.WebHome");
+        outputEquals("");
+    }
+
+    @Test
+    public void testSetHiddent() throws Exception
+    {
+        run(r -> {
+            r.answer("/rest/wikis/xwiki/spaces/Main/pages/WebHome", e -> {
+                if ("GET".equals(e.getRequestMethod())) {
+                    sendResponse(e, getFileContent("Main.WebHome.xml"), HttpURLConnection.HTTP_OK);
+                } else if ("PUT".equals(e.getRequestMethod())) {
+                    // FIXME this check is not ideal, but better might require that we use a real XWiki instance
+                    assertTrue(new String(e.getRequestBody().readAllBytes(), StandardCharsets.UTF_8)
+                        .contains("<hidden>true</hidden>"));
+                    sendResponse(e, "", HttpURLConnection.HTTP_OK);
+                }
+            });
+        }, "--set-metadata", "hidden", "true", "-r", "Main.WebHome");
         outputEquals("");
     }
 

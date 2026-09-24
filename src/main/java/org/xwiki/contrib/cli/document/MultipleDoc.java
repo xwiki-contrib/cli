@@ -171,6 +171,30 @@ public class MultipleDoc implements InputOutputDoc
     }
 
     @Override
+    public String getMetadata(String metadata) throws DocException
+    {
+        String metavalue = null;
+        for (var inputDoc : inputDocs) {
+            var newMetavalue = inputDoc.getMetadata(metadata);
+            if (metavalue == null) {
+                metavalue = newMetavalue;
+            } else if (newMetavalue != null && !metadata.equals(newMetavalue)) {
+                return pickInputFile("the metadata value").getContent();
+            }
+        }
+
+        return metavalue;
+    }
+
+    @Override
+    public void setMetadata(String metadata, String metavalue) throws DocException
+    {
+        for (var outputDoc : outputDocs) {
+            outputDoc.setMetadata(metadata, metavalue);
+        }
+    }
+
+    @Override
     public String getSyntaxId() throws DocException
     {
         String syntax = null;
