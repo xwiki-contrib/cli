@@ -20,7 +20,6 @@ import org.xwiki.contrib.cli.DocException;
 import org.xwiki.contrib.cli.Editing;
 import org.xwiki.contrib.cli.document.InputDoc;
 import org.xwiki.contrib.cli.document.MvnRepoFileDoc;
-import org.xwiki.contrib.cli.document.XMLFileDoc;
 import org.xwiki.contrib.cli.document.XMLRestPage;
 import org.xwiki.contrib.cli.document.element.AttachmentInfo;
 import org.xwiki.contrib.cli.document.element.MemoryDocument;
@@ -96,9 +95,9 @@ public class MemoryDocumentManager
     private InputDoc getInputDoc(String reference) throws IOException, DocException
     {
         if (command.noMvnRepoWrite()) {
-            return new XMLRestPage(command, command.wiki(), reference);
+            return new XMLRestPage(command, command.wiki(), reference, false);
         } else {
-            return new MvnRepoFileDoc(command,  reference);
+            return new MvnRepoFileDoc(command, reference);
         }
     }
 
@@ -116,13 +115,25 @@ public class MemoryDocumentManager
             );
     }
 
-    public boolean docExist(String reference) {
+    private MemoryDocument getDocOrDefault(String reference)
+    {
+        return documents.getOrDefault(reference,
+            new MemoryDocument(reference, null, 0, 0, List.of(), List.of()));
+    }
+
+    public boolean docExist(String reference)
+    {
         return documents.containsKey(reference);
+    }
+
+    public List<String> getAllDocReference()
+    {
+        return documents.keySet().stream().toList();
     }
 
     public boolean isTitleEquals(String reference, String value)
     {
-        var d = documents.get(reference);
+        var d = getDocOrDefault(reference);
         if (d == null) {
             return false;
         }
@@ -131,7 +142,7 @@ public class MemoryDocumentManager
 
     public boolean isContentEquals(String reference, String value)
     {
-        var d = documents.get(reference);
+        var d = getDocOrDefault(reference);
         if (d == null) {
             return false;
         }
@@ -146,18 +157,19 @@ public class MemoryDocumentManager
 
     public boolean isAttachmentEquals(String reference, String name, byte[] value)
     {
-        return documents.get(reference).attachments().stream()
+        return getDocOrDefault(reference).attachments().stream()
             .anyMatch(a -> a.getLeft().name().equals(name) && a.getRight() == convertToChecksum(value));
     }
 
     public List<String> getAttachments(String reference)
     {
-        return documents.get(reference).attachments().stream().map(a -> a.getLeft().name()).toList();
+        return getDocOrDefault(reference).attachments().stream().map(a -> a.getLeft().name()).toList();
     }
 
-    public Map<String, List<Integer>> getObjects(String reference) {
+    public Map<String, List<Integer>> getObjects(String reference)
+    {
         var res = new HashMap<String, List<Integer>>();
-        for (var o : documents.get(reference).objects()) {
+        for (var o : getDocOrDefault(reference).objects()) {
             res.computeIfAbsent(o.objectClass(), k -> new ArrayList<>()).add(o.number());
         }
         return res;
@@ -176,11 +188,14 @@ public class MemoryDocumentManager
 
     public void onDocumentChanged(AbstractEvent event)
     {
+        if (documents.get(event.reference()) == null && !(event instanceof PageCreatedEvent)) {
+            logger.warn("Document [{}] does not exist in memory", event.reference());
+        }
         try {
             switch (event) {
                 case PageCreatedEvent e:
                     documents.put(e.reference(),
-                        new MemoryDocument(e.reference(), e.syntax(), 0, 0, List.of(), List.of()));
+                        new MemoryDocument(e.reference(), e.syntax(), 0, 0, new ArrayList<>(), new ArrayList<>()));
                     break;
                 case PageDeletedEvent e:
                     documents.remove(e.reference());
@@ -226,7 +241,6 @@ public class MemoryDocumentManager
                     documents.get(e.reference()).objects()
                         .add(new ObjectInfo(e.className(), e.number(), e.properties()));
                     break;
-
                 case ObjectRemovedEvent e: {
                     var d = documents.get(e.reference());
                     d.objects().stream().filter(o -> o.objectClass().equals(e.className()) && o.number() == e.number())

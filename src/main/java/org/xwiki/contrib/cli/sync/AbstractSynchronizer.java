@@ -61,10 +61,10 @@ public abstract class AbstractSynchronizer implements PagesSynchronizer
 
         // check each doc property to see what changed
 
-        if (memoryDocumentManager.isTitleEquals(ref, doc.getTitle())) {
+        if (!memoryDocumentManager.isTitleEquals(ref, doc.getTitle())) {
             res.add(new TitleChangedEvent(ref, doc.getTitle()));
         }
-        if (memoryDocumentManager.isContentEquals(ref, doc.getContent())) {
+        if (!memoryDocumentManager.isContentEquals(ref, doc.getContent())) {
             res.add(new ContentChangedEvent(ref, doc.getContent()));
         }
 

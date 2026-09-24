@@ -141,7 +141,8 @@ public class MvnProjectSynchronizer extends AbstractWorkingDirSynchronizer imple
         throws DocException, IOException, ComponentLookupException, ParseException
     {
         if (!"xwiki/2.1".equals(doc.getSyntaxId()) && !"xwiki/2.0".equals(doc.getSyntaxId())) {
-            logger.warn("Ignoring document with unknown syntax [{}]", doc.getSyntaxId());
+            logger.info("Ignoring document at reference [{}] with unknown syntax [{}]", doc.getReference(),
+                doc.getSyntaxId());
             return;
         }
 
@@ -267,7 +268,7 @@ public class MvnProjectSynchronizer extends AbstractWorkingDirSynchronizer imple
     }
 
     @Override
-    public List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind) throws IOException
+    protected List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind) throws IOException
     {
         logger.debug("change detected for path  [{}], kindName [{}], kindClass [{}]", path, kind.name(),
             kind.getClass().getName());
@@ -298,7 +299,7 @@ public class MvnProjectSynchronizer extends AbstractWorkingDirSynchronizer imple
     }
 
     @Override
-    public Path getPathToMonitor()
+    protected Path getPathToMonitor()
     {
         return javaPath;
     }
@@ -312,7 +313,7 @@ public class MvnProjectSynchronizer extends AbstractWorkingDirSynchronizer imple
             logger.debug("Ignoring event for reference [{}] because it's not created", event.reference());
             return;
         }
-        if (docSyntax.isEmpty()) {
+        if (docSyntax.isEmpty() && !(event instanceof PageCreatedEvent)) {
             logger.error("Memory document not found with reference [{}]", event.reference());
             return;
         }
@@ -321,6 +322,7 @@ public class MvnProjectSynchronizer extends AbstractWorkingDirSynchronizer imple
         try {
             switch (event) {
                 case PageCreatedEvent e: {
+                    Files.createDirectories(dstJava);
                     var titleFilePath = Path.of(dstJava.toString(), TITLE + DOT + VM);
                     Files.writeString(titleFilePath, "");
                     titleMap.put(titleFilePath, e.reference());

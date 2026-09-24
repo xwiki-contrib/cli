@@ -48,6 +48,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     protected final String reference;
 
     private final String url;
+
     private final String urlWithObject;
 
     private String content;
@@ -64,7 +65,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
      * @param reference the reference to use.
      * @throws DocException if something when wrong while initializing this object.
      */
-    public XMLRestPage(Command cmd, String wiki, String reference) throws DocException
+    public XMLRestPage(Command cmd, String wiki, String reference, boolean acceptNewDocument) throws DocException
     {
         super(cmd);
 
@@ -77,7 +78,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
         var status = response.statusCode();
         if (status == 200) {
             handleResponse(response);
-        } else if (status == 404 && cmd.acceptNewDocument()) {
+        } else if (status == 404 && (cmd.acceptNewDocument() || acceptNewDocument)) {
             // 404 : Document not found, we assume it's a document we would like to create
             response = Utils.httpPut(cmd, url, "", null);
             status = response.statusCode();

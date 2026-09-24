@@ -46,8 +46,8 @@ public class PageMonitor
                     if (listener != event.getLeft()) {
                         listener.onDocumentChanged(event.getRight());
                     }
-                    memoryDocumentManager.onDocumentChanged(event.getRight());
                 }
+                memoryDocumentManager.onDocumentChanged(event.getRight());
             } catch (Exception e) {
                 logger.error("Error while processing event [{}]", event, e);
             }

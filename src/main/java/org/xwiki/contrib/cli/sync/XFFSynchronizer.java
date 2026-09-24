@@ -149,7 +149,7 @@ public class XFFSynchronizer extends AbstractWorkingDirSynchronizer implements P
     }
 
     @Override
-    public List<AbstractEvent> getEvent(Path fullPath, WatchEvent.Kind<?> kind) throws IOException
+    protected List<AbstractEvent> getEvent(Path fullPath, WatchEvent.Kind<?> kind) throws IOException
     {
         logger.debug("change detected for path  [{}], kindName [{}], kindClass [{}]", fullPath, kind.name(),
             kind.getClass().getName());
@@ -200,7 +200,7 @@ public class XFFSynchronizer extends AbstractWorkingDirSynchronizer implements P
     }
 
     @Override
-    public Path getPathToMonitor()
+    protected Path getPathToMonitor()
     {
         return syncPath;
     }

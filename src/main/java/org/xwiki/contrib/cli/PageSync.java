@@ -47,7 +47,7 @@ public class PageSync
     public void pushPage(String reference) throws IOException, DocException
     {
         var mvnPage = new MvnRepoFileDoc(cmd, reference);
-        var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), reference);
+        var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), reference, true);
         syncPage(mvnPage, xwikiPage);
     }
 
@@ -82,7 +82,7 @@ public class PageSync
         var allPagesReferences = getAllPagesRefencesMvnRepo();
         for (var pageRef : allPagesReferences) {
             var mvnPage = new MvnRepoFileDoc(cmd, pageRef);
-            var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), pageRef);
+            var xwikiPage = new XMLRestPage(cmd, cmd.wiki(), pageRef, true);
             syncPage(mvnPage, xwikiPage);
         }
     }

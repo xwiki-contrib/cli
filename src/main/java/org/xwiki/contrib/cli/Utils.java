@@ -53,7 +53,14 @@ import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.xml.sax.SAXException;
 import org.xwiki.contrib.cli.document.element.ObjectInfo;
+import org.xwiki.contrib.cli.document.element.XWikiEvent;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.StreamReadFeature;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.MapperFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.primitives.Bytes;
 
 /**
@@ -719,7 +726,6 @@ public final class Utils
             var requestUrl = cmd.url() + "/rest/liveData/sources/liveTable/entries?namespace=wiki:" + cmd.wiki()
                 + "&sourceParams.queryFilters=unique&sourceParams.space=" + URLEncoder.encode(space,
                 StandardCharsets.UTF_8) + "&properties=doc.fullName&limit=1000";
-
             var response = httpGet(cmd, requestUrl);
             if (response.statusCode() != 200) {
                 throw new DocException("Can't get list of document for space " + space);
@@ -733,6 +739,20 @@ public final class Utils
             }
         }
         return res;
+    }
+
+    public static List<XWikiEvent> getEvents(Command cmd) throws DocException, JsonProcessingException
+    {
+        var response = httpGet(cmd, cmd.url() + REST + "/notifications?media=json&count=1000");
+        if (response.statusCode() != 200) {
+            throw new DocException("Can't events from REST API");
+        }
+        var mapper = new ObjectMapper();
+        mapper.enable(MapperFeature.ACCEPT_CASE_INSENSITIVE_ENUMS);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        var notifications = mapper.readValue(response.body(), new TypeReference<Map<String,
+            List<XWikiEvent>>>() {}).get("notifications");
+      return notifications;
     }
 
     /**

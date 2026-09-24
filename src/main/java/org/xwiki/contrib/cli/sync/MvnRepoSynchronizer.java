@@ -41,7 +41,7 @@ public class MvnRepoSynchronizer extends AbstractFileSynchronizer implements Pag
     }
 
     @Override
-    public List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind) throws IOException, DocException
+    protected List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind) throws IOException, DocException
     {
         logger.debug("change detected for path  [{}], kindName [{}], kindClass [{}]", path, kind.name(),
             kind.getClass().getName());
@@ -76,7 +76,7 @@ public class MvnRepoSynchronizer extends AbstractFileSynchronizer implements Pag
     }
 
     @Override
-    public Path getPathToMonitor()
+    protected Path getPathToMonitor()
     {
         return Utils.getMvnReposRessourcePath(command);
     }

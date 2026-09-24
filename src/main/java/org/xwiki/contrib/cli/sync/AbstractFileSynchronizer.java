@@ -25,13 +25,14 @@ public abstract class AbstractFileSynchronizer extends AbstractSynchronizer impl
 {
     private final Map<Path, Long> fileChangedByMyself = new HashMap<>();
 
-    public abstract List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind) throws IOException, DocException;
+    protected abstract List<AbstractEvent> getEvent(Path path, WatchEvent.Kind<?> kind)
+        throws IOException, DocException;
 
-    public abstract Path getPathToMonitor();
+    protected abstract Path getPathToMonitor();
 
     protected AbstractFileSynchronizer(Command cmd, MemoryDocumentManager memoryDocumentManager)
     {
-        super(cmd,  memoryDocumentManager);
+        super(cmd, memoryDocumentManager);
     }
 
     @Override
@@ -86,8 +87,13 @@ public abstract class AbstractFileSynchronizer extends AbstractSynchronizer impl
                     continue;
                 }
                 if (Files.isDirectory(child)) {
-                    logger.debug("Ignoring directory");
-                    continue;
+                    // Need watch the new directory which is added
+                    try {
+                        watchDir(keyMaps, child, watcher);
+                    } catch (IOException e) {
+                        logger.error("Can't watch dir", e);
+                        return;
+                    }
                 }
 
                 // Ignore event triggerd by itself

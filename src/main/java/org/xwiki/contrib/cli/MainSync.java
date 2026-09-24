@@ -50,7 +50,7 @@ public class MainSync
             case Command.FirstSyncFrom.WIKI -> {
                 var allPages = Utils.listAllPagesForSpaceXWiki(command, command.spaces());
                 for (var p : allPages) {
-                    var doc = new XMLRestPage(command, command.wiki(), p);
+                    var doc = new XMLRestPage(command, command.wiki(), p, false);
                     memoryDocumentManager.createInitDocFile(doc);
                     xffSynchronizer.createInitDocFile(doc);
                     mvnProjectSynchronizer.createInitDocFile(doc);
