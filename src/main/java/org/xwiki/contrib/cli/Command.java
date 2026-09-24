@@ -561,7 +561,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                cmd.printf(value(doc.getContent()) + "\n");
+                cmd.printf("%s\n", value(doc.getContent()));
             }
         },
         SET_CONTENT {
@@ -578,7 +578,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                cmd.printf(value(doc.getTitle()) + "\n");
+                cmd.printf("%s\n", value(doc.getTitle()));
             }
         },
         SET_TITLE {
