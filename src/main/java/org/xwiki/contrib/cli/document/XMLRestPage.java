@@ -222,11 +222,10 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
     @Override
     public String getTitle() throws DocException
     {
-        if (!StringUtils.isEmpty(title)) {
-            return title;
-        } else {
+        if (title == null) {
             return super.getTitle();
         }
+        return title;
     }
 
     @Override
