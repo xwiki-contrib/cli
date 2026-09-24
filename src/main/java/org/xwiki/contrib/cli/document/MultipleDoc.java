@@ -69,9 +69,9 @@ public class MultipleDoc implements InputOutputDoc
         outputDocs = new ArrayList<>();
 
         inputDocs.add(new CommandDoc(cmd));
-
+        XMLFileDoc inputDoc = null;
         if (StringUtils.isNotEmpty(cmd.inputFile())) {
-            XMLFileDoc inputDoc = new XMLFileDoc(cmd, cmd.inputFile());
+            inputDoc = new XMLFileDoc(cmd, cmd.inputFile());
             if (StringUtils.isEmpty(reference)) {
                 reference = inputDoc.getReference();
             }
@@ -79,15 +79,23 @@ public class MultipleDoc implements InputOutputDoc
         }
 
         if (StringUtils.isNotEmpty(cmd.outputFile())) {
-            outputDocs.add(new XMLFileDoc(cmd, cmd.outputFile()));
+            outputDocs.add(
+                cmd.outputFile().equals(cmd.inputFile())
+                    ? inputDoc
+                    : new XMLFileDoc(cmd, cmd.outputFile())
+            );
         }
 
         if (StringUtils.isNotEmpty(cmd.mvnRepo()) && !cmd.noMvnRepoWrite()) {
             outputDocs.add(new MvnRepoFileDoc(cmd, reference));
         }
 
-        if (StringUtils.isNotEmpty(cmd.url()) && !cmd.noWriteWiki()) {
-            outputDocs.add(new XMLRestPage(cmd, wiki, reference));
+        if (StringUtils.isNotEmpty(cmd.url())) {
+            XMLRestPage restPage = new XMLRestPage(cmd, wiki, reference);
+            inputDocs.add(restPage);
+            if (!cmd.noWriteWiki()) {
+                outputDocs.add(restPage);
+            }
         }
     }
 
