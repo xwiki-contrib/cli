@@ -561,7 +561,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                System.console().printf(value(doc.getContent()) + "\n");
+                cmd.printf(value(doc.getContent()) + "\n");
             }
         },
         SET_CONTENT {
@@ -578,7 +578,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                System.console().printf(value(doc.getTitle()) + "\n");
+                cmd.printf(value(doc.getTitle()) + "\n");
             }
         },
         SET_TITLE {
@@ -595,7 +595,7 @@ public class Command
             void run(Command cmd) throws Exception
             {
                 var doc = new MultipleDoc(cmd);
-                System.console().printf(value(doc.getValue(cmd.objectClass, cmd.objectNumber(), cmd.property).orElse("empty")) + "\n");
+                cmd.printf("%s\n", value(doc.getValue(cmd.objectClass, cmd.objectNumber(), cmd.property).orElse("empty")));
             }
         },
         SET_PROPERTY_VALUE {
@@ -616,7 +616,7 @@ public class Command
             {
                 var doc = new MultipleDoc(cmd);
                 for (var object : doc.getObjects(cmd.objectClass, cmd.objectNumber(), cmd.property)) {
-                    System.console().printf(object.objectClass() + '/' + object.number() + "\n");
+                    cmd.printf("%s\n", object.objectClass() + '/' + object.number());
                 }
             }
         },
@@ -635,7 +635,7 @@ public class Command
                         } else if (severalLines(val)) {
                             val = LINE + '\n' + val + LINE;
                         }
-                        System.console().printf(prop.name() + " = " + val + "\n");
+                        cmd.printf("%s = %s\n", prop.name(), val);
                     }
                 }
             }
@@ -708,7 +708,7 @@ public class Command
             {
                 var doc = new MultipleDoc(cmd);
                 for (var attachment : doc.getAttachments()) {
-                    System.console().printf(attachment.name() + " (size: " + attachment.size() + ")\n");
+                    cmd.printf("%s (size: %s)\n", attachment.name(), attachment.size());
                 }
             }
         },
@@ -716,7 +716,7 @@ public class Command
             @Override
             void run(Command cmd)
             {
-                System.console().printf("xwiki-cli JAVA\n\n%s", HELP_TEXT);
+                cmd.printf("xwiki-cli JAVA\n\n%s", HELP_TEXT);
             }
         };
 
@@ -1384,5 +1384,15 @@ public class Command
         }
 
         return XWIKI_FILE_EXTENSION;
+    }
+
+    public void printf(String format, Object... args)
+    {
+        Console console = System.console();
+        if (console == null) {
+            System.out.printf(format, args);
+        } else {
+            console.printf(format, args);
+        }
     }
 }
