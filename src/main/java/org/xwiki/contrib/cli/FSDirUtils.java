@@ -3,7 +3,7 @@ package org.xwiki.contrib.cli;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
-final class FSDirUtils
+public final class FSDirUtils
 {
     public static final String DOT = ".";
 

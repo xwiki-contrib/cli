@@ -112,8 +112,10 @@ public class Command
             --ext <EXT>                  Use this as a file extension when editing a file
 
         Parameters for --edit-tree:
-            --no-write-wiki              Don't read from the wiki instance
+            --no-write-wiki              Don't write on the wiki instance
             --no-mvn-repo-write          Don't write on the maven repository
+            --no-read-wiki               Don't read changes on the wiki instance
+            --no-mvn-repos-read          Don't read changes on the maven repository
             --first-sync-from <mvn|wiki> Specify the source for the working directory generation.
                                           - 'mvn' will use the maven repository.
                                           - 'wiki' will use the XWiki instance.
@@ -656,9 +658,9 @@ public class Command
             {
                 LOGGER.info("Preparing the working directory at [{}] on Maven repository [{}]",
                         cmd.workingDirectory(), cmd.mvnRepo());
-                XWikiDirAutoSync ds = new XWikiDirAutoSync(cmd);
+                MainSync ds = new MainSync(cmd);
                 try {
-                    ds.doFirstSync();
+                    ds.createInitDocFile();
                     LOGGER.info("Monitoring the working directory for changes...");
                     ds.monitor();
                 } catch (Exception e) {
@@ -724,7 +726,7 @@ public class Command
         }
     }
 
-    enum FirstSyncFrom
+    public enum FirstSyncFrom
     {
         MVN,
         WIKI
@@ -777,6 +779,10 @@ public class Command
     private boolean noMvnRepoWrite;
 
     private boolean noWriteWiki;
+
+    private boolean noMvnRepoRead;
+
+    private boolean noReadWiki;
 
     private FirstSyncFrom firstSyncFrom = FirstSyncFrom.MVN;
 
@@ -1202,6 +1208,38 @@ public class Command
      * @param noWriteWiki true, if we don't want to write into the XWiki instance.
      */
     public void setNoWriteWiki(boolean noWriteWiki)
+    {
+        this.noWriteWiki = noWriteWiki;
+    }
+
+    /**
+     * {@return true, if we don't want to read change into the maven repos}
+     */
+    public boolean noMvnRepoRead()
+    {
+        return noMvnRepoRead;
+    }
+
+    /**
+     * @param noMvnRepoRead true, if we don't want to read change into the maven repos.
+     */
+    public void setNoMvnRepoRead(boolean noMvnRepoRead)
+    {
+        this.noMvnRepoWrite = noMvnRepoWrite;
+    }
+
+    /**
+     * {@return true, if we don't want to read change into the XWiki instance.}
+     */
+    public boolean noReadWiki()
+    {
+        return noReadWiki;
+    }
+
+    /**
+     * @param noReadWiki true, if we don't want to read change into the XWiki instance.
+     */
+    public void setNoReadWiki(boolean noReadWiki)
     {
         this.noWriteWiki = noWriteWiki;
     }

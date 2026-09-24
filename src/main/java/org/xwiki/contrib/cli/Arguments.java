@@ -156,6 +156,8 @@ public final class Arguments
                 case "--ext" -> cmd.setFileExtension(getNextParameter(args, i++));
                 case "--no-write-wiki" -> cmd.setNoWriteWiki(true);
                 case "--no-mvn-repo-write" -> cmd.setNoMvnRepoWrite(true);
+                case "--no-read-wiki" -> cmd.setNoReadWiki(true);
+                case "--no-mvn-repos-read" -> cmd.setNoMvnRepoRead(true);
                 case "--first-sync-from" -> {
                     var value = getNextParameter(args, i++);
                     if ("wiki".equalsIgnoreCase(value)) {

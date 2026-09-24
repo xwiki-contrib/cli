@@ -11,7 +11,7 @@ import org.xwiki.contrib.cli.Utils;
  *
  * @version $Id$
  */
-public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
+public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc, InputOutputDoc
 {
     /**
      * @param cmd cmd the command line called.
@@ -21,6 +21,6 @@ public class MvnRepoFileDoc extends XMLFileDoc implements InputDoc, OutputDoc
     public MvnRepoFileDoc(Command cmd, String reference) throws IOException
     {
         super(cmd, Path.of(cmd.mvnRepo(), "src", "main", "resources",
-            Utils.fromReferenceToMvnReposPath(reference)) + ".xml");
+            Utils.fromReferenceToMvnReposPath(reference) + ".xml").toString());
     }
 }

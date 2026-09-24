@@ -75,7 +75,7 @@ public abstract class AbstractXMLDoc
 
     protected static final String XPATH_XML_PROPERTY = "property/%s";
 
-    protected final Logger logger = LoggerFactory.getLogger(AbstractXMLDoc.class);
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     protected final Command cmd;
 

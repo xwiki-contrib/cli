@@ -1,6 +1,6 @@
 package org.xwiki.contrib.cli.document.element;
 
-import java.util.List;
+import java.util.Collection;
 
 /**
  * Information related to an object.
@@ -8,9 +8,8 @@ import java.util.List;
  * @param objectClass class of the object.
  * @param number object number.
  * @param properties list of all properties of the object.
- *
  * @version $Id$
  */
-public record ObjectInfo(String objectClass, int number, List<Property> properties)
+public record ObjectInfo(String objectClass, int number, Collection<Property> properties)
 {
 }

@@ -90,6 +90,11 @@ public class XMLFileDoc extends AbstractXMLDoc implements InputDoc, OutputDoc
         }
     }
 
+    public String getFilename()
+    {
+        return filename;
+    }
+
     @Override
     public void setAttachment(String attachmentName, byte[] content) throws DocException
     {

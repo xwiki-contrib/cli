@@ -54,7 +54,7 @@ import org.xwiki.rendering.renderer.printer.DefaultWikiPrinter;
 import org.xwiki.rendering.renderer.printer.WikiPrinter;
 import org.xwiki.rendering.syntax.Syntax;
 
-final class Editing
+public final class Editing
 {
     private static final List<String> KNOWN_MACRO_WITH_WIKI_SYNTAX = List.of("job");
 
