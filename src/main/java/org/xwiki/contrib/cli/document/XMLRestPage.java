@@ -21,6 +21,7 @@
 package org.xwiki.contrib.cli.document;
 
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -203,7 +204,7 @@ public class XMLRestPage extends AbstractXMLDoc implements InputOutputDoc
             for (var prop : obj.properties()) {
                 var objectValue = objectValues.stream()
                     .filter(o -> o.objectClass().equals(obj.objectClass()) && obj.number() == o.number())
-                    .findFirst().orElse(new ObjectInfo("", 0, List.of()))
+                    .findFirst().orElse(new ObjectInfo("", 0, new ArrayList<>()))
                     .properties().stream().filter(p -> p.name().equals(prop.name())).findFirst();
 
                 properties.add(objectValue.orElse(prop));

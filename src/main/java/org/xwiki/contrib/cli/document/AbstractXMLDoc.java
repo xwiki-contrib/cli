@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.Document;
@@ -361,7 +362,7 @@ public abstract class AbstractXMLDoc
             properties.entrySet().stream()
                 .map(i -> new Property(i.getKey(), i.getValue(),
                     Utils.getScriptLangFromObjectInfo(properties, className, i.getKey())))
-                .toList()));
+                .collect(Collectors.toCollection(ArrayList::new))));
     }
 
     private static List<Node> getElements(Node parent, String nodeName)
