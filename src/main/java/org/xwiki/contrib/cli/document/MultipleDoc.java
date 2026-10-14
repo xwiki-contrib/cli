@@ -305,7 +305,7 @@ public class MultipleDoc implements InputOutputDoc
     private InputDoc pickInputFile(String what) throws DocException
     {
         out.println(
-            "Input documents have various " + what
+            "Input documents have conflicting values for " + what
                 + ". Please select one of these choices, or 'c' to cancel."
         );
 
